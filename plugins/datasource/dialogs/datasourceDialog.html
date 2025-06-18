@@ -1,0 +1,107 @@
+<script type="text/x-handlebars-template" id="datasource_containerTemplate">
+    <div tabindex="-1" role="dialog"
+         class="ui-dialog ui-corner-all ui-widget ui-widget-content ui-front no-close ui-draggable datasource-insert-container"
+         aria-describedby="datasource-dialog" aria-labelledby="ui-id-1">
+        <div class="si-swicth" >
+            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
+        </div>
+        <div id="datasource-dialog" class="ui-dialog-content ui-widget-content datasource-dialog-content">
+            <div id="datasourceTabContent" class="tab-content datasource_tab_content">
+                <section id="dataElement" style="display: flex; flex-direction: column; height: 100%;">
+                    <div class="insert-prompt">
+                        <div style="display: inline-block;">*双击插入数据元</div>
+                    </div>
+                    <div class="form-inline glyphicon glyphicon-search">
+                        <input type="input" class="form-control" id="dataElement_name" placeholder="输入名称">
+                    </div>
+                    <ul class="datasource-item-list" style="list-style: none; padding-left: 5px; flex: 1; overflow-y: auto; margin-bottom: 0;"></ul>
+                    <div id="dsd_pager" class="dsd_pager_container" style="display: none;"></div>
+                </section>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script type="text/x-handlebars-template" id="dataSource_contentTemplate">
+    <% if(_.isEmpty(emrDataSourceList)){ %>
+        <li style="padding: 10px 5px;"> 未查询到数据元信息！</li>
+    <% }else{ %>
+        <%_.each(emrDataSourceList,function(datasource,index){%>
+            <li class="datasource-item" name="insert" index="<%=index%>" title="数据元类型：<%=datasource.nodeName%>" style="padding: 8px 5px; cursor: pointer; border-bottom: 1px solid #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"> <%=datasource.name%> </li>
+        <%})%>
+    <% } %>
+</script>
+
+<script type="text/x-handlebars-template" id="pageTemplate">
+    <% if(page.totalPage > 1){ %>
+        <ul class="pagination" style="margin: 5px 0;">
+            <li <% if(page.currentPage===1){ %> class="disabled" <% } %> >
+                <a href="javascript:void(0)" name="pageA" pageNumber="1">
+                    <span aria-hidden="true">&lt;&lt;</span>
+                </a>
+            </li>
+            <li <% if(page.currentPage===1){ %> class="disabled" <% } %> >
+                <a href="javascript:void(0)" name="pageA" pageNumber="<%=page.currentPage-1%>">
+                    <span aria-hidden="true">&lt;</span>
+                </a>
+            </li>
+            <%_.each(page.numberArray,function(number){%>
+                <li <% if(page.currentPage===number){ %> class="active" <% } %>>
+                    <a href="javascript:void(0);" name="pageA" pageNumber="<%=number%>">
+                        <%=number%>
+                    </a>
+                </li>
+            <%})%>
+            <li <% if(page.currentPage===page.totalPage){ %> class="disabled" <% } %> >
+                <a href="javascript:void(0);" name="pageA" pageNumber="<%=page.currentPage+1%>">
+                    <span aria-hidden="true">&gt;</span>
+                </a>
+            </li>
+            <li <% if(page.currentPage===page.totalPage){ %> class="disabled" <% } %> >
+                <a href="javascript:void(0);" name="pageA" pageNumber="<%=page.totalPage%>">
+                    <span aria-hidden="true">&gt;&gt;</span>
+                </a>
+            </li>
+        </ul>
+    <% } %>
+</script>
+
+<style>
+.datasource-item:hover {
+    background-color: #f5f5f5;
+}
+.datasource-insert-container {
+    width: 210px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    top: 0 !important;
+}
+.datasource-dialog-content {
+    padding: 5px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+}
+.datasource_tab_content {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+}
+#dataElement {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+}
+.datasource-item-list {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    max-height: none !important;
+}
+.dsd_pager_container {
+    display: none !important;
+}
+.pagination {
+    margin: 5px 0;
+}
+</style>

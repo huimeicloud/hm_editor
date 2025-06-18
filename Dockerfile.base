@@ -1,0 +1,70 @@
+# 基础镜像Dockerfile - 包含所有稳定的依赖
+# 这个镜像很少需要重新构建
+
+FROM bitnami/node:14.18.3-debian-10-r21 AS builder
+
+WORKDIR /app
+
+# 第一层：安装所有系统依赖，这部分很少变动
+RUN apt-get update && apt-get install -y \
+    bash \
+    gconf-service \
+    libxext6 \
+    libxfixes3 \
+    libxi6 \
+    libxrandr2 \
+    libxrender1 \
+    libcairo2 \
+    libcups2 \
+    libdbus-1-3 \
+    libexpat1 \
+    libfontconfig1 \
+    libgcc1 \
+    libgdk-pixbuf2.0-0 \
+    libglib2.0-0 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libstdc++6 \
+    libx11-6 \
+    libxcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libatk1.0-0 \
+    libc6 \
+    ca-certificates \
+    lsb-release \
+    xdg-utils \
+    wget \
+    libgconf-2-4 \
+    libgtk-3-0 \
+    libnspr4 \
+    libx11-xcb1 \
+    libxss1 \
+    libxtst6 \
+    libappindicator1 \
+    libnss3 \
+    libasound2 \
+    fonts-liberation \
+    && rm -rf /var/lib/apt/lists/*
+
+# 第二层：安装 wkhtmltopdf，这部分不会变动
+COPY wkhtmltox/wkhtmltox_0.12.6-1.buster_amd64.deb wkhtmltox_0.12.6-1.buster_amd64.deb
+RUN dpkg-deb -x wkhtmltox_0.12.6-1.buster_amd64.deb /app/wkhtmltox && rm -f wkhtmltox_0.12.6-1.buster_amd64.deb
+ENV PATH="/app/wkhtmltox/usr/local/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/app/wkhtmltox/usr/local/lib:/app/wkhtmltox/usr/lib:${LD_LIBRARY_PATH}"
+
+# 第三层：复制字体文件，这些很少变动
+COPY fontPackage /usr/share/fonts/truetype/
+
+# 复制样式文件
+COPY styles/contents.css styles/
+COPY styles/print.css styles/
+COPY styles/font-awesome.min.css styles/
+COPY fonts fonts/
+
+# 执行字体缓存更新
+RUN fc-cache -f -v
+
+# 推送镜像到docker hub
+# docker push hmeditor/node_wkhtmltox:14.18.3

@@ -1,0 +1,1302 @@
+::-webkit-scrollbar {
+    /* width: 6px; */
+    height: 6px;
+    border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cdcdcd;
+    border-radius: 8px;
+}
+
+html {
+    padding-top: 2mm;
+    background: #E9EBEE;
+    caret-color: #ff5e00;
+}
+
+body {
+    background: white;
+    margin: auto;
+    padding: 0;
+    font-family: '宋体', '宋体-简', '宋体-繁', isans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    /* 这一句写上去之后wk打印会超界? */
+    /*text-align: justify;*/
+    word-break: break-all;
+    margin-bottom: 60px;
+}
+.hm-logic-page{
+    text-align: justify;
+}
+
+div.emrWidget {
+    border: 0 dashed ;
+}
+div.emrWidget-content-non-editable {
+    background-color: #564f4f26;
+}
+
+p, pre {
+    margin: 0;
+    /*text-align: justify;*/
+    word-break: break-all;
+}
+pre{
+    padding: 0;
+}
+/* 新数据元敲回车会导致括号和内容之间会换行 */
+span.new-textbox p{
+    display: inline;
+}
+
+p._paragraphHide, td._paragraphHide{
+    text-decoration:line-through;
+    color: grey;
+}
+
+.hide_class {
+    text-decoration:line-through;
+    color: grey;
+}
+._paragraphHide.print-preview,
+._printHide.print-preview,
+.hide_class.print-preview {
+    display: none !important;
+}
+
+p._paragraphHide:nth-child(n), td._paragraphHide:nth-child(n){
+    text-decoration:line-through;
+    color: grey;
+}
+
+.hr-del-cls {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    display: inline-block;
+    height: 1px;
+    background-color: grey;
+}
+
+/*@media print*/
+table {
+    page-break-inside: auto
+}
+
+tr {
+    page-break-inside: auto;
+    page-break-after: auto
+}
+
+table[data-hm-datatable] tr,
+table[pageBreakInside-tr-avoid] tr{
+    page-break-inside: avoid;
+}
+
+thead {
+    display: table-header-group
+}
+
+tfoot {
+    display: table-footer-group
+}
+
+table {
+    border-collapse: collapse;
+    padding: 0;
+    table-layout: fixed;
+    line-height: 1.5;
+}
+
+table td, table th {
+    padding: 0;
+    border: 1px dashed black;
+    /*text-align: left;*/
+}
+
+table td._text-top{
+    vertical-align: top;
+}
+
+table.solid-border td, table.solid-border th {
+    border: 1px solid black;
+}
+
+table.dashed-border td, table.dashed-border th {
+    border: 0px dashed black;
+}
+
+table.solid-border .dashed-border td, table.solid-border .dashed-border th {
+    border: 0px dashed black;
+}
+
+table.dashed-border .solid-border td, table.dashed-border .solid-border th {
+    border: 1px solid black;
+}
+
+/*数据元加粗 */
+table.font-normal td , table.font-normal th{
+    font-weight: 400;
+}
+
+table.font-weight td, table.font-weight th{
+    font-weight: 800;
+}
+
+
+/*体温单 start*/
+table[data-hm-table=temperature] {
+    width: 98%;
+    white-space: nowrap;
+}
+
+table[data-hm-table=temperature] td, table[data-hm-table=temperature] th {
+    text-align: center;
+    font-size: 8px;
+    border: 1px solid black;
+}
+
+table[data-hm-table=temperature] tr[data-hm-tr=date] td {
+    width: 11.5%;
+}
+
+span[data-hm-span=left] {
+    display: block;
+    height: 75px;
+    position: relative;
+    font-size: 12px;
+}
+
+table[data-hm-table=temperature] tbody[data-hm-tbody=header] tr:nth-child(1) > *,
+table[data-hm-table=temperature] tbody[data-hm-tbody=header] tr:nth-child(2) > *,
+table[data-hm-table=temperature] tbody[data-hm-tbody=header] tr:nth-child(3) > *,
+table[data-hm-table=temperature] tbody[data-hm-tbody=header] tr:nth-child(4) > th:nth-child(1),
+table[data-hm-table=temperature] tbody[data-hm-tbody=footer] tr > th {
+    font-size: 12px;
+    height: 24px;
+}
+
+table[data-hm-table=temperature] tbody[data-hm-tbody=footer] tr[data-hm-tr=skinTest] > td {
+    height: 24px;
+}
+
+table[data-hm-table=temperature] tbody[data-hm-tbody=footer] tr[data-hm-tr=breath] > td {
+    font-size: 8pt;
+}
+
+table[data-hm-table=temperature] tbody[data-hm-tbody=footer] tr[data-hm-tr=bloodPressure] > td {
+    font-size: 8pt;
+}
+
+table[data-hm-table=temperature] tbody[data-hm-tbody=footer] td {
+    font-size: 10pt;
+}
+
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] tr > td:nth-child(1),
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] tr > td:nth-child(2) {
+    border-top: none;
+    border-bottom: none;
+}
+
+span[data-hm-span=left] > span {
+    position: absolute;
+    right: 2px;
+    top: -10px;
+    font-size: 14px;
+}
+
+table[data-hm-table] td._diagonal{
+    /*position: relative;*/
+}
+
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] .icon {
+    display: block;
+    position: relative;
+    margin-bottom: 5px;
+    line-height: 10px;
+    font-size: 12px;
+    text-align: justify;
+    margin-left: 5px;
+}
+
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] .icon:after {
+    display: block;
+    position: absolute;
+    left: 35px;
+    top: 0;
+    height: 10px;
+}
+
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] .icon--oralThermometer::after {
+    width: 10px;
+    background-color: blue;
+    border-radius: 50%;
+    content: '';
+}
+
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] .icon--armpitThermometer::after {
+    height: 10px;
+    color: blue;
+    content: '×';
+    font-weight: bold;
+}
+
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] .icon--rectalThermometer::after {
+    width: 6px;
+    height: 6px;
+    border: 2px solid blue;
+    border-radius: 50%;
+    content: '';
+}
+
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] .icon--earThermometer::after {
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 8px solid blue;
+    content: '';
+}
+
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] .icon--pulse::after {
+    width: 10px;
+    background-color: red;
+    border-radius: 50%;
+    content: '';
+}
+
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] .icon--heartRate::after {
+    width: 6px;
+    height: 6px;
+    border: 2px solid red;
+    border-radius: 50%;
+    content: '';
+}
+
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] td {
+    vertical-align: top;
+    text-align: right;
+}
+
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] tr:first-child td:last-child {
+    text-align: justify;
+}
+
+/**/
+.widget-table tr{
+    height: 38px;
+    line-height: 15px;
+}
+.widget-table tr>td{
+    position: relative;
+}
+.widget-table tr>td .cke_widget_wrapper_textboxWidget:first-of-type{
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+.widget-table tr>td .cke_widget_wrapper_textboxWidget:last-of-type{
+    position: absolute;
+    right: 0;
+    bottom: 0;
+}
+
+
+
+/*体温单 end*/
+
+span[data-hm-node=labelbox] {
+    background-color: #F0F0F0;
+    color:black;
+}
+span[data-hm-node].print-preview {
+    background-color: transparent !important;
+    background-image: none;
+}
+
+span[data-hm-node=dropbox] {
+    background-color: #4297FE7F;
+    position: relative;
+    display: inline-block;
+    min-width: 20px;
+    min-height: 18px;
+    cursor: pointer;
+}
+
+span[data-hm-node=dropbox] {
+    background-image: url(img/drop-down.png);
+    background-position: right;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+span[data-hm-node=timebox] {
+    background-color: #4297FE7F;
+    position: relative;
+    display: inline-block;
+    min-width: 40px;
+    min-height: 18px;
+    cursor: pointer;
+
+}
+
+span[data-hm-node=timebox] {
+    background-image: url('img/calendar.png');
+    background-position: right;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+span[data-hm-node=searchbox] {
+    background-color: #4297FE7F;
+    position: relative;
+    display: inline-block;
+    min-width: 40px;
+    min-height: 18px;
+    cursor: pointer;
+}
+
+span[data-hm-node=expressionbox] {
+    background-color: #4297FE7F;
+    margin: 0 4px;
+    position: relative;
+    display: inline-block;
+    min-width: 40px;
+    min-height: 18px;
+    cursor: pointer;
+
+}
+
+span[data-hm-node=searchbox] {
+    background-image: url('img/search.png');
+    background-position: right;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+
+span[data-hm-node=textboxwidget]{
+    position: relative;
+    display: inline-block;
+    min-width: 20px;
+    min-height: 15px;
+    background-color: #4297FE7F;
+}
+
+span.fa-dot-circle-o[data-hm-node=radiobox][_color=red]{
+    color: red;
+}
+
+span[data-hm-node=radiobox] {
+    cursor: pointer;
+    color: black;
+}
+
+span.fa-check-square-o[data-hm-node=checkbox][_color=red]{
+    color: red;
+}
+
+span[data-hm-node=checkbox] {
+    cursor: pointer;
+    color: black;
+}
+th[data-hm-node=cellbox] {
+    background-color: #4297FE7F;
+}
+td[data-hm-node=cellbox] {
+    background-color: #4297FE7F;
+}
+
+td[_emrstyle ~='_if(overflow){breakparagraph}']{
+    white-space: normal !important;
+    word-break:break-all;
+    line-height: 1;
+}
+
+span[data-hm-node=icd9-name],
+span[data-hm-node=icd9-code],
+span[data-hm-node=icd10Chi-name],
+span[data-hm-node=icd10Chi-code],
+span[data-hm-node=icd10-name],
+span[data-hm-node=icd10-code] {
+    cursor: pointer;
+    background-color: #ddd;
+}
+
+[_placeholdertext] {
+    color: lightgray
+}
+[_placeholdertext]:focus {
+    background: #3398e1;
+    color:white;
+}
+
+[_paperheader] {
+    /* background-color: #F0F0F0; */
+}
+[_placeholdertext].print-preview {
+    display: none !important;
+}
+
+[_paperfooter] {
+    /* background-color: #F0F0F0; */
+}
+
+span._1st_add {
+    text-decoration: underline blue;
+}
+
+span._2st_add {
+    border-bottom: 3px double blue;
+}
+
+span._1st_del {
+    text-decoration: line-through red;
+}
+
+span._2st_del {
+    background: url('img/double-strike.png');
+    background-repeat: repeat-x;
+    background-position: center;
+    background-attachment: scroll;
+}
+
+/*-------------------*/
+
+blockquote {
+    font-style: italic;
+    font-family: Georgia, Times, "Times New Roman", serif;
+    padding: 2px 0;
+    border-style: solid;
+    border-color: #ccc;
+    border-width: 0;
+}
+
+.cke_contents_ltr blockquote {
+    padding-left: 20px;
+    padding-right: 8px;
+    border-left-width: 5px;
+}
+
+.cke_contents_rtl blockquote {
+    padding-left: 8px;
+    padding-right: 20px;
+    border-right-width: 5px;
+}
+
+a {
+    color: #0782C1;
+}
+
+ol, ul, dl {
+    /* IE7: reset rtl list margin. (#7334) */
+    /* *margin-right: 0px; */
+    /* preserved spaces for list items with text direction other than the list. (#6249,#8049)*/
+    padding: 0 40px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: normal;
+    line-height: 1.2;
+}
+
+hr {
+    border: 0px;
+    border-top: 1px solid #000;
+}
+
+img.right {
+    border: 1px solid #ccc;
+    float: right;
+    margin-left: 15px;
+    padding: 5px;
+}
+
+img.left {
+    border: 1px solid #ccc;
+    float: left;
+    margin-right: 15px;
+    padding: 5px;
+}
+
+pre {
+    white-space: pre-wrap; /* CSS 2.1 */
+    word-wrap: break-word; /* IE7 */
+    -moz-tab-size: 4;
+    tab-size: 4;
+}
+
+.marker {
+    background-color: Yellow;
+}
+mark {
+    background-color: transparent;
+    color: inherit;
+}
+
+span[lang] {
+    font-style: italic;
+}
+
+figure {
+    text-align: center;
+    border: solid 1px #ccc;
+    border-radius: 2px;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 10px;
+    margin: 10px 20px;
+    display: inline-block;
+}
+
+figure > figcaption {
+    text-align: center;
+    display: block; /* For IE8 */
+}
+
+a > img {
+    padding: 1px;
+    margin: 1px;
+    border: none;
+    outline: 1px solid #0782C1;
+}
+
+/* Widget Styles */
+.code-featured {
+    border: 5px solid red;
+}
+
+.math-featured {
+    padding: 20px;
+    box-shadow: 0 0 2px rgba(200, 0, 0, 1);
+    background-color: rgba(255, 0, 0, 0.05);
+    margin: 10px;
+}
+
+.image-clean {
+    border: 0;
+    background: none;
+    padding: 0;
+}
+
+.image-clean > figcaption {
+    font-size: .9em;
+    text-align: right;
+}
+
+.image-grayscale {
+    background-color: white;
+    color: #666;
+}
+
+.image-grayscale img, img.image-grayscale {
+    filter: grayscale(100%);
+}
+
+.embed-240p {
+    max-width: 426px;
+    max-height: 240px;
+    margin: 0 auto;
+}
+
+.embed-360p {
+    max-width: 640px;
+    max-height: 360px;
+    margin: 0 auto;
+}
+
+.embed-480p {
+    max-width: 854px;
+    max-height: 480px;
+    margin: 0 auto;
+}
+
+.embed-720p {
+    max-width: 1280px;
+    max-height: 720px;
+    margin: 0 auto;
+}
+
+.embed-1080p {
+    max-width: 1920px;
+    max-height: 1080px;
+    margin: 0 auto;
+}
+
+/**
+Copyright 2013 LoopIndex, This file is part of the Track Changes plugin for CKEditor.
+
+The track changes plugin is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License, version 2, as published by the Free Software Foundation.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with this program as the file gpl-2.0.txt. If not, see http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+Written by (David *)Frenkiel - https://github.com/imdfl
+**/
+
+ins, del {
+    text-decoration: none !important;
+}
+
+ins.print-preview {
+    display: none !important;
+}
+del.print-preview {
+    display: none !important;
+}
+
+
+del.hm-del {
+    display: none;
+}
+
+ins.hm-ins, ins.hm-del {
+    white-space: pre-wrap;
+    text-decoration: none !important;
+}
+
+ins.ice-no-decoration, del.ice-no-decoration {
+    text-decoration: none !important;
+}
+
+.HM-Trace span.hm-ins, .HM-Trace ins.hm-ins,
+.HM-Trace span.hm-del, .HM-Trace del.hm-del {
+    color: #000;
+}
+
+.HM-Trace span.hm-del, .HM-Trace del.hm-del {
+    display: inline;
+    text-decoration: line-through !important;
+    color: #555;
+}
+
+
+
+.HM-Trace .hm-ins.hm-trace-1, .HM-Trace .hm-ins.hm-trace-1 > * {
+    text-decoration: underline !important;
+    text-decoration-color: red !important;
+}
+
+.HM-Trace .hm-del.hm-trace-1 {
+    text-decoration: line-through !important;
+    text-decoration-color: red !important;
+}
+
+.HM-Trace .hm-ins.hm-trace-2, .HM-Trace .hm-ins.hm-trace-2 > * {
+    text-decoration: underline double !important;
+    text-decoration-color: blue !important;
+}
+
+.HM-Trace .hm-del.hm-trace-2 {
+    text-decoration: line-through double !important;
+    text-decoration-color: blue !important;
+}
+.continuation-identifier {
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+    text-align: center;
+}
+
+.continuation-identifier > input:first-child {
+    position: absolute;
+    width: 100%;
+}
+.continuation-identifier > input {
+    left:0;
+    right:0;
+    outline: 0;
+    border: 0;
+    text-align: center;
+}
+.continuation-identifier > input::placeholder {
+    color: #0000ff;
+    font-size: 12px;
+}
+
+/* 留痕相关样式 start */
+
+.HM-Trace .hm-ins-mark {
+    background-color: #DAFCD3;
+}
+.HM-Trace .hm-del-mark {
+    text-decoration: line-through !important;
+    color: #F5554A;
+}
+.HM-Trace .hm-del-mark .express-del-line {
+    display: inherit;
+    width: 100%;
+    margin-top: 24px;
+    border-bottom: 2px solid #F5554A;
+}
+.HM-Trace .hm-modify-mark {
+    background-color: #FFF0A6;
+}
+.HM-Trace-Hide .hm-del-mark {
+    display: none;
+}
+
+.document-interval-line {
+    margin: 50px 20px;
+    font-size: 12px;
+    text-align: center;
+    color: lightgray;
+
+}
+
+.document-interval-line hr {
+    border-top-color: lightgray;
+}
+
+/* .hm-ins-mark.hm-mark-hideen {
+    background-color: transparent;
+}
+.hm-del-mark.hm-mark-hideen {
+    text-decoration: none;
+    color:  inherit;
+} */
+/* 留痕相关样式 end */
+
+
+/* 病历中下拉菜单边框显示样式 */
+/* span[data-hm-node=dropbox][_border] {
+    width: 14px;
+    height: 14px;
+    line-height: 1;
+    min-width: 14px;
+    min-height: 14px;
+    text-align: center;
+    font-size: 14px;
+    border: 1px solid #000;
+    vertical-align: text-bottom;
+} */
+
+.new-textbox:before {
+    content: "[";
+    color: #2284FE;
+}
+.hm-logic-page .new-textbox:before {
+    color: transparent;
+    background: url("./img/left.png") no-repeat;
+    background-size: 100% 100%;
+    margin-left: -1px;
+    margin-right: calc(-0.5em + 1px);
+}
+
+.new-textbox:after {
+    content: "]";
+    color: #2284FE;
+}
+.hm-logic-page .new-textbox:after {
+    color: transparent;
+    background: url("./img/right.png") no-repeat;
+    background-size: 100% 100%;
+    margin-left: calc(-0.5em + 1px);
+    margin-right: 0;
+}
+
+[data-hm-node="newtextbox"][_texttype="时间文本"].new-textbox{
+    background: #2284FE7F;
+}
+[data-hm-node="newtextbox"][_texttype="时间文本"].new-textbox [_placeholdertext] {
+    color: #a1a0a0;
+}
+[data-hm-node="newtextbox"][_texttype="时间文本"].new-textbox:before{
+    content: "[";
+    color: transparent;
+}
+[data-hm-node="newtextbox"][_texttype="时间文本"].new-textbox:after{
+    content: "]";
+    color: transparent;
+}
+.new-textbox span.new-textbox-content{
+    outline: none;
+    white-space: break-spaces;
+    /*padding-right: 3px;*/
+}
+
+/*表格属性设置:单行显示、单行溢出截断时，文本数据元单行显示*/
+.table2 .new-textbox span.new-textbox-content,.table3 .new-textbox span.new-textbox-content {
+    white-space: nowrap;
+}
+
+.new-textbox.print-preview span.new-textbox-content{
+    padding: 0;
+}
+.new-textbox.print-preview:before {
+    /*visibility: hidden!important;*/
+    /*display: none!important;*/
+}
+.new-textbox.print-preview:after {
+    /*visibility: hidden!important;*/
+    /*display: none!important;*/
+}
+/*.new-textbox.print-preview.print-hold:before {*/
+/*    visibility: hidden!important;*/
+/*    display: inline-block!important;*/
+/*}*/
+/*.new-textbox.print-preview.print-hold:after {*/
+/*    visibility: hidden!important;*/
+/*    display: inline-block!important;*/
+/*}*/
+/*.new-textbox.print-hold:before {*/
+/*    color: #09c5fd;*/
+/*}*/
+/*.new-textbox.print-hold:after {*/
+/*    color: #09c5fd;*/
+/*}*/
+/*.new-textbox{*/
+/*    text-align: justify;*/
+/*}*/
+
+/* 单选按钮样式修改 */
+span[_radiostyle='radioStyle_square'] span[data-hm-itemname].fa-circle-o:before {
+    content: "\f096";
+}
+span[_radiostyle='radioStyle_square'] span[data-hm-itemname].fa-dot-circle-o:before {
+    content: "\f046";
+}
+
+/* 修订样式==== start ===== */
+.hm-revise-show .hm_revise_ins {
+    color: red;
+}
+.hm-revise-hide .hm_revise_del {
+    display: none;
+}
+.hm-revise-show .hm_revise_del {
+    display: inline;
+    color: initial;
+    text-decoration-line: line-through !important;
+    text-decoration-color: red !important;
+}
+.hm-revise-show .hm_self_ins {
+    color: initial;
+}
+/* 修订样式==== end ===== */
+
+/*分页记号*/
+.cke_page_split_mark {
+    display: none;
+}
+.cke_page_split_mark:before {
+    content: '@自动分页标记@';
+
+}
+
+.cke_page_split_mark.print-preview {
+    display: none !important;
+}
+
+
+.cke_page_split_mark[force=true] {
+    margin-left: 2em;
+}
+.cke_page_split_mark[force=true]:before {
+    content: '┙';
+}
+
+
+
+/*续打*/
+.continue-print-hide {
+    display: none;
+}
+
+/* 将斜体改为新宋体 */
+em{
+    font-family: STSong;
+}
+/* 避免粗体和斜体样式重复 */
+em strong{
+    text-shadow:0 0 black;
+}
+/* endregion 宋体 */
+
+/* 每页页面 */
+.hm-logic-page{
+    background: white;
+    /* 这个 margin-bottom 要跟 hm-page-splitter 一致*/
+    margin-bottom: 30px;
+    page-break-after: always;
+    box-shadow: 0 0 6px 6px #0000001a;
+    position: relative;
+    /*overflow: hidden;*/
+}
+/* 分页符所在位置的元素 */
+.hm-page-splitter {
+    position: absolute;
+    cursor: vertical-text;
+    width: 100%;
+    left: 0;
+    bottom: -30px;
+    height: 30px;
+    /*老浏览器不兼容*/
+    /*box-shadow: inset 0 12px 12px -12px #0000001a;*/
+}
+/* 最后一页不能显示分页符 */
+.hm-logic-page:last-child > .hm-page-splitter {
+    display: none;
+}
+
+/* 页面的中间层, 方便渲染页脚 */
+.hm-page-middleLayer {
+    position: relative;
+    height: 100%;
+}
+/* 页脚 */
+.hm-page-footer-group {
+    bottom: 0;
+    position: absolute;
+    width: 100%;
+}
+/* 分页和打印的误差 / 页脚的占位标签 */
+.hm-page-offset,.hm-fake-page-footer{
+    visibility: hidden;
+}
+
+/* emmmmmmmm */
+:focus-visible {
+    outline: none;
+}
+
+.border-none{
+    border:none;
+}
+.border-none tr{
+    border:none;
+}
+.border-none td{
+    border:none;
+}
+
+/* 新续打 */
+.breakLineEleNew {
+    pointer-events: none;
+    z-index: 100;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    min-width: 210mm;
+    box-shadow: 0 2px 10px rgb(0 0 255 / 70%);
+    background: rgba(0, 0, 255, 0.2);
+}
+
+/* region 打印样式: "print.css" 的拷贝, chrome 前端打印时会用到 */
+@media print{
+    html {
+        background: #ffffff;
+        caret-color:transparent;
+    }
+    body {
+        margin-bottom: 0px !important;
+        box-shadow: none;
+    }
+
+    table.dashed-border td,table.dashed-border th{
+        border: 0px;
+    }
+
+    td[_emrstyle ~='_if(overflow){breakparagraph}']{
+        white-space: normal;word-break:break-all;line-height: 1;
+    }
+
+    span[data-hm-node]{
+        color:black !important;
+        background-image:none !important;
+    }
+
+    .new-textbox:before,.new-textbox:after{
+        visibility: hidden!important;
+        /*display: none !important;*/
+    }
+
+    .cell-bottom-line{
+        border-bottom: 1px solid #000 !important;
+    }
+
+    [_print_underline]{
+        border-bottom:1px solid !important;
+    }
+    [_print_cascade]{
+        display: none !important;
+    }
+    /*[_underline]{*/
+    /*    border-bottom:1px solid !important;*/
+    /*}*/
+    [_print_color=red]{
+        color: red !important;
+    }
+    .hm-page-break{
+        page-break-after:always;
+    }
+    span.fa-check-square-o[data-hm-node=checkbox][_color=red]{
+        color: red !important;
+    }
+    span.fa-dot-circle-o[data-hm-node=radiobox][_color=red]{
+        color: red !important;
+    }
+    [_print_datasource=none]{
+        display: none !important;
+    }
+
+    [_paperheader]{
+        background-color: white !important;
+    }
+
+    [_paperfooter]{
+        background-color: white !important;
+    }
+    [data-hm-node] {
+        background-color: transparent !important;
+    }
+
+    div.emrWidget{
+        border: 0px !important;
+    }
+
+    div.emrWidget-content{
+        outline: none !important;
+    }
+
+    ._paragraphHide{
+        display: none !important;
+    }
+
+    ._printHide{
+        display: none !important;
+    }
+    /* 病历中下拉菜单边框显示样式 */
+    span[data-hm-node=dropbox][_border] {
+        width: 14px;
+        height: 14px;
+        line-height: 1;
+        min-width: 14px;
+        min-height: 14px;
+        text-align: center;
+        font-size: 14px;
+        border: 1px solid #000;
+        vertical-align: text-bottom;
+    }
+    span[type='button']{
+        text-rendering: auto;
+
+        letter-spacing: normal;
+        word-spacing: normal;
+        line-height: normal;
+        text-transform: none;
+        text-indent: 0px;
+        text-shadow: none;
+        display: inline-block;
+        text-align: center;
+        align-items: flex-start;
+        cursor: default;
+        box-sizing: border-box;
+        background-color: unset;
+        margin: 0em;
+        padding: 1px 6px;
+        /* border-width: 1px;
+        border-style: outset;
+        border-color: #5c5959;; */
+        border:unset;
+
+    }
+    .hm-readonly-bgcolor{
+        background-color: transparent !important;
+    }
+
+    span[data-hm-node=searchbox],
+    span[data-hm-node=expressionbox] {
+        vertical-align: bottom;
+    }
+
+    /* region 分页打印样式 */
+    html {
+        padding: 0;
+    }
+
+    body {
+        margin: 0;
+        background: white;
+    }
+
+    /* TODO 暂时解决聚合病历中由于行末过多空格引起的打印缩放问题, 未根治 */
+    body {
+        overflow: hidden;
+    }
+
+    /* 每页页面 */
+    .hm-logic-page{
+        background: white;
+        margin-bottom: 0;
+        box-shadow: none;
+        /*cursor: text;*/
+        overflow-x: hidden;
+        overflow-y: visible;
+    }
+
+    /* 页面之间的部分打印时不能占位 */
+    .hm-page-splitter {
+        display: none;
+    }
+
+    /*当前鼠标移动到病历上的边框 与 在左侧点击病历时的边框*/
+    .cke_widget_wrapper:hover > .cke_widget_element, .emrWidget-content {
+        outline: none !important;
+    }
+
+    .justify-last {
+        text-align-last: justify;
+    }
+
+    /* chrome 宋体: 打印样式不支持宋体的加粗, 所以加个阴影以假乱真 */
+    strong, .simsun-bold-print {
+        text-shadow:0.1pt 0px 0px black,0.2pt 0px 0px black,0.3pt 0px 0px black,-0.2pt 0px 0px black,0px 0.2pt 0px black,0px -0.2pt 0px black;
+        /*text-shadow:0.15pt 0px 0px black,0.25pt 0px 0px black,0.35pt 0px 0px black,-0.25pt 0px 0px black,0px 0.25pt 0px black,0px -0.25pt 0px black;*/
+        /*font-weight: normal;*/
+    }
+
+    .cke_page_split_mark {
+        display: none;
+    }
+    /* 新续打 */
+    .breakLineEleNew{
+        display: none;
+    }
+    button[data-hm-id]{
+        border:unset;
+    }
+    /* endregion */
+}
+/* endregion 打印样式 */
+
+.hm-readonly-bgcolor{
+    /* background-color: #f0f0f0; */
+}
+
+._paragraphHide.concise-model,
+._printHide.concise-model,
+.hide_class.concise-model {
+    display: none !important;
+}
+span[data-hm-node].concise-model {
+    background-color: transparent !important;
+    background-image: none;
+}
+
+[_placeholdertext].concise-model {
+    visibility: hidden!important;
+}
+.new-textbox.concise-model span.new-textbox-content{
+    padding: 0;
+}
+.new-textbox.concise-model:before {
+    visibility: hidden!important;
+    /*display: none!important;*/
+}
+.new-textbox.concise-model:after {
+    visibility: hidden!important;
+    /*display: none!important;*/
+}
+
+/*内容校验*/
+.check-error-backcolor{
+    background-color: #e5a6a6 !important;
+}
+
+/*不显示图标*/
+span[data-hm-node=dropbox][_noshowicon=true],
+span[data-hm-node=searchbox][_noshowicon=true],
+span[data-hm-node=timebox][_noshowicon=true] {
+    background-image:none;
+    padding-right: 0;
+}
+span[data-hm-node=dropbox][_noshowicon=true]{
+    min-width: 20px;
+}
+/*非空*/
+span[data-hm-node=newtextbox][_notnull=true],
+span[data-hm-node=searchbox][_notnull=true]{
+    position: relative;
+}
+span[data-hm-node=newtextbox][_notnull=true] .new-textbox-content:after,
+span[data-hm-node=searchbox][_notnull=true]:after,
+span[data-hm-node=timebox][_notnull=true]:after{
+    position: absolute;
+    content: '*';
+    /* color: #2284FE7F; */
+    color:#e5a6a6;
+    bottom: 0;
+    right: -1em;
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+}
+.concise-model .check-error-backcolor{
+    background-color: unset
+}
+.concise-model.check-error-backcolor{
+    background-color: unset
+}
+span[data-hm-node=newtextbox][_notnull=true].concise-model .new-textbox-content:after{
+    display: none !important;
+}
+span[data-hm-node=searchbox][_notnull=true].concise-model:after{
+    display: none !important;
+}
+span[data-hm-node=timebox][_notnull=true].concise-model:after{
+    display: none !important;
+}
+.bgred{
+    background: rgb(255 0 0 / 50%) !important;
+}
+.group-table-all{
+    padding: 2px;
+    border: 1px dashed lightgray;
+    position: relative;
+}
+.group-table {
+    position: relative;
+}
+.group-table-btn{
+    position: absolute;
+    display: inline-block;
+    right: -21px;
+    cursor: pointer;
+    font-size: 16px;
+    background: #4297fe;
+    height: 16px;
+    width: 16px;
+    text-align: center;
+    line-height: 16px;
+    border-radius: 8px;
+    color: white;
+}
+.group-table-btn[type='add']{
+    bottom: 0px;
+}
+.group-table-btn[type='delete']{
+    bottom: 20px;
+    /* line-height: 12px; */
+}
+
+.hm-readonly-bgcolor.group-table-all{
+    border: unset;
+}
+.hm-readonly-bgcolor .group-table .group-table-btn{
+    display: none;
+}
+.hm-readonly-bgcolor .group-table-all{
+    border: unset;
+}
+/* 默认有 hover 效果 */
+.cke_widget_wrapper.hover > .cke_widget_element {
+    /* hover 样式 */
+}
+
+/* 只有一个时，禁用 hover 效果 */
+.only-one-widget .cke_widget_wrapper:hover > .cke_widget_element {
+    /* 取消 hover 样式，比如 */
+    outline:none !important;
+}

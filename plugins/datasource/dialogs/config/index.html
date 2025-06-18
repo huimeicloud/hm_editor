@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link type="text/css" rel="stylesheet" href="<%=sdkHost%>/vendor/iconfont/iconfont.css" />
+    <link rel="stylesheet" type="text/css" href="<%=sdkHost%>/vendor/bootstrap.css">
+    </link>
+    <link rel="stylesheet" type="text/css" href="<%=sdkHost%>/vendor/jquery.datetimepicker.css">
+    </link>
+    <link rel="stylesheet" type="text/css" href="<%=sdkHost%>/vendor/jquery-editable-select.css">
+    </link>
+    <link type="text/css" rel="stylesheet" href="<%=sdkHost%>/vendor/jquery-ui.css">
+    <link type="text/css" rel="stylesheet" href="<%=sdkHost%>/plugins/datasource/dialogs/config/index.css">
+</head>
+
+<body>
+    <div class="box">
+        <div class="tab">
+            <ul class="nav nav-tabs">
+                <li class="active"><a href="#baseConfig" data-toggle="tab">基础设置</a></li>
+                <li><a href="#advanceConfig" data-toggle="tab">高级设置</a></li>
+                <li><a href="#printConfig" data-toggle="tab">打印设置</a></li>
+            </ul>
+        </div>
+        <div class="tab-content">
+            <div class="content tab-pane fade in active" id="baseConfig">
+                <div>
+                    <fieldset>
+                        <legend>一般项目</legend>
+                        <div>
+                            <div class="row type">
+                                <div class="form-check form-check-inline">
+                                    <input _type="data-hm-node" class="form-check-input" type="radio"
+                                        name="type_radio" id="tr1" value="labelbox">
+                                    <label class="form-check-label" for="tr1">标题</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input _type="data-hm-node" class="form-check-input" type="radio"
+                                        name="type_radio" id="tr2" value="newtextbox" checked>
+                                    <label class="form-check-label" for="tr2">文本</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input _type="data-hm-node" class="form-check-input" type="radio"
+                                        name="type_radio" id="tr3" value="timebox">
+                                    <label class="form-check-label" for="tr3">时间</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input _type="data-hm-node" class="form-check-input" type="radio"
+                                        name="type_radio" id="tr4" value="radiobox">
+                                    <label class="form-check-label" for="tr4">单选</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input _type="data-hm-node" class="form-check-input" type="radio"
+                                        name="type_radio" id="tr5" value="checkbox">
+                                    <label class="form-check-label" for="tr5">多选</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input _type="data-hm-node" class="form-check-input" type="radio"
+                                        name="type_radio" id="tr6" value="searchbox">
+                                    <label class="form-check-label" for="tr6">搜索</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input _type="data-hm-node" class="form-check-input" type="radio"
+                                        name="type_radio" id="tr7" value="cellbox">
+                                    <label class="form-check-label" for="tr7">单元</label>
+                                </div>
+                                <!-- <div class="form-check form-check-inline">
+                                    <input _type="data-hm-node" class="form-check-input" type="radio"
+                                        name="type_radio" id="tr8" value="textboxwidget">
+                                    <label class="form-check-label" for="tr8">文本控件</label>
+                                </div> -->
+                            </div>
+                            <div  class="row">
+                                <span class="label label-txt">数&#8197;&#8197;据&#8197;&#8197;元：</span>
+                                <div id="dsSel" class="dsSel"></div>
+                                <input id="dsInput" type="text" class="form-control col-auto" placeholder="标题">
+                                <span class="label label-txt ds-code">编&#12288;&#12288;码：</span>
+                                <input _type="data-hm-code" type="text" class="form-control col-auto ds-code" disabled="true">
+
+                                <span class="label templatename" style="margin-left: 10px;">关联模板名称：</span>
+                                <input _type="_templatename" type="text" class="form-control c1 col-auto templatename" id="templatename" placeholder="提示" >
+                            </div>
+
+                            <div class="row text">
+                                <span class="label">文本类型：</span>
+                                <select _type="_texttype" class="form-select form-select-sm"
+                                    aria-label=".form-select-sm example">
+                                    <option value="纯文本">文本</option>
+                                    <option value="数字文本">数字</option>
+                                    <option value="时间文本">时间</option>
+                                    <option value="下拉">下拉</option>
+                                </select>
+                                <span class="label">输入提示：</span>
+                                <input _type="_placeholder" type="text" class="form-control col-auto" id="msg"
+                                    placeholder="提示">
+                            </div>
+                            <div class="row dropdown">
+                                <span class="label">选择方式：</span>
+                                <select _type="_selecttype" class="form-select form-select-sm"
+                                    aria-label=".form-select-sm example">
+                                    <option value="单选">单选</option>
+                                    <option value="多选">多选</option>
+                                </select>
+                                <span class="label">拼接符号：</span>
+                                <input _type="_jointsymbol" type="text" class="form-control col-auto" id="joinChar"
+                                    placeholder="多选拼接符，默认(,)" value=",">
+                            </div>
+                            <div class="row option">
+                                <span class="label radio">按钮样式：</span>
+                                <select _type="_radiostyle" class="form-select form-select-sm radio"
+                                    aria-label=".form-select-sm example">
+                                    <option value="radioStyle_circle">O</option>
+                                    <option value="radioStyle_square">☐</option>
+                                </select>
+                                <span class="label radio">是否必选：</span>
+                                <select _type="_radio_select_type" class="form-select form-select-sm radio"
+                                    aria-label=".form-select-sm example">
+                                    <option value="1">是</option>
+                                    <option value="0">否</option>
+                                </select>
+                                <div class="breakline"></div>
+                                <span class="label check label-txt">选&#12288;&#12288;项：</span>
+                                <input _type="data-hm-items" type="text" class="form-control col-auto check"
+                                    placeholder="值1(编码1)#值2(编码2)" style="width: 395px;">
+                                <button class="check" title="值和编码调换" onclick="revertItems()">翻转</button>
+                            </div>
+                            <div class="row searchbox">
+                                <span class="label">搜索类型：</span>
+                                <select _type="_searchoption" class="type form-select form-select-sm" id="searchTypeSelect"
+                                    aria-label=".form-select-sm example">
+                                    <option value="">请选择</option>
+                                    <!-- 选项将从window['global_searchOption_list']中动态加载 -->
+                                </select>
+                                <span class="label relabel">对应编码：</span>
+                                <div id="dsSel1" class="dsSel"></div>
+                            </div>
+                            <div class="row searchbox">
+                                <span class="label">搜索返回：</span>
+                                <input _type="_searchreturn" class="form-check-input" type="checkbox" name="searchReturn" id="searchReturnName" value="名称">
+                                <label class="form-check-label" for="searchReturnName">名称</label>
+                                <input _type="_searchreturn" class="form-check-input" type="checkbox" name="searchReturn" id="searchReturnCode" value="编码" style="margin-left: 10px;">
+                                <label class="form-check-label" for="searchReturnCode">编码</label>
+                            </div>
+                            <div class="row searchbox">
+                                <span class="label">搜索URL：</span>
+                                <input _type="data-hm-search-url" type="text" class="form-control col-auto" placeholder="搜索接口URL" style="width: 70%;">
+                            </div>
+                            <div class="row searchbox">
+                                <span class="label">级联参数：</span>
+                                <input _type="data-hm-search-params" type="text" class="form-control col-auto" placeholder="{key1=DE01.XX.XX.XX,key2=DE02.XX.XX.XX}" style="width: 70%;">
+                            </div>
+
+                            <!-- <div class="row searchbox operation">
+                                <span class="label">手术级别：</span>
+                                <div id="dsSel2" class="dsSel"></div>
+                                <span class="label">诊疗方式：</span>
+                                <div id="dsSel3" class="dsSel"></div>
+                            </div> -->
+
+
+                            <div class="row dsEdit">
+                                <div class="form-check form-check-inline c1">
+                                    <input _type="_isdisabled" class="form-check-input" type="checkbox" id="c1"
+                                        value="true">
+                                    <label class="form-check-label" for="c1">只读</label>
+                                </div>
+                                <div class="form-check form-check-inline c2">
+                                    <input _type="_writeable" class="form-check-input" type="checkbox" id="c2"
+                                        value="true">
+                                    <label class="form-check-label" for="c2">可自由录入</label>
+                                </div>
+                                <div class="form-check form-check-inline c3">
+                                    <input _type="_deleteable" class="form-check-input" type="checkbox" id="c3"
+                                        value="true">
+                                    <label class="form-check-label" for="c3">可删除</label>
+                                </div>
+                                <div class="form-check form-check-inline c8">
+                                    <input _type="_click" class="form-check-input" type="checkbox" id="c8"
+                                        value="true">
+                                    <label class="form-check-label" for="c8">单击</label>
+                                </div>
+                                <div class="form-check form-check-inline c4">
+                                    <input _type="_doubleclick" class="form-check-input" type="checkbox" id="c4"
+                                        value="true">
+                                    <label class="form-check-label" for="c4">双击</label>
+                                </div>
+                                <div class="form-check form-check-inline c5">
+                                    <input _type="_noshowicon" class="form-check-input" type="checkbox" id="c5"
+                                        value="true">
+                                    <label class="form-check-label" for="c5">不显示图标</label>
+                                </div>
+                                <div class="form-check form-check-inline c6">
+                                    <input _type="_autoshowcurtime" class="form-check-input" type="checkbox" id="c6"
+                                        value="true">
+                                    <label class="form-check-label" for="c6">默认当前时间</label>
+                                    <input _type="_autoshowsavetime" class="form-check-input" type="checkbox" id="c9"
+                                           value="true">
+                                    <label class="form-check-label" for="c9">默认保存时间</label>
+                                </div>
+                                <div class="form-check form-check-inline c7">
+                                    <input _type="_isedit" class="form-check-input" type="checkbox" id="c7"
+                                        value="是">
+                                    <label class="form-check-label" for="c7">可编辑</label>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="valid">
+                    <fieldset>
+                        <legend>数据校验</legend>
+                        <div>
+                            <div class="row validType">
+                                <div class="form-check form-check-inline">
+                                    <input _type="_notnull" class="form-check-input" type="checkbox" id="c21"
+                                        value="true">
+                                    <label class="form-check-label" for="c21">不能留空</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input _type="_realtimecheck" class="form-check-input" type="checkbox" id="c22"
+                                        value="true">
+                                    <label class="form-check-label" for="c22">输入实时校验</label>
+                                </div>
+                            </div>
+                            <div class="row group textValid t1">
+                                <div class="form-check form-check-inline">
+                                    <input _type="_textflag" class="form-check-input" type="checkbox" id="cg1"
+                                        value="文本输入">
+                                    <label class="form-check-label" for="cg1">文本输入</label>
+                                </div>
+                            </div>
+                            <div class="row t1">
+                            <span class="label">值表达式：</span>
+                                <input _type="_reg" type="text" class="form-control col-auto" placeholder="表达式">
+                            </div>
+                                <div class="row t1">
+                                <span class="label">最小长度：</span>
+                                <input _type="_text_min" type="text" class="form-control col-auto" id="text_min">
+                                <span class="label">最大长度：</span>
+                                <input _type="_text_max" type="text" class="form-control col-auto" id="text_max">
+                            </div>
+
+                            <div class="row group numValid t2">
+                                <div class="form-check form-check-inline">
+                                    <input _type="_numflag" class="form-check-input" type="checkbox" id="cg2"
+                                        value="数值输入">
+                                    <label class="form-check-label" for="cg2">数值输入</label>
+                                </div>
+                            </div>
+                            <div class="row t2">
+                                <span class="label">数字精度：</span>
+                                <select _type="_precision" class="form-select form-select-sm"
+                                    aria-label=".form-select-sm example">
+                                    <option value="all">任何</option>
+                                    <option value="0">0</option>
+                                    <option value="0.0">0.0</option>
+                                    <option value="0.00">0.00</option>
+                                    <option value="0.000">0.000</option>
+                                    <option value="0.0000">0.0000</option>
+                                </select>
+
+                            </div>
+                            <div class="row t2">
+                                <span class="label">最小数值：</span>
+                                <input _type="_num_min" type="number" step="1" min="0" class="form-control col-auto" id="num_min">
+                                <span class="label">最大数值：</span>
+                                <input _type="_num_max" type="number" step="1" min="0" class="form-control col-auto" id="num_max">
+                            </div>
+
+                            <div class="row group dateValid t3">
+                                <div class="form-check form-check-inline">
+                                    <input _type="_dateflag" class="form-check-input" type="checkbox" id="cg3" value="日期输入">
+                                    <label class="form-check-label" for="cg3">日期输入</label>
+
+                                </div>
+                            </div>
+                            <div class="row t3">
+                                <span class="label">日期格式：</span>
+                                <select id="dateFormat" _type="_timeoption" class="form-select form-select-sm"
+                                    aria-label=".form-select-sm example">
+                                </select>
+
+                                <span class="label time-width">组件宽度：</span>
+                                <input _type="_timewidth" type="text" class="form-control col-auto time-width">
+
+                            </div>
+                            <div class="row t3">
+                                <span class="label">最小日期：</span>
+                                <input _type="_date_min" type="datetime-local" class="form-control col-auto" id="date_min">
+                                <span class="label">最大日期：</span>
+                                <input _type="_date_max" type="datetime-local" class="form-control col-auto" id="date_max">
+                            </div>
+                        </div>
+                    </fieldset>
+                </div>
+            </div>
+            <div class="content tab-pane fade" id="advanceConfig">
+                <div>
+                    <div class="row">
+                        <span class="label">自定义标题关联数据元：</span>
+                        <input _type="_association_name" type="text" class="form-control col-auto"
+                            id="advance_defined_ds">
+                    </div>
+                </div>
+
+                <div>
+                    <fieldset>
+                        <legend>级联设置</legend>
+                        <span style="color:red;">注：如果关联数据元的值需要置空处理，需要在【关联数据元值】配置'置空'二字。</span>
+                        <button class="addBtn" onclick="addTr()">增加</button>
+                        <table border="1" cellspacing="0" cellpadding="0">
+                            <thead>
+                                <tr>
+                                    <th>当前数据元值</th>
+                                    <th>关联数据元名称</th>
+                                    <th>关联数据元值</th>
+                                    <th>关联数据元显示隐藏</th>
+                                    <th style="width:60px;text-align:center">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="relevanceItems">
+                            </tbody>
+                        </table>
+
+                    </fieldset>
+                </div>
+
+            </div>
+            <div class="content tab-pane fade" id="printConfig">
+                <div>
+                    <div class="row">
+                        <span class="label">默认文本：</span>
+                        <input _type="_replacement" type="text" class="form-control col-auto" id="print_default_text">
+                        <span class="label">最小宽度：</span>
+                        <input _type="_minwidth" type="text" class="form-control col-auto" id="print_min_width">
+                    </div>
+                    <div class="row">
+                        <span class="label" style="display: inline-block;width: 70px;text-align: left;">颜色：</span>
+                        <select _type="_color" class="form-select form-select-sm" aria-label=".form-select-sm example">
+
+                            <option value=""></option>
+                            <option value="black">black</option>
+                            <option value="red">red</option>
+                        </select>
+                        <span class="label timePrintFormat">打印格式：</span>
+                        <select id="timePrintFormat" _type="_time_print_format" class="form-select form-select-sm timePrintFormat"
+                                    aria-label=".form-select-sm example">
+
+                        </select>
+                    </div>
+                    <div class="row">
+                        <span class="label">文本截取：</span>
+                        <input _type="_splitment" type="text" class="form-control col-auto" id="print_split_text">
+                    </div>
+                    <div class="row">
+                        <div class="form-check form-check-inline">
+                            <input _type="_underline" class="form-check-input" type="checkbox" id="p1" value="true">
+                            <label class="form-check-label" for="p1">下划线</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input _type="_border" class="form-check-input" type="checkbox" id="p2" value="true">
+                            <label class="form-check-label" for="p2">外边框(下拉菜单)</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script type="text/javascript" charset="utf-8" src="<%=sdkHost%>/vendor/jquery.min.js"></script>
+<script type="text/javascript" src="<%=sdkHost%>/vendor/jquery.datetimepicker.full.min.js"></script>
+<script type="text/javascript" src="<%=sdkHost%>/vendor/jquery-editable-select.js"></script>
+<script type="text/javascript" src="<%=sdkHost%>/vendor/jquery-ui.min.js"></script>
+<script type="text/javascript" src="<%=sdkHost%>/vendor/bootstrap.min.js"></script>
+<script type="text/javascript" src="<%=sdkHost%>/plugins/datasource/dialogs/config/config.js"></script>
+
+</html>

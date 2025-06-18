@@ -1,0 +1,127 @@
+<div class="doc-composer">
+    <div class="doc-composer-chat">
+        <div class="doc-composer-header">
+            <span class="doc-composer-rg">
+                <span class="doc-composer-btn btn-stop">
+                    <span class="doc-composer-icon icon-stop"></span>   
+                    <span class="doc-btn-text">停止</span>
+                </span>
+                <% if(data.problem.supportBackfill==1){%>
+                    <span class="doc-composer-btn btn-confirm">
+                        <span class="doc-composer-icon icon-confirm"></span>
+                        <span class="doc-btn-text">保留</span>
+                    </span>
+                    <span class="doc-composer-btn btn-cancel">
+                        <span class="doc-btn-text">弃用</span>
+                    </span>
+                    
+                <%}else{%>
+                    <span class="doc-composer-btn btn-close">
+                        <span class="doc-btn-text">关闭</span>
+                    </span>
+                <%}%>
+               
+            </span>
+            <span class="doc-composer-logo"></span>
+            <span class="doc-composer-title">大模型思考中
+                <span class="thinking-dots"></span>
+            </span>
+            <span class="doc-composer-icon icon-down"></span>
+        </div>
+        <div class="doc-composer-chat-body">
+            <div class="doc-composer-result">
+                <span class="doc-r-rec-header">
+                    <span class="doc-r-rec"></span>
+                    大模型建议：
+                </span>
+                <div class="doc-composer-result-detail">
+                    <span class="doc-r-rec-od"></span>
+                    <span class="doc-r-rec-arrow">→</span>
+                    <span class="doc-r-rec-rec"></span>
+    
+                </div>
+            </div>
+            <div class="doc-composer-content">
+                <div class="doc-composer-think">
+        
+                </div>
+            </div>
+           <img class="doc-composer-loading" src="/emr-editor/docAi/icons/loading.gif">
+        </div>
+       
+    </div>
+    <%if(data){%>
+        <div class="doc-composer-qc">
+            <i class="doc-composer-qc-close fa fa-close"></i>
+            <span class="doc-composer-qc-title"><%=data.problem.name%></span>
+            <div class="doc-composer-qc-content">
+                <div>
+                    <span class="doc-composer-i">
+                        机器
+                    </span>
+                    <span class="doc-composer-qc-remark">
+                        <%=data.problem.detailsInfo%>
+                    </span>
+                </div>
+                
+            </div>
+            <% if(data.backfillContents && data.problem.supportBackfill==1){%>
+                <div>
+                    <%if(type==1){%>
+                        <span class="doc-r-rec-header">
+                            <span class="doc-r-rec"></span>
+                            <span class="doc-r-h-t">建议修改为：</span>
+                        </span>
+                        <div class="doc-r-rec-content">
+                            <span class="doc-r-rec-od"><%=data.surroundingText%></span>
+                            <span class="doc-r-rec-arrow">→</span>
+                            <span class="doc-r-rec-rec"><%=data.backfillContents%></span>
+                        </div>
+                    <%} else if(type==2){%>
+                        <span class="doc-r-rec-header">
+                            <span class="doc-r-rec"></span>
+                            <span class="doc-r-h-t">补写建议:</span>
+                        </span>
+                        <div class="doc-r-rec-content">
+                            <%=data.backfillContents%>
+                        </div>
+                    <%}%>
+                   
+
+                </div>
+            <%}%>
+            <div class="doc-composer-qc-foot">
+                <% var deductionScore = (data.problem.ruleInfo||{}).deductionScore,deductionType =(data.problem.ruleInfo||{}).deductionType; %>
+                <% if(deductionScore){%>
+                    <span class="doc-c-q-mark">
+                        <%=deductionScore%>分
+                    </span>
+                <%}%>
+               <% if(deductionType){%>
+                    <span class="doc-c-q-mark">
+                        <span class="doc-c-q-mark-icon"></span><span class="doc-c-q-mark-text"><%=deductionType%></span>
+                    </span>
+               <%}%>
+                <span class="doc-c-q-group">
+                    <span class="doc-f-btt d-btt-ignore" uucode="<%=data.uucode%>">
+                        忽略
+                    </span>
+                    <%if(data.problem.supportAi==1){%>
+                        <span class="doc-f-btt d-btt-ai" uucode="<%=data.uucode%>">
+                            AI推荐
+                        </span>
+                    <%}%>
+                    <%if(data.problem.supportBackfill==1 && data.backfillContents){%>
+                        <span class="doc-f-btt d-btt-backfill" uucode="<%=data.uucode%>">
+                            回写
+                        </span>
+                    <%}%>
+                </span>
+    
+            </div>
+    
+        </div>
+    <%}%>
+
+
+</div>

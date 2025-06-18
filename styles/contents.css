@@ -1,0 +1,630 @@
+html {
+    background: rgb(204, 204, 204);
+}
+
+body {
+    background: white;
+    margin: auto;
+    padding: 0;
+    font-family: FangSong, isans-serif;
+    font-size: 12pt;
+    line-height: 1.5;
+    box-shadow: 0 0 0.5cm rgba(0, 0, 0, 0.5);
+    word-break: normal;
+    margin-bottom: 60px; 
+}
+
+div.emrWidget {
+    border: 0px dashed ;
+}
+div.emrWidget-content-non-editable {
+    background-color: #564f4f26;
+}
+
+p {
+    margin: 0pt 0pt;
+    text-align: justify;
+}
+
+p._paragraphHide, td._paragraphHide{
+    text-decoration:line-through;
+    color: grey;
+}
+
+/*@media print*/
+table {
+    page-break-inside: auto
+}
+
+tr {
+    page-break-inside: auto;
+    page-break-after: auto
+}
+
+table[data-kyee-datatable] tr{
+    page-break-inside: avoid;
+}
+
+thead {
+    display: table-header-group
+}
+
+tfoot {
+    display: table-footer-group
+}
+
+table {
+    border-collapse: collapse;
+    padding: 0;
+    table-layout: fixed;
+    line-height: 1.5;
+}
+
+table td, table th {
+    padding: 0;
+    border: 1px dashed black;
+    text-align: left;
+}
+
+table td._text-top{
+    vertical-align: top;
+}
+
+table.dashed-border td, table.dashed-border th {
+    border: 0px dashed black;
+}
+
+table.solid-border td, table.solid-border th {
+    border: 1px solid black;
+}
+
+/*体温单 start*/
+table[data-kyee-table=temperature] {
+    width: 98%;
+    white-space: nowrap;
+}
+
+table[data-kyee-table=temperature] td, table[data-kyee-table=temperature] th {
+    text-align: center;
+    font-size: 8px;
+    border: 1px solid black;
+}
+
+table[data-kyee-table=temperature] tr[data-kyee-tr=date] td {
+    width: 11.5%;
+}
+
+span[data-kyee-span=left] {
+    display: block;
+    height: 75px;
+    position: relative;
+    font-size: 12px;
+}
+
+table[data-kyee-datatable] td{
+    /*position: relative; //造成单元格边框消失? */ 
+}
+
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=header] tr:nth-child(1) > *,
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=header] tr:nth-child(2) > *,
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=header] tr:nth-child(3) > *,
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=header] tr:nth-child(4) > th:nth-child(1),
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=footer] tr > th {
+    font-size: 12px;
+    height: 24px;
+}
+
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=footer] tr[data-kyee-tr=skinTest] > td {
+    height: 24px;
+}
+
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=footer] tr[data-kyee-tr=breath] > td {
+    font-size: 8pt;
+}
+
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=footer] tr[data-kyee-tr=bloodPressure] > td {
+    font-size: 8pt;
+}
+
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=footer] td {
+    font-size: 10pt;
+}
+
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] tr > td:nth-child(1),
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] tr > td:nth-child(2) {
+    border-top: none;
+    border-bottom: none;
+}
+
+span[data-kyee-span=left] > span {
+    position: absolute;
+    right: 2px;
+    top: -10px;
+    font-size: 14px;
+}
+
+table[data-kyee-table] td._diagonal{
+    /*position: relative;*/
+}
+
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon {
+    display: block;
+    position: relative;
+    margin-bottom: 5px;
+    line-height: 10px;
+    font-size: 12px;
+    text-align: left;
+    margin-left: 5px;
+}
+
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon:after {
+    display: block;
+    position: absolute;
+    left: 35px;
+    top: 0;
+    height: 10px;
+}
+
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon--oralThermometer::after {
+    width: 10px;
+    background-color: blue;
+    border-radius: 50%;
+    content: '';
+}
+
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon--armpitThermometer::after {
+    height: 10px;
+    color: blue;
+    content: '×';
+    font-weight: bold;
+}
+
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon--rectalThermometer::after {
+    width: 6px;
+    height: 6px;
+    border: 2px solid blue;
+    border-radius: 50%;
+    content: '';
+}
+
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon--earThermometer::after {
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 8px solid blue;
+    content: '';
+}
+
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon--pulse::after {
+    width: 10px;
+    background-color: red;
+    border-radius: 50%;
+    content: '';
+}
+
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon--heartRate::after {
+    width: 6px;
+    height: 6px;
+    border: 2px solid red;
+    border-radius: 50%;
+    content: '';
+}
+
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] td {
+    vertical-align: top;
+    text-align: right;
+}
+
+table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] tr:first-child td:last-child {
+    text-align: left;
+}
+
+/**/
+.widget-table tr{
+    height: 38px;
+    line-height: 15px;
+}
+.widget-table tr>td{
+    position: relative;
+}
+.widget-table tr>td .cke_widget_wrapper_textboxWidget:first-of-type{
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+.widget-table tr>td .cke_widget_wrapper_textboxWidget:last-of-type{
+    position: absolute;
+    right: 0;
+    bottom: 0;
+}
+
+
+
+/*体温单 end*/
+
+span[data-kyee-node=labelbox] {
+    background-color: #F0F0F0;
+    color:black;
+}
+
+span[data-kyee-node=textbox] {
+    color: #fd8709;
+}
+
+span[data-kyee-node=dropbox] {
+    background-color: #fed3a5;
+    position: relative;
+    display: inline-block;
+    min-width: 20px;
+    min-height: 18px;
+    cursor: pointer;
+    vertical-align: bottom;
+}
+
+span[data-kyee-node=dropbox] {
+    background-image: url(img/drop-down.png);
+    background-position: right;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+span[data-kyee-node=timebox] {
+    background-color: #fed3a5;
+    position: relative;
+    display: inline-block;
+    min-width: 40px;
+    min-height: 18px;
+    cursor: pointer;
+    vertical-align: bottom;
+
+}
+
+span[data-kyee-node=timebox] {
+    background-image: url('img/calendar.png');
+    background-position: right;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+span[data-kyee-node=searchbox] {
+    background-color: #fed3a5;
+    position: relative;
+    display: inline-block;
+    min-width: 40px;
+    min-height: 18px;
+    cursor: pointer;
+    vertical-align: bottom;
+}
+
+span[data-kyee-node=expressionbox] {
+    background-color: #fed3a5;
+    position: relative;
+    display: inline-block;
+    min-width: 40px;
+    min-height: 18px;
+    cursor: pointer;
+    vertical-align: bottom;
+
+}
+
+span[data-kyee-node=searchbox] {
+    background-image: url('img/search.png');
+    background-position: right;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+
+span[data-kyee-node=textboxwidget]{
+    position: relative;
+    display: inline-block;
+    min-width: 20px;
+    min-height: 15px;
+    font-size: 14px;
+    background-color: #fed3a5;
+}
+
+span.fa-dot-circle-o[data-kyee-node=radiobox][_color=red]{
+    color: red;
+}
+
+span[data-kyee-node=radiobox] {
+    cursor: pointer;
+    color: black;
+}
+
+span.fa-check-square-o[data-kyee-node=checkbox][_color=red]{
+    color: red;
+}
+
+span[data-kyee-node=checkbox] {
+    cursor: pointer;
+    color: black;
+}
+
+td[data-kyee-node=cellbox] {
+    background-color: #F5F5DC;
+}
+
+span[data-kyee-node=icd9-name],
+span[data-kyee-node=icd9-code],
+span[data-kyee-node=icd10Chi-name],
+span[data-kyee-node=icd10Chi-code],
+span[data-kyee-node=icd10-name],
+span[data-kyee-node=icd10-code] {
+    cursor: pointer;
+    background-color: #ddd;
+}
+
+[_placeholdertext] {
+    color: lightgray
+}
+
+[_paperheader] {
+    background-color: #F0F0F0;
+}
+
+[_paperfooter] {
+    background-color: #F0F0F0;
+}
+
+span._1st_add {
+    text-decoration: underline blue;
+}
+
+span._2st_add {
+    border-bottom: 3px double blue;
+}
+
+span._1st_del {
+    text-decoration: line-through red;
+}
+
+span._2st_del {
+    background: url('img/double-strike.png');
+    background-repeat: repeat-x;
+    background-position: center;
+    background-attachment: scroll;
+}
+
+/*-------------------*/
+
+blockquote {
+    font-style: italic;
+    font-family: Georgia, Times, "Times New Roman", serif;
+    padding: 2px 0;
+    border-style: solid;
+    border-color: #ccc;
+    border-width: 0;
+}
+
+.cke_contents_ltr blockquote {
+    padding-left: 20px;
+    padding-right: 8px;
+    border-left-width: 5px;
+}
+
+.cke_contents_rtl blockquote {
+    padding-left: 8px;
+    padding-right: 20px;
+    border-right-width: 5px;
+}
+
+a {
+    color: #0782C1;
+}
+
+ol, ul, dl {
+    /* IE7: reset rtl list margin. (#7334) */
+    *margin-right: 0px;
+    /* preserved spaces for list items with text direction other than the list. (#6249,#8049)*/
+    padding: 0 40px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: normal;
+    line-height: 1.2;
+}
+
+hr {
+    border: 0px;
+    border-top: 1px solid #000;
+}
+
+img.right {
+    border: 1px solid #ccc;
+    float: right;
+    margin-left: 15px;
+    padding: 5px;
+}
+
+img.left {
+    border: 1px solid #ccc;
+    float: left;
+    margin-right: 15px;
+    padding: 5px;
+}
+
+pre {
+    white-space: pre-wrap; /* CSS 2.1 */
+    word-wrap: break-word; /* IE7 */
+    -moz-tab-size: 4;
+    tab-size: 4;
+}
+
+.marker {
+    background-color: Yellow;
+}
+
+span[lang] {
+    font-style: italic;
+}
+
+figure {
+    text-align: center;
+    border: solid 1px #ccc;
+    border-radius: 2px;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 10px;
+    margin: 10px 20px;
+    display: inline-block;
+}
+
+figure > figcaption {
+    text-align: center;
+    display: block; /* For IE8 */
+}
+
+a > img {
+    padding: 1px;
+    margin: 1px;
+    border: none;
+    outline: 1px solid #0782C1;
+}
+
+/* Widget Styles */
+.code-featured {
+    border: 5px solid red;
+}
+
+.math-featured {
+    padding: 20px;
+    box-shadow: 0 0 2px rgba(200, 0, 0, 1);
+    background-color: rgba(255, 0, 0, 0.05);
+    margin: 10px;
+}
+
+.image-clean {
+    border: 0;
+    background: none;
+    padding: 0;
+}
+
+.image-clean > figcaption {
+    font-size: .9em;
+    text-align: right;
+}
+
+.image-grayscale {
+    background-color: white;
+    color: #666;
+}
+
+.image-grayscale img, img.image-grayscale {
+    filter: grayscale(100%);
+}
+
+.embed-240p {
+    max-width: 426px;
+    max-height: 240px;
+    margin: 0 auto;
+}
+
+.embed-360p {
+    max-width: 640px;
+    max-height: 360px;
+    margin: 0 auto;
+}
+
+.embed-480p {
+    max-width: 854px;
+    max-height: 480px;
+    margin: 0 auto;
+}
+
+.embed-720p {
+    max-width: 1280px;
+    max-height: 720px;
+    margin: 0 auto;
+}
+
+.embed-1080p {
+    max-width: 1920px;
+    max-height: 1080px;
+    margin: 0 auto;
+}
+
+/**
+Copyright 2013 LoopIndex, This file is part of the Track Changes plugin for CKEditor.
+
+The track changes plugin is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License, version 2, as published by the Free Software Foundation.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with this program as the file gpl-2.0.txt. If not, see http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+Written by (David *)Frenkiel - https://github.com/imdfl
+**/
+
+ins, del {
+    text-decoration: none !important;
+}
+
+del.kyee-del {
+    display: none;
+}
+
+ins.kyee-ins, ins.kyee-del {
+    white-space: pre-wrap;
+    text-decoration: none !important;
+}
+
+ins.ice-no-decoration, del.ice-no-decoration {
+    text-decoration: none !important;
+}
+
+.KYEE-Trace span.kyee-ins, .KYEE-Trace ins.kyee-ins,
+.KYEE-Trace span.kyee-del, .KYEE-Trace del.kyee-del {
+    color: #000;
+    /*	padding: 1px 0 2px; */
+}
+
+.KYEE-Trace span.kyee-del, .KYEE-Trace del.kyee-del {
+    display: inline;
+    text-decoration: line-through !important;
+    color: #555;
+    /*background-color: #e5ffcd !important;*/
+}
+
+.KYEE-Trace .kyee-ins, .KYEE-Trace .kyee-ins > * {
+    /*background-color: #e5ffcd !important;*/
+}
+
+.KYEE-Trace .kyee-ins.kyee-trace-1, .KYEE-Trace .kyee-ins.kyee-trace-1 > * {
+    /*background-color: #e5ffcd !important;*/
+    text-decoration: underline !important;
+    text-decoration-color: red !important;
+}
+
+.KYEE-Trace .kyee-del.kyee-trace-1 {
+    /*background-color: #e5ffcd !important;*/
+    text-decoration: line-through !important;
+    text-decoration-color: red !important;
+}
+
+.KYEE-Trace .kyee-ins.kyee-trace-2, .KYEE-Trace .kyee-ins.kyee-trace-2 > * {
+    /*background-color: #e3ffff !important;*/
+    text-decoration: underline double !important;
+    text-decoration-color: blue !important;
+}
+
+.KYEE-Trace .kyee-del.kyee-trace-2 {
+    /*background-color: #e3ffff !important;*/
+    text-decoration: line-through double !important;
+    text-decoration-color: blue !important;
+}
+p[data-kyee-node^='continuation-identifier'] {
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+    text-align: center;
+}
+
+p[data-kyee-node^='continuation-identifier'] >input {
+    width: 100%;
+    outline: 0;
+    border: 0;
+    text-align: center;
+}
+p[data-kyee-node^='continuation-identifier'] >input::placeholder {
+    color: #0000ff;
+    font-size: 12px;
+}

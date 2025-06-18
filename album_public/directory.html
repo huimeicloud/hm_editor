@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <script type="text/javascript" src="/emr-editor/vendor/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/emr-editor/vendor/bootstrap.css"></link> 
+    <style type="text/css">
+      .directory-cell{
+        height: 150px;
+        width: 100px;
+        margin: 10px;
+        padding: 2px;
+        float: left;
+      }
+      .directory-cell img{
+        height: 80px;
+        width: 80px;
+      }
+    </style>
+    <script type="text/javascript">
+      $(document).ready(function(){
+
+        $('#directory-header').find('a').first().addClass('btn btn-link disabled');
+        $('#directory-header').find('a').not(':first').addClass('btn btn-link');
+
+        var files = [];
+        $('#files').find('li a').each(function(){
+          var link = $(this).attr('href');
+          var name = $(this).children().first().text();
+          var filesize = $(this).children().eq(1).text();
+          if(filesize == ''){
+            files.push({"link":link,"name":name,"img":false});
+          }else{
+            files.push({"link":link,"name":name,"img":true});
+          }
+        })
+        $('#files').remove();
+
+        for(var i = 0; i < files.length; i++){
+          if(files[i]['img']){
+            $('#directory-body').append('<div class="directory-cell">' + '<img src="' + files[i]['link'] + '">' + '<a class="btn btn-link" href="#" meta-href="' + files[i]['link'] + '">引用</a>' + '</div>')
+          }else{
+            $('#directory-header').append('<div><a class="btn btn-link" href="' + files[i]['link'] + '">' + files[i]['name'] + '</a></div>')
+          }
+        }
+        
+        $('#directory-body').on('click',function(e){
+          var $a = $(e.target);
+          if( $a.is('a') ){
+            parent.editorIns.insertHtml('<img src="' + $a.attr('meta-href') + '">');
+          }
+        })
+
+      })
+    </script>   
+  </head>
+  <body>
+    <div id="directory-header">
+      {linked-path}
+    </div>
+    <div id="directory-body">
+      {files}
+    </div>
+  </body>
+</html>

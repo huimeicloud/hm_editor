@@ -1,0 +1,60 @@
+body {
+	margin-bottom: 0px !important; 
+	word-break: normal;
+}
+
+table.dashed-border td,table.dashed-border th{
+    border: 0px;
+}
+
+span[data-kyee-node]{
+	color:black !important;
+	background-image:none !important;
+}
+
+span[data-kyee-node=textbox]{
+	display: none !important;
+}
+[_print_underline]{
+	border-bottom:1px solid !important;
+}
+[_print_cascade]{
+	display: none !important;
+}
+[_underline]{
+	border-bottom:1px solid !important;
+}
+[_print_color=red]{
+	color: red !important;
+}
+span.fa-check-square-o[data-kyee-node=checkbox][_color=red]{
+    color: red !important;
+}
+span.fa-dot-circle-o[data-kyee-node=radiobox][_color=red]{
+    color: red !important;
+}
+[_print_datasource=none]{
+	display: none !important;
+}
+
+[_paperheader]{
+	background-color: white !important;
+}
+
+[_paperfooter]{
+	background-color: white !important;
+}
+[data-kyee-node] {
+	background-color: white !important;
+}
+div.emrWidget{
+	border: 0px !important;
+}
+
+div.emrWidget-content{
+	outline: none !important;
+}
+
+._paragraphHide{
+	display: none !important;
+}

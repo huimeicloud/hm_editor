@@ -1,0 +1,99 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>高级画板程序(canvas) - 授课系统</title>
+    <link rel="stylesheet" href="<%=sdkHost%>/drawingboard/libs/tui.color-picker-2.2.0/tui-color-picker.css" />
+    <link rel="stylesheet" href="<%=sdkHost%>/drawingboard/css/index.css">
+    <link rel="stylesheet" href="<%=sdkHost%>/drawingboard/fonts/iconfont.css">
+    <script type="text/javascript" src="<%=sdkHost%>/drawingboard/fonts/iconfont.js"></script>
+    <style type="text/css">
+        .icon {
+          width: 1em; height: 1em;
+          vertical-align: -0.15em;
+          fill: currentColor;
+          overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div class="editor-container" id="editor-container">
+        <div class="editor-menu-container" id="editor-menu-container">
+            <ul id="toolsul" class="tools editor-menu">
+                <li class="iconfont icon-pen" data-show="pen-group" title="画笔"></li>
+                <li class="iconfont icon-line" data-show="line-group" title="直线"></li>
+                <li data-type="circle" title="圆形">
+                    <svg class="icon" aria-hidden="true">
+                        <use xlink:href="#icon-circle"></use>
+                    </svg>
+                </li>
+                <li data-type="rectangle" title="矩形">
+                    <svg class="icon" aria-hidden="true">
+                        <use xlink:href="#icon-rectangle"></use>
+                    </svg>
+                </li>
+                <li data-type="triangle" title="三角形">
+                    <svg class="icon" aria-hidden="true">
+                        <use xlink:href="#icon-triangle"></use>
+                    </svg>
+                </li>
+                <li class="iconfont icon-text" data-show="text-group" title="文本"></li>
+                <li class="iconfont icon-rubber" data-type="rubber" title="橡皮擦"></li>
+                <!-- <li class="iconfont icon-dictionaries" data-show="dictionaries-group" title="字典"></li> -->
+            </ul>
+            <div class="editor-submenu" id="editor-submenu">
+                <ul id="pen-group">
+                    <div class="submenu-layer">
+                        <div id="size-slider-picker-conatiner"></div>
+                        <div id="tui-color-picker-conatiner"></div>
+                    </div>
+                </ul>
+                <ul id="line-group">
+                    <div class="submenu-layer">
+                         <ul>
+                            <li class="submenu-tool-item iconfont icon-straight_line line" data-type="straight_line"></li>
+                            <li class="submenu-tool-item iconfont icon-rrow_line line" data-type="rrow_line"></li>
+                            <li class="submenu-tool-item iconfont icon-imaginary_line line" data-type="imaginary_line"></li>
+                         </ul>
+                    </div>
+                </ul>
+                <ul id="text-group">
+                    <div class="submenu-layer">
+                        <div>
+                            <li class="submenu-tool-item fontset-area iconfont icon-align_left" data-type="fontleft"></li>
+                            <li class="submenu-tool-item fontset-area iconfont icon-align_center" data-type="fontcenter"></li>
+                            <li class="submenu-tool-item fontset-area iconfont icon-align_right" data-type="fontright"></li>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <li class="submenu-tool-item fontset-area iconfont icon-bold" data-type="fontbold" style="font-size: 14px;"></li>
+                            <li class="submenu-tool-item fontset-area iconfont icon-italic" data-type="fontitalic" style="font-size: 14px;"></li>
+                            <li class="submenu-tool-item fontset-area" data-type="fontsize">
+                                <select id="fontsize">
+                                    <option>12</option>
+                                    <option>14</option>
+                                    <option>16</option>
+                                    <option>18</option>
+                                    <option>20</option>
+                                    <option>22</option>
+                                    <option>24</option>
+                                    <option>26</option>
+                                    <option>28</option>
+                                    <option>30</option>
+                                </select>
+                            </li>
+                        </div>
+                    </div>
+                </ul>
+            </div>
+        </div>
+        <div id="canvasDiv" class="canvasDiv">
+            <canvas id="c" style="width:100%;height:100%">请使用支持HTML5的浏览器</canvas>
+        </div>
+    </div>
+    <script type="text/javascript" src="<%=sdkHost%>/drawingboard/libs/jquery.min.js"></script>
+    <script type="text/javascript" src="<%=sdkHost%>/drawingboard/libs/fabric.js-2.4.3/fabric.min.js"></script>
+    <script type="text/javascript" src="<%=sdkHost%>/drawingboard/libs/tui.code-snippet-1.4.0/tui-code-snippet.js"></script>
+    <script type="text/javascript" src="<%=sdkHost%>/drawingboard/libs/tui.color-picker-2.2.0/tui-color-picker.js"></script>
+    <script type="text/javascript" src="<%=sdkHost%>/drawingboard/js/imageEditor.js"></script>
+    <script type="text/javascript" src="<%=sdkHost%>/drawingboard/js/canvasZoom.js"></script>
+</body>
+</html>

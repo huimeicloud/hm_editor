@@ -1,0 +1,600 @@
+.doc-warn-txt{
+    color: red;
+    text-decoration: underline wavy red;
+    cursor: pointer;
+}
+.doc-warn-level-2{
+    color: #FF9500;
+    text-decoration: underline wavy #FF9500;
+}
+
+
+.doc-warn-txt-del{
+    text-decoration: line-through;
+}
+.doc-warn-p{
+    color: #ef5353;
+    border:1px solid #FFB3AE;
+    border-style: dashed;
+    line-height: 20px;
+    padding: 5px;
+    font-size: 12px;
+    margin-bottom: 10px;
+    .doc-warn-lack{
+       display: block;
+       em{
+        font-style: normal;
+        font-family: SimSun;
+        vertical-align: middle;
+        display: inline-block;
+       }
+       .doc-warn-lack-title{
+        cursor: pointer;
+        white-space: nowrap;
+        display: inline-block;
+        max-width: 570px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: middle;
+       }
+       .doc-warn-lack-ignore{
+        text-decoration: underline;
+        margin-left: 10px;
+        cursor: pointer;
+        vertical-align: middle;
+       }
+    }
+    .doc-lack-level-2{
+        color: #FB7F0C;
+    }
+}
+.r-model-gen-text{
+    color: lightgray;
+}
+.r-model-gen-remark{
+    color: lightgray;
+    cursor: pointer;
+}
+.doc-composer{
+    color: #444;
+    .doc-composer-chat{
+
+        .doc-composer-chat-body{
+            display: none;
+        }
+        .doc-composer-content{
+            min-height: 150px;
+            max-height: 300px;
+            overflow-y: auto;
+            clear: both;
+            border: 1px solid #C2DEFF;
+            border-radius: 4px;
+            background:#f4f8fd ;
+            margin-top: 5px;
+            padding: 5px;
+            display: none;
+            .doc-composer-think{
+                border-left: 1px solid #99CAFF;
+                padding-left: 8px;
+                color: #666;
+                p{
+                    margin: 5px 0;
+                }
+            }
+            
+
+        }
+        .doc-composer-result{
+            display: none;
+            
+            .doc-composer-result-detail{
+                background: #FFFBF0;
+                border: 1px solid #f1d1b4;
+                border-radius: 4px;
+                padding: 5px;
+                // display: none;
+                think{
+                    padding: 5px;
+                    display: block;
+                    border-radius: 4px;
+                    background: #f5f5f5;
+                    color: #777;
+                }
+                recommend{
+                    color: #43A047;
+                    display: block;
+                    padding-bottom: 5px;
+                }
+            }
+            .type-2{
+                background: none;
+            }
+        }
+        .doc-composer-loading{
+            outline: none;
+            border: none;
+            width: 16px;
+            height: 16px;
+            margin-left: 5px;
+        }
+    }
+    .doc-composer-header{
+        .doc-composer-logo{
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background-image: url(../img/icons/AI.png);
+            background-size: 100% 100%;
+            vertical-align: middle;
+        }
+        .doc-composer-title{
+           font-size: 14px;
+           vertical-align: middle;
+           font-weight: bold;
+           display: inline-block;
+           width: 135px;
+           .thinking-dots:after {
+                content: '';
+                animation: thinking 1.5s infinite;
+                font-size: 14px;
+                font-weight: normal;
+            }
+           @keyframes thinking {
+                0% { content: ''; }
+                25% { content: '.'; }
+                50% { content: '..'; }
+                75% { content: '...'; }
+                100% { content: ''; }
+            }
+        }
+        .doc-composer-icon{
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background-size: 100% 100%;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+       
+        .icon-down{
+            background-image: url(../img/icons/down.png);
+        }
+        .icon-show{
+            background-image: url(../img/icons/up.png); 
+        }
+        .doc-composer-rg{
+            float: right;
+            
+            line-height: 24px;
+            .doc-composer-btn{
+                .icon-stop{
+                    background-image: url(../img/icons/stop.png);
+                }
+                .icon-confirm{
+                    background-image: url(../img/icons/save.png);
+                }
+                .doc-btn-text{
+                    font-size: 12px;
+                    vertical-align: middle;
+                }
+                border-radius: 4px;
+                display: none;
+                font-size: 0;
+                margin-left: 5px;
+                padding: 0 6px;
+                vertical-align: middle;
+                cursor: pointer;
+            }
+            .popu-active{
+                display: inline-block;
+            }
+            .btn-confirm{
+                background-color: #6cc370;
+                color: #fff;
+            }
+            .btn-confirm:hover{
+                background-color: #43A047;
+            }
+            .btn-cancel,.btn-close{
+                background-color: #F5F5F5;
+                color: #666;
+            }
+            .btn-cancel:hover,.btn-close:hover{
+                background-color: #dfdfdf;
+                color: #666;
+            }
+            .btn-stop{
+                background-color:#FFF0EF;
+                color:#FF3B30;
+            }
+            .bth-stop:hover{
+                background-color: #f7dddb;
+            }
+        }
+    }
+    .doc-composer-qc{
+        position: relative;
+        .doc-composer-qc-close{
+            position: absolute;
+            right: 2px;
+            top: 2px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #888;
+            font-weight: normal;
+        }
+        .doc-composer-qc-close:hover{
+            color: #729beb;
+        }
+        .doc-composer-qc-title{
+            font-size: 14px;
+            font-weight: bold;
+            padding: 2px 0 5px;
+            display: inline-block;
+            max-width: 360px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .doc-composer-qc-content{
+            background: #f5f5f5;
+            border-radius: 4px;
+            padding: 8px;
+            line-height: 20px;
+            .doc-composer-i{
+                background: #409BFF;
+                color: #fff;
+                float: left;
+                padding: 1px 2px;
+                border-radius: 2px;
+                margin-top: 1px;
+                line-height: 16px;
+            }
+            .doc-composer-qc-remark{
+                margin-left: 36px;
+                display: block;
+
+            }
+        }
+        .doc-composer-qc-foot{
+            margin-top: 5px;
+            padding: 5px 0;
+            .doc-c-q-mark{
+                background: #FFF0EF;
+                border-radius: 4px;
+                display: inline-block;
+                margin-right: 10px;
+                color: #FF3B30;
+                padding: 0 5px;
+                .doc-c-q-mark-icon{
+                    background: url(../img/icons/warn.png);
+                    background-size: 100% 100%;
+                    width: 12px;
+                    height: 20px;
+                    display: inline-block;
+                    vertical-align: middle;
+                }
+                .doc-c-q-mark-text{
+                    vertical-align: middle;
+                }
+            }
+            .doc-c-q-group{
+                float: right;
+                .doc-f-btt{
+                    display: inline-block;
+                    border-radius: 4px;
+                    margin-left: 10px;
+                    padding: 0 6px;
+                    cursor: pointer;
+                    color: #fff;
+                }
+                .d-btt-ignore{
+                    background: #5ab15e;
+                }
+                .d-btt-ignore:hover{
+                    background: #43A047;
+                }
+                .d-btt-backfill,.d-btt-ai{
+                    background: #338ef2;
+                }
+                .d-btt-backfill:hover,.d-btt-ai:hover{
+                    background: #007AFF;
+                }
+
+            }
+        }
+    }
+    .doc-r-rec-header{
+        color: #FB7F0C;
+        font-weight: bold;
+        padding: 5px 0 0;
+        display: inline-block;
+        .doc-r-rec{
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: url(../img/icons/recomend.png);
+            background-size: 100% 100%;
+            vertical-align: middle;
+        }
+        .doc-r-h-t{
+            vertical-align: middle;
+        }
+    }
+    .doc-r-rec-content{
+        background: #FFFBF0;
+        border: 1px solid #f1d1b4;
+        border-radius: 4px;
+        padding: 5px;
+    }
+    .doc-r-rec-od{
+        color: red;
+    }
+    .doc-r-rec-arrow{
+        font-size: 16px;
+        vertical-align: middle;
+    }
+    .doc-r-rec-rec{
+        color: #43A047;
+    }
+}
+.mc-auto-text{
+    color: #43A047;
+}
+.sk-popup{
+    border: 2.4px solid #99CAFF !important;
+//    border-image-source: linear-gradient(90.2deg, #99CAFF 0%, #78D3F8 47.26%, #9D91FF 100%);
+    padding: 5px;
+    background: #fff;
+    .sk-popup-container{
+        max-height: none;
+    }
+    .sk-popup-icon-2{
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-bottom: 5px solid #007bff; /* 蓝色边框 */
+        background: none;
+        height: auto;
+        width: auto;
+    }
+
+}
+
+/* 提醒端与管理系统样式 */
+.doc-reminder {
+    color: #444;
+    font-family: Helvetica,Tahoma,Arial,PingFangSC-Regular,"Hiragino Sans GB","Heiti SC","Microsoft YaHei","WenQuanYi Micro Hei",sans-serif;
+    /* 提醒头部样式 */
+    .doc-reminder-header {
+        text-align: right;
+        .doc-reminder-group{
+            padding: 6px;
+            border-radius: 6px 6px 0 0;
+            background-color: #F6FAFF;
+            border: 1px solid #99CAFF;
+            border-bottom: none;
+            font-size: 0;
+            display: inline-block;
+            margin-right: 4px;
+            .doc-reminder-action{
+                display: inline-block;
+                padding: 0 8px;
+                cursor: pointer;
+                .doc-reminder-view-text{
+                    font-size: 12px;
+                    vertical-align: middle;
+                    color: #007AFF;
+                }
+                .doc-reminder-icon{
+                    width: 20px;
+                    height: 20px;
+                    background-size: 100% 100%;
+                    display: inline-block;
+                    vertical-align: middle;
+                }
+                line-height: 20px;
+            }
+            .doc-reminder-number {
+                font-size: 12px;
+                vertical-align: middle;
+                color: #666666;
+                display: inline-block;
+                padding: 0 8px;
+                line-height: 20px;
+            }
+            .btt-ignore-all{
+                .doc-reminder-icon{
+                    background-image: url(../img/icons/cancel.png);
+                }
+                border-left: 1px dashed  #d0e1f3;
+                border-right: 1px dashed  #d0e1f3;
+            }
+            .btt-view-all{
+                .doc-reminder-icon{
+                    background-image: url(../img/icons/all.png);
+                }
+            }
+        }
+    }
+    
+    /* 提醒列表样式 */
+    .doc-reminder-list {
+        font-size: 14px;
+    }
+    
+
+
+    
+}
+.doc-reminder-bg{
+    background: rgba(0, 0, 0, 0.3);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+}
+.doc-reminder-all{
+    font-family: Helvetica,Tahoma,Arial,PingFangSC-Regular,"Hiragino Sans GB","Heiti SC","Microsoft YaHei","WenQuanYi Micro Hei",sans-serif;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 70%;
+    height: 100%;
+    font-size: 14px;
+    box-shadow: 0px 4px 24px 0px #143E8240;
+    background: #fff;
+    .doc-reminder-header{
+        height: 40px;
+        background-color: #EBF4FF;
+        border-bottom: 1px solid #C2DEFF;
+        line-height: 40px;
+        .doc-reminder-number {
+            font-size: 12px;
+            vertical-align: middle;
+            display: inline-block;
+            padding: 0 8px;
+            line-height: 20px;
+            color:#2E62B8;
+            .doc-reminder-number-text{
+                font-size: 14px;
+                font-weight: bold;
+            }
+        }
+        .doc-reminder-group{
+            float:right;
+            .doc-reminder-action{
+                display: inline-block;
+                padding: 2px 8px;
+                cursor: pointer;
+                margin-right: 10px;
+                border-radius: 4px;
+                .doc-reminder-view-text{
+                    font-size: 12px;
+                    vertical-align: middle;
+                }
+                .doc-reminder-icon{
+                    width: 20px;
+                    height: 20px;
+                    background-size: 100% 100%;
+                    display: inline-block;
+                    vertical-align: middle;
+                }
+                line-height: 20px;
+            }
+
+            .btt-ignore-all{
+                background-color: #43A047;
+                color: #fff;
+                .doc-reminder-icon{
+                    background-image: url(./img/icons/cancel_white.png);
+                }
+                &:hover {
+                    background-color: #63ba67;
+                }
+            }
+            .btt-view-close{
+                color:#2E62B8;
+                .doc-reminder-icon{
+                    background-image: url(./img/icons/close.png);
+                }
+            }
+        }
+    }
+    .doc-reminder-list{
+        padding: 10px;
+        overflow-y: auto;
+    }
+   
+}
+.doc-reminder-all ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px
+}
+
+.doc-reminder-all ::-webkit-scrollbar-track {
+    background: none
+}
+
+.doc-reminder-all ::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 5px
+}
+/* 提醒项样式 */
+.doc-reminder-item {
+    background-color: #FFF6F5;
+    border: 1px solid #FFB3AE;
+    border-radius: 6px;
+    padding: 6px;
+    margin-bottom: 5px;
+    transition: all 0.3s ease;
+    
+    .doc-reminder-item-header {
+        display:inline-block;
+        .doc-reminder-item-icon {
+            width:16px;
+            height:20px;
+            background-image: url(../img/icons/level3.png);
+            background-size: 100% 100%;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        .doc-reminder-item-title {
+            display: inline-block;
+            vertical-align: middle;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+            max-width: 500px;
+            .doc-reminder-item-name {
+                font-size: 14px;
+                color: #000000;
+            }
+        }
+    }
+    
+    .doc-reminder-item-action {
+        float: right;
+            /* 按钮样式 */
+        .doc-reminder-btn {
+            display: inline-block;
+            height: 20px;
+            line-height: 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 0 6px;
+            font-size: 12px;
+            &:hover {
+                background-color: #f8f8f8;
+            }
+        }
+        .btt-ignore {
+            background-color: #FFFFFF;
+            border: 1px solid #f5e0e0;
+            .doc-btn-text {
+                color: #999999;
+            }
+            
+        }
+        .btt-evalute{
+            background-color: #FFFFFF;
+            border: 1px solid #f5e0e0;
+            .doc-btn-text {
+                color: #43A047;
+            }
+        }
+    }
+}
+.doc-reminder-level-2{
+    background-color: #FFFBF0;
+    border: 1px solid #CCA583;
+    .doc-reminder-item-header .doc-reminder-item-icon{
+        background-image: url(../img/icons/level2.png);
+    }
+}
+
+
+
+

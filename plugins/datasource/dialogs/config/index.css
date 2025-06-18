@@ -1,0 +1,143 @@
+fieldset {
+    border: 1px solid #c0c0c0;
+    margin: 0 2px;
+    padding: 0.35em 0.625em 0.75em;
+}
+
+legend {
+    width: unset;
+    border: unset;
+    padding: 0 5px;
+    font-size: 1.1em;
+    margin-bottom: unset;
+}
+
+.row {
+    margin-left: unset;
+    margin-right: unset;
+    padding: 3px 0;
+    position: relative;
+}
+
+.row .label {
+    color: unset;
+    font-size: unset;
+    padding: unset;
+    font-weight: unset;
+}
+
+.row label {
+    font-weight: unset;
+    margin-right: 5px;
+
+}
+
+.row .label-txt{
+    display: inline-block;width: 70px;text-align: left; 
+}
+
+.row.option .radio{
+    display: inline-block;
+}
+.row input[type=text] {
+    font-weight: unset;
+
+    width: 160px;
+    
+}
+.row input[type=date] {
+    font-weight: unset;
+
+    width: 160px;
+
+}
+.row input[type=number] {
+    font-weight: unset;
+
+    width: 160px;
+}
+
+.row select {
+    width: 160px;
+    padding-left: 5px;
+
+}
+
+.row .form-check-inline {
+    display: inline-block;
+}
+
+.row .col-auto {
+    width: auto;
+    display: inline-block;
+}
+
+.row .form-control {
+    padding: unset;
+    height: 22px;
+}
+
+.row.group::after {
+    width: 100%;
+    height: 1px;
+    border-top: 1px solid #c0c0c0;
+    position: absolute;
+    top: 15px;
+    left: 80px;
+    width: calc(100% - 80px);
+}
+
+.nav>li>a {
+    padding: 5px 8px;
+}
+
+.form-select {
+
+    border-color: #cccccc;
+    appearance: none;
+    -webkit-appearance: none;
+    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAICAYAAADJEc7MAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAIGNIUk0AAG2YAABzjgAA4DIAAIM2AAB5CAAAxgwAADT6AAAgbL5TJ5gAAABGSURBVHjaYvz//z8DOYCJgUzA0tnZidPK8vJyRpw24pLEpwnuVHRFhDQxMDAwMPz//x+OOzo6/iPz8WFGuocqAAAA//8DAD/sORHYg7kaAAAAAElFTkSuQmCC) right center no-repeat;
+}
+
+/* 数据元下拉框 */
+.dsSel {
+    display: inline-block;
+    width: 160px;
+}
+
+.panel-body {
+    padding: unset;
+}
+
+.es-input {
+    height: 22px;
+    border: 1px solid #cccccc;
+}
+
+button.check{
+    background: #4297FE;
+    color: #fff;
+    border: unset;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.addBtn{
+    float: right;
+    margin-bottom: 7px;
+    margin-top: -10px;
+}
+table {
+    width: 100%;
+    table-layout: fixed;
+}
+table input[type="text"] {
+    border: none;
+    width: 100%;
+}
+.relevanceItems td:last-child{
+    text-align:center
+}
+.relevanceItems select{
+    width: 100%;
+}

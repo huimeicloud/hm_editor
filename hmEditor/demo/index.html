@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <meta charset="utf-8">
+        <title>HM Editor 标签页 Demo</title>
+        <!-- 引入 jQuery -->
+        <script src="../vendor/jquery.min.js"></script>
+        <!-- 引入编辑器 SDK -->
+        <script src="../iframe/HmEditorIfame.js"></script>
+        <!-- 引入 Font Awesome -->
+        <link rel="stylesheet" href="../vendor/font-awesome.min.css">
+        <!-- 引入自定义 CSS 和 JS -->
+        <link rel="stylesheet" href="./css/tab-demo.css">
+        <script src="./js/tree-data.js"></script>
+        <script src="./js/tab-demo.js"></script>
+        <script src="./js/api-logger.js"></script>
+    </head>
+
+    <body>
+        <div class="container">
+            <div class="left-panel">
+                <div class="panel-header">
+                    <div class="toolbar-title">
+                        <!-- <span class="title-icon">
+                            <img src="../img/demo-logo.png" alt="editor">
+                        </span> -->
+                        <span class="title-text">编辑器 SDK 演示</span>
+                    </div>
+                    <!-- <div class="panel-subtitle">惠每开源电子病历编辑器</div> -->
+                </div>
+                <div class="panel-content">
+                    <div class="document-tree">
+                        <div class="tree-header">
+                            <span class="tree-icon"><i class="fa fa-folder-open"></i></span>
+                            <span class="tree-title">演示病历文档列表</span>
+                        </div>
+                        <div class="tree-container" id="documentTree">
+                            <!-- 树结构将在这里动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 主内容区域 -->
+            <div class="main-content">
+                <!-- 顶部工具栏 -->
+                <div class="btn-panel">
+                    <div class="left-btn-container">
+                        <button id="btnAddTab" class="btn-primary" style="height:80px">加载文档</button>
+                    </div>
+                    <div class="center-btn-container">
+                        <button id="btnInsertDoc">插入文档</button>
+                        <button id="btnSetData">设置数据</button>
+                        <button id="btnInsertDataAtCursor">光标插入内容</button>
+                        <button id="btnInsertImageAtCursor">光标插入图片</button>
+                        <button id="btnMenu">自定义菜单</button>
+                        <button id="btnReadOnly">只读模式</button>
+                        <button id="btnRevise">修订模式</button>
+                        <button id="btnWatermark">设置水印</button>
+                        <button id="btnGetHtml">获取HTML</button>
+                        <button id="btnGetText">获取TEXT</button>
+                        <button id="btnGetMetaData">获取数据元</button>
+                        <button id="btnExportPdf">下载PDF</button> 
+                        <button id="btnHmAiQc" disabled class="next-feature-btn">质控提醒</button>
+                        <button id="btnNodeGen" disabled class="next-feature-btn">节点生成</button>
+                        <button id="btnDocGen" disabled class="next-feature-btn">病历生成</button>
+                        <button id="btnDocContinue" disabled class="next-feature-btn">病历续写</button>
+                        <button id="btnAgent" disabled class="next-feature-btn">常用Agent</button>
+                        
+                    </div>
+                    <div class="right-btn-container">
+                        <button id="btnCreateTemplate" class="btn-success">制作模板</button>
+                        <button id="btnCloseTab" class="btn-danger">销毁编辑器</button>
+                    </div>
+                </div>
+
+                <!-- 标签页容器 -->
+                <div id="tabContainer" class="tab-container"></div>
+            </div>
+
+            <!-- 右侧日志窗口 -->
+            <div class="log-panel">
+                <div class="log-header">
+                    <div class="log-title">API 调用日志</div>
+                    <div class="log-header-btns">
+                        <button id="btnClearLog" class="log-button" title="清空日志">清空</button>
+                        <button id="btnToggleLog" class="log-button" title="折叠/展开日志">折叠</button>
+                    </div>
+                </div>
+                <div class="log-content" id="logContent">
+                    <div id="apiLog" class="api-log"></div>
+                </div>
+            </div>
+
+            <!-- 加载文档_输入框 -->
+            <div class="dialogBox documentInfo">
+                <h3>演示用 - 输入加载参数</h3>
+                <div class="option-row">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="openInNewTab"> 在新标签中打开
+                    </label>
+                </div>
+                <textarea placeholder="请输入JSON格式的文档内容" style="height:220px;min-height:120px;resize:vertical;white-space:pre;overflow:auto;"></textarea>
+                <div class="quick-links">
+                    快速载入:
+                    <a href="javascript:void(0);" class="quick-link quick-link-loadDoc"
+                        data-file="file/load_DOC_001.json">例_单个病历</a>
+                    <a href="javascript:void(0);" class="quick-link quick-link-loadDoc"
+                        data-file="file/load_DOC_002.json">例_聚合病历</a>
+                    <a href="javascript:void(0);" class="quick-link quick-link-loadDoc" id="loadTemplateFile">打开模板文件</a>
+                    <input type="file" id="templateFileInput" style="display:none;" accept=".txt,.html,.htm,.xml">
+                </div>
+                <div>
+                    <button id="btnConfirmDoc" class="dialog-btn btn-primary">确定</button>
+                    <button id="btnCancelDoc" class="dialog-btn">取消</button>
+                    <div class="help-text">点击取消创建空白文档</div>
+                </div>
+            </div>
+
+            <!-- 插入文档弹框 -->
+            <div class="insertDocDialog">
+                <h3>演示用 - 插入文档</h3>
+                <div class="input-group">
+                    <label>插入位置：</label>
+                    <input type="text" id="insertPosition" placeholder="请输入目标文档编号">
+                </div>
+                <textarea placeholder="请输入JSON格式的文档内容"></textarea>
+                <div>
+                    <button id="btnConfirmInsert" class="dialog-btn btn-primary">确定</button>
+                    <button id="btnCancelInsert" class="dialog-btn">取消</button>
+                </div>
+            </div>
+
+            <!-- 设置数据对话框 -->
+            <div class="dataInputDialog">
+                <h3>演示用 - 输入数据参数</h3>
+                <textarea placeholder="请输入JSON格式的数据"></textarea>
+                <div>
+                    <button id="btnConfirmData" class="dialog-btn btn-primary">确定</button>
+                    <button id="btnCancelData" class="dialog-btn">取消</button>
+                </div>
+            </div>
+
+            <!-- 光标处插入内容对话框 -->
+            <div class="dialogBox insertDataAtCursorDialog">
+                <h3>演示用 - 光标处插入内容</h3>
+                <textarea placeholder="请输入要插入的内容"></textarea>
+                <div>
+                    <button id="btnConfirmInsertData" class="dialog-btn btn-primary">确定</button>
+                    <button id="btnCancelInsertData" class="dialog-btn">取消</button>
+                </div>
+            </div>
+
+            <!-- 光标处插入图片对话框 -->
+            <div class="dialogBox insertImageAtCursorDialog">
+                <h3>演示用 - 光标处插入图片</h3>
+                <div class="input-group">
+                    <label>图片URL：</label>
+                    <textarea id="imageUrl" placeholder="请输入图片的base64格式数据" rows="4"></textarea>
+                </div>
+                <div class="input-group">
+                    <label>图片宽度：</label>
+                    <input type="number" id="imageWidth" placeholder="请输入图片宽度">
+                </div>
+                <div class="input-group">
+                    <label>图片高度：</label>
+                    <input type="number" id="imageHeight" placeholder="请输入图片高度">
+                </div>
+                <div>
+                    <button id="btnConfirmInsertImage" class="dialog-btn btn-primary">确定</button>
+                    <button id="btnCancelInsertImage" class="dialog-btn">取消</button>
+                </div>
+            </div>
+
+            <!-- 模板制作_设置数据元参数_输入框 -->
+            <div class="dialogBox templateParamDialog">
+                <h3>演示用 - 设置模板数据元参数</h3>
+                <textarea placeholder="请输入JSON格式的参数"></textarea>
+                <div class="quick-links">
+                    快速载入:
+                    <a href="javascript:void(0);" class="quick-link-template"
+                        data-file="file/template_datasources_001.json">入院记录</a>
+                </div>
+                <div>
+                    <button id="btnConfirmTemplateParam" class="dialog-btn btn-primary">确定</button>
+                    <button id="btnCancelTemplateParam" class="dialog-btn">取消</button>
+                </div>
+            </div>
+
+            <!-- 展示内容对话框 -->
+            <div class="dialogBox contentDisplayDialog">
+                <h3 id="contentTitle">内容展示</h3>
+                <textarea id="contentDisplay" readonly></textarea>
+                <div>
+                    <button id="btnCopyContent" class="dialog-btn">复制</button>
+                    <button id="btnSaveContent" class="dialog-btn">保存文件</button>
+                    <button id="btnSaveHtmlRaw" class="dialog-btn hidden">保存HTML原文</button>
+                    <button id="btnCloseContent" class="dialog-btn">取消</button>
+                </div>
+            </div>
+
+            <!-- 获取HTML文本对话框 -->
+            <div class="dialogBox getHtmlDialog">
+                <h3>演示用 - 获取HTML文本</h3>
+                <textarea placeholder="请输入文档唯一编号（可选）"></textarea>
+                <div>
+                    <button id="btnConfirmGetHtml" class="dialog-btn btn-primary">确定</button>
+                    <button id="btnCancelGetHtml" class="dialog-btn">取消</button>
+                    <div class="help-text">参数为空，获取所有HTML内容</div>
+                </div>
+            </div>
+
+            <!-- 设置水印对话框 -->
+            <div class="dialogBox setWatermarkDialog">
+                <h3>演示用 - 水印设置</h3>
+                <div class="input-group">
+                    <label>水印类型：</label>
+                    <select id="watermarkType">
+                        <option value="1">文本水印</option>
+                        <option value="2">图片水印</option>
+                    </select>
+                </div>
+                <div class="input-group watermark-text-group">
+                    <label>水印文本：</label>
+                    <input type="text" id="watermarkText" placeholder="请输入水印文本">
+                </div>
+                <div class="input-group watermark-image-group" style="display: none;">
+                    <label>选择图片：</label>
+                    <input type="file" id="watermarkImageFile" accept="image/*">
+                </div>
+                <div class="input-group watermark-image-group" style="display: none;">
+                    <label>图片预览：</label>
+                    <div class="image-preview-container">
+                        <img id="watermarkImagePreview" style="max-width: 200px; max-height: 100px; display: none;" />
+                        <span id="watermarkImagePlaceholder" class="image-placeholder">请选择图片文件</span>
+                    </div>
+                </div>
+                <div class="input-group watermark-text-group">
+                    <label>字体大小：</label>
+                    <input type="number" id="watermarkFontSize" placeholder="请输入字体大小" value="16" min="8" max="72">
+                </div>
+                <div class="input-group">
+                    <label>透明度：</label>
+                    <input type="number" id="watermarkOpacity" placeholder="0-1之间的数值" step="0.1" min="0" max="1"
+                        value="0.3">
+                </div>
+                <div class="input-group watermark-text-group">
+                    <label>颜色：</label>
+                    <input type="color" id="watermarkColor" value="#cccccc">
+                </div>
+                <div class="input-group">
+                    <label>倾斜度：</label>
+                    <input type="number" id="watermarkRotation" placeholder="值域(0~360)" value="-45" min="-90" max="90">
+                    <span class="unit-text">度</span>
+                </div>
+                <div class="input-group">
+                    <label>水印高度：</label>
+                    <input type="number" id="watermarkHeight" placeholder="建议100~300" value="100" min="50" max="500">
+                    <span class="unit-text">px</span>
+                </div>
+                <div class="input-group">
+                    <label>水印列数：</label>
+                    <input type="number" id="watermarkColumns" placeholder="水印列数" value="3" min="1" max="10">
+                    <span class="unit-text">列</span>
+                </div>
+                <div class="input-group">
+                    <label>打印显示：</label>
+                    <div class="checkbox-container">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="watermarkShowInPrint" checked> 打印时显示水印
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <button id="btnConfirmWatermark" class="dialog-btn btn-primary">确定</button>
+                    <button id="btnCancelWatermark" class="dialog-btn">取消</button>
+                    <div class="help-text">设置文档水印效果</div>
+                </div>
+            </div>
+
+            <!-- 获取病历数据传参对话框 -->
+            <div class="dialogBox getDataDialog">
+                <h3 id="contentTitle">演示用 - 输入获取病历参数</h3>
+                <textarea placeholder=""></textarea>
+                <div>
+                    <button id="btnAddParamsText" class="dialog-btn" style="display: none;">快速录入</button>
+                    <button id="btnGetDataByParams" class="dialog-btn btn-primary">确定</button>
+                    <button id="btnGetDataClose" class="dialog-btn">取消</button>
+                    <div class="help-text">参数为空，获取所有数据</div>
+                </div>
+            </div>
+
+            <!-- 只读模式设置对话框 -->
+            <div class="dialogBox readOnlyDialog">
+                <h3>演示用 - 只读模式设置</h3>
+                <div class="input-group">
+                    <label>病历编码：</label>
+                    <input type="text" id="readOnlyCode" placeholder="请输入病历唯一编码（可选）">
+                </div>
+                <!-- <div class="input-group">
+                    <label>只读模式：</label>
+                    <div class="checkbox-container">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="readOnlyFlag" checked> 启用只读模式
+                        </label>
+                    </div>
+                </div> -->
+                <div style="margin: 25px 0;">
+                    <label class="switch-label">
+                         <label>只读模式：</label>
+                        <div class="switch">
+                            <input type="checkbox" id="readOnlyFlag" class="switch-flag">
+                            <span class="slider">
+                                <span class="slider-circle"></span>
+                            </span>
+                        </div>
+                        <span class="switch-label-text">取消</span>
+                    </label>
+                </div>
+                <div>
+                    <button id="btnConfirmReadOnly" class="dialog-btn btn-primary">确定</button>
+                    <button id="btnCancelReadOnly" class="dialog-btn">取消</button>
+                    <div class="help-text">编码为空则对所有文档设置只读模式</div>
+                </div>
+            </div>
+
+            <!-- 质控提醒对话框 -->
+            <div class="dialogBox hmAiQcDialog">
+                <h3>演示用 - 质控提醒参数</h3>
+                <textarea placeholder="请输入JSON格式的质控参数"></textarea>
+                <div class="quick-links">
+                    快速载入:
+                    <a href="javascript:void(0);" class="quick-link quick-link-hmAi">病历参数示例</a>
+                </div>
+                <div>
+                    <button id="btnConfirmHmAi" class="dialog-btn btn-primary">确定</button>
+                    <button id="btnCancelHmAi" class="dialog-btn">取消</button>
+                    <div class="help-text">输入质控参数进行文档质控检查</div>
+
+                </div>
+            </div>
+
+            <!-- 修订模式弹框 -->
+             <!-- 只读模式设置对话框 -->
+            <div class="dialogBox reviseDialog">
+                <h3>演示用 - 修订模式设置</h3>
+                <div style="margin: 25px 0;">
+                    <label class="switch-label">
+                         <label>修订模式：</label>
+                        <div class="switch">
+                            <input type="checkbox" id="reviseFlag" class="switch-flag">
+                            <span class="slider">
+                                <span class="slider-circle"></span>
+                            </span>
+                        </div>
+                        <span class="switch-label-text">关闭</span>
+                    </label>
+                </div>
+                <div>
+                    <button id="btnConfirmRevise" class="dialog-btn btn-primary">确定</button>
+                    <button id="btnCancelRevise" class="dialog-btn">取消</button>
+                </div>
+            </div>
+
+            <!-- 自定义菜单参数弹框 -->
+            <div class="customMenuDialog dialogBox" style="display:none;">
+                <h3>演示用-自定义右键菜单参数</h3>
+                <textarea id="customMenuJson" style="width:100%;height:240px;white-space:pre;overflow:auto;resize:vertical;font-family:monospace;font-size:14px;"></textarea>
+                <div style="margin-top:18px;text-align:right;">
+                  <button id="customMenuOkBtn" class="dialog-btn btn-primary">确定</button>
+                  <button id="customMenuCancelBtn" class="dialog-btn">取消</button>
+                </div>
+            </div>
+
+            <!-- 通用alert弹框 -->
+            <div id="customAlertDialog" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.15);align-items:center;justify-content:center;">
+              <div style="background:#fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.13);padding:20px 28px;min-width:220px;max-width:400px;">
+                <div id="customAlertMsg" style="font-size:15px;color:#333;margin-bottom:18px;word-break:break-all;"></div>
+                <div style="text-align:right;">
+                  <button id="alertOkBtn" style="background:#1976d2;color:#fff;border:none;border-radius:4px;padding:5px 16px;font-size:14px;cursor:pointer;">确定</button>
+                </div>
+              </div>
+            </div>
+        </div>
+    </body>
+
+</html>

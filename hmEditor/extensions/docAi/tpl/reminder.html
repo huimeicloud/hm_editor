@@ -1,0 +1,24 @@
+
+<!-- 高危风险评估提醒 -->
+<% for(var i=0;i< list.length;i++){%> 
+    <% var item = list[i]; %>
+<div class="doc-reminder-item doc-reminder-level-<%=item.level||1%>" uucode="<%=item.uucode%>">
+    <span class="doc-reminder-item-header">
+        <span class="doc-reminder-item-icon">
+        </span>
+        <span class="doc-reminder-item-title">
+            <%=item.title%>
+        </span>
+    </span>
+    <span class="doc-reminder-item-action">
+        <% if(item.businessInfo && item.businessInfo.businessModule=='ASSESSMENT'){ %>
+        <span class="doc-reminder-btn btt-evalute" uucode="<%=item.uucode%>">
+            <span class="doc-btn-text" >去评估</span>
+        </span>
+        <% }%>
+        <span class="doc-reminder-btn btt-ignore" uucode="<%=item.uucode%>">
+            <span class="doc-btn-text" >忽略</span>
+        </span>
+    </span>
+</div>
+<%}%> 

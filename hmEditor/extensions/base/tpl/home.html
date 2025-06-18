@@ -1,0 +1,47 @@
+<!-- editorSpace 里面的 div 不能删, 删除之后会严重影响自动分页速度! -->
+<!--至于原因可能是载入页面后编辑器会将 editorSpace 中的内容过一遍初始化. 其实editorSpace里面写注释也行, 但是怕编译的时候编译器删注释 -->
+<div id="editor-container" class="editor-container">
+    <div id="editorSpace">
+        <div></div>
+    </div>
+    <div id="graduationRuler" style="display: none;">
+        <div style="padding-top: 6px;background-color: #fff;">
+        <div class="ruler"></div>
+        </div>
+    </div>
+    <div id="interactDiv" class="panel panel-default" style="min-width:40px;min-height:50px;position:absolute;display:none">
+
+    </div>
+    <div id="hm-datasource-mark" class="hm-datasource-mark hidden-mark" style="position:absolute;"><div class="quality-datasource-toobar-mark" ></div></div>
+    <div class="zoom">
+        <span id="enlargeOrShrink" title="适合窗口宽度">
+            <img src="<%=sdkHost%>/img/enlarge.jpg" alt="" srcset="">
+        </span>
+        <span class="zoomout" title="放大">+</span>
+        <span class="zoomin" title="缩小">-</span>
+    </div>
+
+    <!-- 图片编辑器 -->
+    <div class="modal fade image_editor_modal" id="imageEditorModal" tabindex="-1" role="dialog" aria-labelledby="imageEditorModalTit"
+        aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title" id="imageEditorModalTit">图片编辑</h4>
+                </div>
+                <div class="modal-body">
+                    <iframe class="image_editor_iframe" name="image_editor_iframe"></iframe>
+                    <div class="modal-btn-group">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-primary image-editor-save-btn"  style="float:right;">保存</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 历史版本号 -->
+    <div class="layer" id="layer-version-code"></div>
+    <iframe id="printIframe" name="printIframe" frameborder="0" style="height:0;border:0;position:absolute;"></iframe>
+</div>

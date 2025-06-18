@@ -1,0 +1,1007 @@
+{"doc_type":"入院记录","datasource":[
+  {
+      "code": "DE08.10.052.00",
+      "name": "组织机构代码",
+      "description": "经《医疗机构执业许可证》登记的，并按照特定编码体系填写的代码",
+      "format": "AN",
+      "length": "10",
+      "type": "S3"
+  },
+  {
+      "code": "DE01.00.010.00",
+      "name": "急诊号",
+      "description": "按照某一特定编码规则赋予门（急）诊就诊对象的顺序号",
+      "format": "AN",
+      "length": "18",
+      "type": "S1"
+  },
+  {
+      "code": "DE08.10.026.00",
+      "name": "科室名称",
+      "description": "患者在医疗机构就诊的科室名称",
+      "format": "AN",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.039.00",
+      "name": "姓名",
+      "description": "患者本人在公安户籍管理部门正式登记注册的姓氏和名称",
+      "format": "A",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.040.00",
+      "name": "性别",
+      "description": "患者生理件别在特定编码体系中的代码",
+      "format": "N1",
+      "type": "S3"
+  },
+  {
+      "code": "DE02.01.005.01",
+      "name": "出生日期",
+      "description": "患者出生当日的公元纪年日期的完整描述",
+      "format": "D8",
+      "type": "D"
+  },
+  {
+      "code": "DE02.01.026.00",
+      "name": "年龄",
+      "description": "患者年龄满1周岁的实足年龄，为患者出生后按照日历计算的历法年龄，以实足年龄的相应整数填写",
+      "format": "N1",
+      "length": "3",
+      "type": "N"
+  },
+  {
+      "code": "DE02.01.032.00",
+      "name": "年龄_月",
+      "description": "年龄不足1周岁的实足年龄的月龄，以分数形式表示:分数的整数部分代表实足月龄，分数部分分母为30,分子为不足1个月的天数",
+      "format": "AN",
+      "length": "8",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.10.022.00",
+      "name": "过敏药物",
+      "description": "患者既往发生过敏情况的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE06.00.062.00",
+      "name": "就诊日期时间",
+      "description": "患者在门（急）诊就诊结束时的公元纪年日期和时间的完整描述",
+      "format": "DTI 5",
+      "type": "DT"
+  },
+  {
+      "code": "DE04.01.119.00",
+      "name": "主诉",
+      "description": "对患者本次疾病相关的主要症状及其持续时间的描述，一般由患者本人或监护人描述",
+      "format": "AN",
+      "length": "100",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.10.071.00",
+      "name": "现病史",
+      "description": "对患者当前所患疾病情况的详细描述",
+      "format": "AN",
+      "length": "2000",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.10.028.00",
+      "name": "中医四诊观察结果",
+      "description": "中医四诊观察结果的详细描述，包括望、闻、问、切四诊内容",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE04.30.009.00",
+      "name": "辅助检查结果",
+      "description": "患者辅助检查、检验结果的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE05.01.024.00",
+      "name": "初步诊断_西医诊断编码",
+      "description": "患者在门（急）诊就诊时初步作出的疾病诊断在西医诊断特定编码体系中的编码",
+      "format": "AN",
+      "length": "11",
+      "type": "S3"
+  },
+  {
+      "code": "DE05.01.025.00",
+      "name": "初步诊断_西医诊断名称",
+      "description": "由医师根据患者就诊时的情况，综合分析所作出的西医诊断名称",
+      "format": "AN",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE05.10.130.00",
+      "name": "初步诊断_中医病名代码",
+      "description": "患者在门（急）诊就诊时初步作出的疾病诊断在中医病名特定分类体系中的代码",
+      "format": "AN",
+      "length": "9",
+      "type": "S3"
+  },
+  {
+      "code": "DE05.10.172.00",
+      "name": "初步诊断_中医病名名称",
+      "description": "由医师根据患者就诊时的情况，综合分析所作出的中医诊断病名",
+      "format": "AN",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE05.10.130.00.040",
+      "name": "初步诊断_中医证候代码",
+      "description": "患者在门（急）诊就诊时初步作出的疾病诊断在中医证候特定分类体系中的代码",
+      "format": "AN",
+      "length": "9",
+      "type": "S3"
+  },
+  {
+      "code": "DE05.10.172.00.007",
+      "name": "初步诊断_中医证候名称",
+      "description": "由医师根据患者就诊时的情况，综合分析所作出的中医证候名称",
+      "format": "AN",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE06.00.300.00",
+      "name": "治则治法",
+      "description": "根据辨证结果采用的治则治法名称术语",
+      "format": "AN",
+      "length": "100",
+      "type": "S1"
+  },
+  {
+      "code": "DE06.00.093.00",
+      "name": "手术及操作编码",
+      "description": "患者住院期间实施的手术及操作在特定编码体系中的编码",
+      "format": "AN",
+      "length": "5",
+      "type": "S3"
+  },
+  {
+      "code": "DE01.00.014.00",
+      "name": "住院号",
+      "description": "按照某一特定编码规则赋予住院就诊对象的顺序号",
+      "format": "AN",
+      "length": "18",
+      "type": "S1"
+  },
+  {
+      "code": "DE08.10.054.00",
+      "name": "病区名称",
+      "description": "患者当前所在病区的名称",
+      "format": "AN",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE01.00.019.00",
+      "name": "病房号",
+      "description": "患者住院期间，所住病房对应的编号",
+      "format": "AN",
+      "length": "10",
+      "type": "S1"
+  },
+  {
+      "code": "DE01.00.026.00",
+      "name": "床位号",
+      "description": "患者住院期间，所住床位对应的编号",
+      "format": "AN",
+      "length": "10",
+      "type": "S1"
+  },
+  {
+      "code": "DE06.00.092.00",
+      "name": "入院时间",
+      "description": "患者实际办理入院手续时的公元纪年日期和时间的完整描述",
+      "format": "DT15",
+      "type": "DT"
+  },
+  {
+      "code": "DE02.01.039.00.171",
+      "name": "住院医师签名",
+      "description": "患者死亡时所在科室具体负责诊治的，具有住院医师专业技术职务任职资格的医师签署的在公安户籍管理部门正式登记注册的姓氏和名称",
+      "format": "A",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.039.00.172",
+      "name": "主治医师签名",
+      "description": "具有主治医师专业技术职务资格的医师签署的在公安户籍管理部门正式登记注册的姓氏和名称",
+      "format": "A",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.039.00.173",
+      "name": "主任医师签名",
+      "description": "具有主任医师专业技术职务资格的医师签署的在公安户籍管理部门正式登记注册的姓氏和名称",
+      "format": "A",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.025.00",
+      "name": "民族",
+      "description": "患者所厲民族在特定编码体系中的代码",
+      "format": "N2",
+      "type": "S3",
+      "dictCode": "WT01.01.002"
+  },
+  {
+      "code": "DE02.01.018.00",
+      "name": "婚姻状况代码",
+      "description": "患者当前婚姻状况在特定编码体系中的代码",
+      "format": "N2",
+      "type": "S3",
+      "dictCode": "WT01.01.007"
+  },
+  {
+      "code": "DE02.01.009.01",
+      "name": "地址_省",
+      "description": "患者本人或联系人地址中的省、自治区或直辖市名称",
+      "format": "AN",
+      "length": "70",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.009.02",
+      "name": "地址_市",
+      "description": "患者本人或联系人地址中的市、地区或州的名称",
+      "format": "AN",
+      "length": "70",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.009.03",
+      "name": "地址_县",
+      "description": "患者本人或联系人地址中的县（区）的名称",
+      "format": "AN",
+      "length": "70",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.009.04",
+      "name": "地址_乡",
+      "description": "患者本人或联系人地址中的乡、镇或城市的街道办事处名称",
+      "format": "AN",
+      "length": "70",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.009.05",
+      "name": "地址_村",
+      "description": "患者本人或联系人地址中的村或城市的街、路、里、弄等名称",
+      "format": "AN",
+      "length": "70",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.009.06",
+      "name": "地址_门牌号码",
+      "description": "患者本人或联系人地址中的门牌号码",
+      "format": "AN",
+      "length": "70",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.052.00",
+      "name": "职业类别代码",
+      "description": "患者当前从事的职业类别在特定编码体系中的代码",
+      "format": "N2",
+      "type": "S3",
+      "dictCode": "WT01.01.006"
+  },
+  {
+      "code": "DE02.01.039.00.169",
+      "name": "病史陈述者姓名",
+      "description": "患者病史的陈述人在公安户籍管理部门正式登记注册的姓氏和名称",
+      "format": "A",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.10.024.00",
+      "name": "陈述者与患者的关系代码",
+      "description": "患者病史陈述人与患者的关系类别在特定编码体系中的代码",
+      "format": "N1",
+      "type": "S3"
+  },
+  {
+      "code": "DE05.10.143.00",
+      "name": "陈述内容可靠标志",
+      "description": "标识陈述内容是否可信的标志",
+      "format": "T/F",
+      "type": "L"
+  },
+  {
+      "code": "DE05.10.031.00",
+      "name": "一般健康状况标志",
+      "description": "标识患者既往是否健康的标志",
+      "format": "T/F",
+      "type": "L"
+  },
+  {
+      "code": "DE02.10.026.00",
+      "name": "疾病史_含外伤",
+      "description": "对患者既往健康状况和疾病（含外伤）的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE05.10.119.00",
+      "name": "患者传染性标志",
+      "description": "标识患者是否具有传染性的标志",
+      "format": "T/F",
+      "type": "L"
+  },
+  {
+      "code": "DE02.10.008.00",
+      "name": "传染病史",
+      "description": "患者既往所患各种急性或慢性传染性疾病名称的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.10.101.00",
+      "name": "预防接种史",
+      "description": "患者预防接种情况的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.10.061.00",
+      "name": "手术史",
+      "description": "患者既往接受手术/操作经历的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.10.100.00",
+      "name": "输血史",
+      "description": "患者既往输血史的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.10.097.00",
+      "name": "个人史",
+      "description": "患者个人生活习惯及有无烟、酒、药物等嗜好，职业与工作条件及有无工业毒物、粉尘、放射性物质接触史，有无冶游史的描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.10.098.00",
+      "name": "婚育史",
+      "description": "患者婚育史的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.10.102.00",
+      "name": "月经史",
+      "description": "患者月经史的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.10.103.00",
+      "name": "家族史",
+      "description": "患者3代以内有血缘关系的家族成员中所患遗传疾病史的描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE04.10.186.00",
+      "name": "体温",
+      "description": "体温的测量值，计量单位为X：",
+      "format": "N",
+      "length": "4",
+      "type": "N"
+  },
+  {
+      "code": "DE04.10.118.00",
+      "name": "脉搏",
+      "description": "患者每分钟脉搏次数的测量值，计量单位为次/min",
+      "format": "N2",
+      "length": "3",
+      "type": "N"
+  },
+  {
+      "code": "DE04.10.081.00",
+      "name": "呼吸频率_次_min",
+      "description": "患者每分钟呼吸次数的测量•值，计量单位为次/min",
+      "format": "N",
+      "length": "3",
+      "type": "N"
+  },
+  {
+      "code": "DE04.10.174.00",
+      "name": "收缩压_mmHg",
+      "description": "收缩压的测量值，计量单位为mmHg",
+      "format": "N2",
+      "length": "3",
+      "type": "N"
+  },
+  {
+      "code": "DE04.10.176.00",
+      "name": "舒张压_mmHg",
+      "description": "舒张压的测量值，计量单位为mmHg",
+      "format": "N2",
+      "length": "3",
+      "type": "N"
+  },
+  {
+      "code": "DE04.10.167.00",
+      "name": "身高_cm",
+      "description": "患者身髙的测量值，计量单位为cm",
+      "format": "N4",
+      "length": "51",
+      "type": "N"
+  },
+  {
+      "code": "DE04.10.188.00",
+      "name": "体重_kg",
+      "description": "患者体重的测量值，计量单位为kg",
+      "format": "N3",
+      "length": "6,2",
+      "type": "N"
+  },
+  {
+      "code": "DE04.10.219.00",
+      "name": "一般状况检查结果",
+      "description": "对患者一般状况检査结果的详细描述，包括其发育状况、营养状况、体味、步态、面容与表情、意识，检査能否合作等等",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE04.10.126.00",
+      "name": "皮肤和黏膜检查结果",
+      "description": "对患者皮肤和黏膜检查结果的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE04.10.114.00",
+      "name": "全身浅表淋巴结检查结果",
+      "description": "对患者皮肤和黏膜检査结果的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE04.10.261.00",
+      "name": "头部及其器官检查结果",
+      "description": "对患者头部及其器官检查结果的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE04.10.255.00",
+      "name": "颈部检查结果",
+      "description": "对患者颈部检査结果的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE04.10.263.00",
+      "name": "胸部检查结果",
+      "description": "对患者胸部（胸廓、肺部、心脏、血管）检査结果的详细描述，包括视触叩听的检査结果",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE04.10.046.00",
+      "name": "腹部检查结果",
+      "description": "对患者腹部（肝脾等）检査结果的详细描述，包括视触叩听的检査结果",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE04.10.065.00",
+      "name": "肛门指诊检查结果描述",
+      "description": "对患者肛门指诊检查结果的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE04.10.195.00",
+      "name": "外生殖器检查结果",
+      "description": "对患者外生殖器检查结果的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE04.10.093.00",
+      "name": "脊柱检查结果",
+      "description": "对患者脊柱检査结果的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE04.10.179.00",
+      "name": "四肢检查结果",
+      "description": "对患者四肢检査结果的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE05.10.149.00",
+      "name": "神经系统检查结果",
+      "description": "对患者神经系统检查结果的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE08.10.061.00",
+      "name": "专科情况",
+      "description": "根据专科需要对患者进行专科特殊检査结果的详细描述",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE05.01.058.00",
+      "name": "初步诊断日期",
+      "description": "初步诊断下达当日的公元纪年日期的完整描述",
+      "format": "D8",
+      "type": "D"
+  },
+  {
+      "code": "DE05.01.025.00.003",
+      "name": "修正诊断_西医诊断名称",
+      "description": "修正诊断的西医诊断名称",
+      "format": "AN",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE05.01.024.00.005",
+      "name": "修正诊断_西医诊断编码",
+      "description": "修正诊断在西医诊断特定编码体系中的编码",
+      "format": "AN",
+      "length": "11",
+      "type": "S3"
+  },
+  {
+      "code": "DE05.10.172.00.003",
+      "name": "修正诊断_中医病名名称",
+      "description": "修正诊断的中医病名",
+      "format": "AN",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE05.10.130.00.003",
+      "name": "修正诊断_中医病名代码",
+      "description": "修正诊断在中医病名特定分类体系中的代码",
+      "format": "AN",
+      "length": "9",
+      "type": "S3"
+  },
+  {
+      "code": "DE05.10.172.00.004",
+      "name": "修正诊断_中医证候名称",
+      "description": "修正诊断的中医证候名称",
+      "format": "AN",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE05.10.130.00.004",
+      "name": "修正诊断_中医证候代码",
+      "description": "修正诊断在中医证候特定分类体系中的代码",
+      "format": "AN",
+      "length": "9",
+      "type": "S3"
+  },
+  {
+      "code": "DE05.01.058.00.001",
+      "name": "修正诊断日期",
+      "description": "修正诊断下达当日的公元纪年日期的完整描述",
+      "format": "D8",
+      "type": "D"
+  },
+  {
+      "code": "DE05.01.025.00.004",
+      "name": "确定诊断_西医诊断名称",
+      "description": "确定诊断的西医诊断名称",
+      "format": "AN",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE05.01.024.00.006",
+      "name": "确定诊断_西医诊断编码",
+      "description": "确诊诊断在西医诊断特定编码体系中的编码",
+      "format": "AN",
+      "length": "11",
+      "type": "S3"
+  },
+  {
+      "code": "DE05.10.172.00.005",
+      "name": "确定诊断_中医病名名称",
+      "description": "确定诊断的中医病名",
+      "format": "AN",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE05.10.130.00.005",
+      "name": "确定诊断_中医病名代码",
+      "description": "确定诊断在中医病名特定分类体系中的代码",
+      "format": "AN",
+      "length": "9",
+      "type": "S3"
+  },
+  {
+      "code": "DE05.10.172.00.006",
+      "name": "确定诊断_中医证候名称",
+      "description": "确定诊断的中医证候名称",
+      "format": "AN",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE05.10.130.00.006",
+      "name": "确定诊断_中医证候代码",
+      "description": "确定诊断在中医证候特定分类体系中的代码",
+      "format": "AN",
+      "length": "9",
+      "type": "S3"
+  },
+  {
+      "code": "DE05.01.058.00.002",
+      "name": "确定诊断日期",
+      "description": "确定诊断下达当日的公元纪年日期的完整描述",
+      "format": "D8",
+      "type": "D"
+  },
+  {
+      "code": "DE05.01.025.00.005",
+      "name": "补充诊断名称",
+      "description": "补充诊断的名称",
+      "format": "AN",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE05.01.024.00.007",
+      "name": "补充诊断编码",
+      "description": "补充诊断在特定编码体系中的编码",
+      "format": "AN",
+      "length": "11",
+      "type": "S3"
+  },
+  {
+      "code": "DE05.01.058.00.003",
+      "name": "补充诊断日期",
+      "description": "补充诊断下达当日的公元纪年日期的完整描述",
+      "format": "D8",
+      "type": "D"
+  },
+  {
+      "code": "DE05.01.080.00",
+      "name": "入院诊断顺位",
+      "description": "表示人院诊断的顺位及其从属关系",
+      "format": "N2",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.039.00.170",
+      "name": "接诊医师签名",
+      "description": "负责患者人院接诊的医师签署的在公安户籍管理部门正式登记注册的姓氏和名称",
+      "format": "A",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE01.00.021.00",
+      "name": "健康卡号",
+      "description": "患者持有的全国统一的居民健康卡的编号",
+      "format": "AN",
+      "length": "18",
+      "type": "S1"
+  },
+  {
+      "code": "DE08.10.026.00.003",
+      "name": "医疗机构科室名称",
+      "description": "患者就诊的医疗机构科室名称",
+      "format": "AN",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.060.00",
+      "dictCode": "CV09.00.404",
+      "name": "患者类型代码",
+      "description": "患者就诊类型的分类代码",
+      "format": "N1",
+      "type": "S3"
+          },
+          {
+      "code": "DE06.00.017.00",
+      "name": "预出院时间",
+      "description": "患者实际办理出院手续时的公元纪年日期和时间的完整描述",
+      "format": "DTI 5",
+      "type": "DT"
+  },
+  {
+      "code": "DE04.01.018.00",
+      "name": "发病日期时间",
+      "description": "疾病发病症状的首次出现的公元纪年日期和时间的完整描述",
+      "format": "DTI 5",
+      "type": "DT"
+  },
+  {
+      "code": "DE05.10.053.00",
+      "name": "就诊原因",
+      "description": "就诊原因的详细描述，如门（急）诊就诊原因、住院原因、转科原因等",
+      "format": "AN",
+      "length": "1000",
+      "type": "S1"
+  },
+  {
+      "code": "DE05.01.024.00.033",
+      "name": "西医诊断编码",
+      "description": "患者所患疾病在西医诊断特定编码体系中的编码",
+      "format": "AN",
+      "length": "11",
+      "type": "S3"
+  },
+  {
+      "code": "DE05.10.130.00.026",
+      "name": "中医病名代码",
+      "description": "患者所患疾病在中医病名特定分类体系中的代码",
+      "format": "AN",
+      "length": "9",
+      "type": "S3"
+  },
+  {
+      "code": "DE05.10.130.00.027",
+      "name": "中医证候代码",
+      "description": "患者所患疾病在中医证候特定分类体系中的代码",
+      "format": "AN",
+      "length": "9",
+      "type": "S3"
+  },
+  {
+      "code": "DE08.50.022.00.003",
+      "name": "关键药物名称",
+      "description": "与本次就诊相关的关键药物通用名称",
+      "format": "AN",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE06.00.136.00",
+      "name": "关键药物用法",
+      "description": "与本次就诊相关的关键药物（含中药）治疗疾病具体用法的描述",
+      "format": "AN",
+      "length": "100",
+      "type": "S1"
+  },
+  {
+      "code": "DE06.00.129.00",
+      "name": "药物不良反应情况",
+      "description": "对可能影响患者诊治的、严重的药物不良反应描述，包括：药物不良反应的表现、相关处理及结局",
+      "format": "AN",
+      "length": "100",
+      "type": "S1"
+  },
+  {
+      "code": "DE06.00.164.00",
+      "name": "中药使用类别代码",
+      "description": "临床治疗中中药使用情况分类在特定编码体系中的代码",
+      "format": "N1",
+      "type": "S3"
+  },
+  {
+      "code": "DE06.00.251.00.001",
+      "name": "其他医学处置",
+      "description": "临床医师对患者实施的除检查/检验、用药、手术/操作以外的医学处置的描述",
+      "format": "AN",
+      "length": "2000",
+      "type": "S1"
+  },
+  {
+      "code": "DE05.01.021.00",
+      "name": "根本死因代码",
+      "description": "导致患者死亡的最根本疾病的诊断代码",
+      "format": "AN",
+      "length": "5",
+      "type": "S3"
+  },
+  {
+      "code": "DE05.10.113.00",
+      "name": "病情转归代码",
+      "description": "出院时患者所患的每种疾病的治疗结果类别在特定编码体系中的代码",
+      "format": "N1",
+      "type": "S3"
+  },
+  {
+      "code": "DE02.01.039.00.020",
+      "name": "责任医师姓名",
+      "description": "负责患者诊疗的主治医师以上的医师在公安户籍管理部门正式登记注册的姓氏和名称",
+      "format": "A",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE04.50.001.00",
+      "name": "ABO血型代码",
+      "description": "进行血型检査明确，或既往病历资料能够明确的患者ABO血型类别在特定编码体系中的代码",
+      "format": "N1",
+      "type": "S3",
+      "dictCode": "WT01.01.011"
+  },
+  {
+      "code": "DE04.50.010.00",
+      "dictCode": "CV04.50.020",
+      "name": "Rh血型代码",
+      "description": "进行血型检查明确，或既往病历资料能够明确的患者Rh血型的类别代码",
+      "format": "N1",
+      "type": "S3"
+          },
+          {
+      "code": "DE08.10.013.00.012",
+      "name": "医疗机构名称",
+      "description": "患者就诊所在的医疗机构名称",
+      "format": "AN",
+      "length": "70",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.010.00",
+      "name": "医疗机构联系电话",
+      "description": "医疗机构的电话号码，包括国际、国内区号和分机号",
+      "format": "AN",
+      "length": "20",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.039.00.031",
+      "name": "医疗机构负责人_法人_姓名",
+      "description": "医疗机构负责人在公安户籍管理部门正式登记注册的姓氏和名称",
+      "format": "A",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.010.00.001",
+      "name": "医疗机构负责人联系电话",
+      "description": "医疗机构负责人的电话号码，包括国际、国内区号和分机号",
+      "format": "AN",
+      "length": "20",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.047.00.006",
+      "name": "邮政编码",
+      "description": "由阿拉伯数字组成，用来表示与医疗机构地址对应的邮局及其投递区域的邮政通信代号",
+      "format": "N",
+      "length": "6",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.004.00",
+      "name": "工作单位名称",
+      "description": "患者在就诊前的工作单位名称",
+      "format": "AN",
+      "length": "70",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.010.00.016",
+      "name": "单位电话",
+      "description": "患者当前所在的工作单位的电话号码，包括国际、国内区号和分机号",
+      "format": "AN",
+      "length": "20",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.039.00.144",
+      "name": "联系人姓名",
+      "description": "指联系人在公安户籍管理部门正式登记注册的姓氏和名称",
+      "format": "A",
+      "length": "50",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.010.00.017",
+      "name": "联系人电话",
+      "description": "联系人的电话号码，包括国际、国内区号和分机号",
+      "format": "AN",
+      "length": "20",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.010.00.015",
+      "name": "患者电话号码",
+      "description": "患者本人的电话号码，包括国际、国内区号和分机号",
+      "format": "AN",
+      "length": "20",
+      "type": "S1"
+  },
+  {
+      "code": "DE02.01.024.00",
+      "dictCode": "CV02.01.205",
+      "name": "地址类别代码",
+      "description": "患者本人或联系人地址类别在特定编码体系中的代码",
+      "format": "N2",
+      "type": "S3"
+          },
+          {
+      "code": "DE02.01.031.00",
+      "name": "身份证件类别代码",
+      "description": "患者身份证件所属类别在特定编码体系中的代码",
+      "format": "N2",
+      "type": "S3"
+  },
+  {
+      "code": "DE02.01.044.00",
+      "dictCode": "CV02.01.204",
+      "name": "医疗保险类别代码",
+      "description": "患者本人参加的医疗保险类别在特定编码体系中的代码",
+      "format": "N2",
+      "type": "S3"
+          },
+          {
+      "code": "DE06.00.218.00.015",
+      "name": "建档日期时间",
+      "description": "患者电子病历初次建档完成吋的公元纪年R期和时间的完整描述",
+      "format": "DTI 5",
+      "type": "DT"
+  },
+  {
+      "code": "DE08.10.052.00.002",
+      "name": "建档医疗机构组织机构",
+      "description": "建档医疗机构经《医疗机构执业许可证》登记的，并按照特定编码体系填写的代码",
+      "format": "AN",
+      "length": "10",
+      "type": "S3"
+  },
+  {
+      "code": "DE02.01.039.00.143",
+      "name": "建档者姓名",
+      "description": "首次为患者建立电子病历的人员在公安户籍管理部门正式登记注册的姓氏和名称",
+      "format": "A",
+      "length": "50",
+      "type": "S1"
+  }
+],"dynamicDict":[{"code":"WT01.01.010","name":"入院病情","url":"http://localhost:8080/emr-server/admin-service/dynamicDict/getDynamicDict","returnCode":"code","returnName":"name"},{"code":"WT01.01.011","name":"测试搜索项","url":"http://127.0.0.1:39090/api/mock/search/test"}]}

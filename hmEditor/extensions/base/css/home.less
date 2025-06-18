@@ -1,0 +1,566 @@
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
+.cke_editor_editorSpace {
+    height: 100% !important;
+}
+
+.cke_editor_editorSpace.emr-reset-height {
+    height: calc(100% - 35px) !important;
+}
+
+.cke_inner {
+    display: flex !important;
+    display: -webkit-flex !important;
+    flex-flow: column nowrap !important;
+    -webkit-flex-flow: column nowrap !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.cke_contents {
+    height: 80% !important;
+    flex: 1 !important;
+    -webkit-flex: 1 !important;
+}
+
+#dataTableGrid {
+    overflow: auto;
+}
+
+.handsontable table.htCore {
+    font-size: 12pt;
+}
+
+.handsontable td, .handsontable th {
+    padding: 0;
+}
+
+.ui-autocomplete {
+    max-height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.ui-autocomplete-loading {
+    background: white url("./vendor/images/ui-anim_basic_16x16.gif") right center no-repeat !important;
+}
+
+.hm-trace-div {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    display: none;
+    position: absolute;
+    z-index: 987898798798798798798;
+    border: 1px solid #000;
+    top: -100px;
+    left: 0;
+    background-color: #242424;
+    border-radius: 5px;
+    box-shadow: 0 0 3px #000;
+}
+
+.hm-trace-div input {
+    border: none;
+    font-size: 14px;
+    margin: 0;
+    padding: 6px;
+    width: 316px;
+    display: inline-block;
+    background: #242424;
+    box-sizing: border-box;
+    color: #ccc;
+    height: 50px;
+}
+
+.hm-trace-div input:focus {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border: none;
+    box-shadow: none;
+    outline: 0;
+}
+
+.hm-trace-div a {
+    display: inline-block;
+    font-size: 24px;
+    font-weight: bolder;
+    text-decoration: none;
+    vertical-align: middle;
+    color: #fff;
+    margin: 0;
+    height: 50px;
+    line-height: 50px;
+    width: 50px;
+    text-align: center;
+}
+
+.hm-trace-div-arrow-under:after, .hm-trace-div-arrow-over:before {
+    border-style: solid;
+    content: '';
+    display: block;
+    height: 0;
+    left: 50%;
+    margin-left: -8px;
+    position: absolute;
+    width: 0;
+}
+
+.hm-trace-div-arrow-under:after {
+    border-width: 8px 8px 0 8px;
+    border-color: #242424 transparent transparent transparent;
+    top: 50px;
+}
+
+.hm-trace-div-arrow-over:before {
+    border-width: 0 8px 8px 8px;
+    border-color: transparent transparent #242424 transparent;
+    top: -8px;
+}
+
+.hm-trace-preview {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    left: 0;
+    top: -100px;
+    line-height: 1.4;
+    max-width: 280px;
+    position: absolute;
+    text-align: center;
+    word-break: break-all;
+    word-wrap: break-word;
+    z-index: 987898798798798798798;
+    display: none;
+}
+
+.hm-trace-preview:before {
+    border-style: solid;
+    content: '';
+    display: block;
+    height: 0;
+    left: 50%;
+    margin-left: -8px;
+    position: absolute;
+    width: 0;
+    border-color: transparent transparent #242424 transparent;
+    top: -8px;
+    border-width: 0 8px 8px 8px;
+}
+.hm-trace-preview.hm-trace-ins:before {
+    border-color: transparent transparent #6CBF6C transparent;
+}
+.hm-trace-preview.hm-trace-del:before {
+    border-color: transparent transparent #F44336 transparent;
+}
+.hm-trace-preview.hm-trace-mark:before {
+    border-color: transparent transparent #F8A31E transparent;
+}
+
+.hm-trace-toolbar-preview {
+    padding: 5px 5px;
+    /* background: #242424; */
+    border-radius: 5px;
+    color: #fff;
+}
+.hm-trace-ins .hm-trace-toolbar-preview {
+    background-color: #6CBF6C;
+}
+.hm-trace-del .hm-trace-toolbar-preview {
+    background-color: #F44336;
+}
+.hm-trace-mark .hm-trace-toolbar-preview {
+    background-color: #F8A31E;
+}
+
+#interactDiv .dropdown-menu {
+    position: static;
+    font-size: 10pt;
+}
+
+#interactDiv .dropdown-menu a {
+    padding: 1px 20px
+}
+#interactDiv .dropdown-menu1 ul{
+    max-height:200px;
+    overflow-y:auto;
+    list-style: none;
+    padding: 5px 15px;
+}
+#interactDiv .dropdown-menu1 ul a{
+    display: block;
+    padding: 5px;
+    color: #333333;
+}
+#interactDiv .dropdown-menu1 ul a:hover,
+#interactDiv .dropdown-menu1 ul a:focus
+  {
+    text-decoration: none;
+    color: #262626;
+    background-color: #f5f5f5;
+}
+#interactDiv .xdsoft_datetimepicker .xdsoft_calendar td, .xdsoft_datetimepicker .xdsoft_calendar th {
+    height: 20px;
+}
+
+#interactDiv .xdsoft_datetimepicker .xdsoft_timepicker .xdsoft_time_box {
+    height: 125px;
+}
+
+#interactDiv .btn {
+    padding: 0px;
+}
+
+.xdsoft_datetimepicker .xdsoft_timepicker .xdsoft_prev,
+.xdsoft_datetimepicker .xdsoft_timepicker .xdsoft_next {
+    height: 10px;
+}
+
+.editor_footer {
+    position: relative;
+    display: none;
+    height: 35px;
+    padding-right: 20px;
+    background: #F9F9FA;
+    box-shadow:0px -2px 4px 0px rgba(29,77,123,0.1);
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.save_tit {
+    text-align: right;
+    color: #6B7179;
+    width: 50%;
+}
+.footer_btn .edit_btn{
+    outline: 0;
+    height: 25px;
+    padding: 3px 10px;
+    border-radius: 15px;
+    box-shadow: 0 0 0 0;
+    border: 0;
+    font-size: 14px;
+}
+.save_btn {
+    background: #4297FE;
+    color: #fff;
+    margin-right: 10px;
+    cursor: pointer;
+}
+.save_btn:hover {
+    background: #2B80E8;
+}
+.save_btn[disabled="disabled"] {
+    cursor: no-drop;
+}
+.save_btn::before, .commit_btn::before {
+    margin-right: 8px;
+}
+
+.commit_btn {
+    background: #D7ECFC;
+    color: #4196FE;
+}
+.commit_btn:hover {
+    background: #4196FE;
+    color: #D7ECFC;
+}
+.layer{
+    position: absolute;
+    left: 0;
+    top: 95px;
+    height: 30px;
+    width: 120px;
+    line-height: 30px;
+    padding-left: 10px;
+    border-radius: 0 15px 15px 0;
+    background-color: #EE931C;
+    color:#fff;
+    z-index: 2;
+    display: none;
+}
+
+ /* 插入数据元面板样式  start*/
+.datasource-insert-container {
+    display: block;
+    top: 0;
+    left: -210px;
+    width: 210px;
+    height: 100%;
+    box-sizing: border-box;
+    border: 0 !important;
+    transition: all 0.7s;
+    position: fixed; /* 确保容器固定在窗口 */
+}
+.datasource-insert-container .si-swicth {
+    position: absolute;
+    top: 50%;
+    right: -24px;
+    margin-top: -30px;
+    width: 24px;
+    height: 60px;
+    text-align: center;
+    border-radius: 2px 0 0 2px;
+    cursor: pointer;
+    background-color: green;
+}
+.datasource-insert-container .si-swicth .glyphicon {
+    top: 0;
+    margin-top: 23px;
+    color: white;
+}
+
+.datasource-insert-container .datasource-dialog-content {
+    width: auto;
+    height: 100%;
+    padding: .5em .8em;
+    min-height: 0px;
+    max-height: none;
+    display: flex;
+    flex-direction: column;
+}
+
+.datasource-insert-container .nav-tabs li > a {
+    padding: 5px 15px;
+}
+
+.datasource-insert-container .insert-prompt {
+    margin: 10px 0px;
+    color: #F8A31E;
+    font-size: 12px;
+}
+.datasource-insert-container .form-control {
+    width: 100%;
+    height: 30px;
+    padding: 6px 20px 6px 12px;
+}
+.datasource-insert-container .form-inline.glyphicon-search::before {
+    position: absolute;
+    right: 5px;
+    z-index: 10;
+    top: 50%;
+    margin-top: -7px;
+    color: #cccccc;
+}
+.datasource-insert-container .datasource_tab_content {
+    height: 100%;
+    overflow: hidden;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.datasource-insert-container .datasource_tab_content .tab-pane,
+.datasource-insert-container .datasource_tab_content section {
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.datasource-insert-container ul, .datasource-insert-container li {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.datasource-insert-container .datasource-item-list {
+    flex: 1;
+    margin: 10px 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: none;
+}
+.datasource-insert-container .datasource-item-list > li {
+    padding: 5px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.datasource-insert-container .datasource-item-list > .datasource-item {
+    cursor: pointer;
+}
+.datasource-insert-container .datasource-item-list > .datasource-item:hover {
+    color: #6ab4cf;
+    background-color: #f5f5f5;
+}
+.dsd_pager_container {
+    display: none;
+}
+/* 插入数据元面板样式  end*/
+
+
+body .cke_chrome {
+    border: none;
+}
+
+.cke_chrome .cke_top {
+    background-color: #fff;
+    border-bottom: 0;
+    box-shadow: 0px 2px 4px 0px rgba(29,77,123,0.1);
+    z-index: 10;
+}
+.cke_dialog_page_contents[name="hm-document-dialog"] {
+    height: 100% !important;
+    overflow: hidden;
+}
+
+.image_editor_modal .modal-dialog {
+    width: 95%;
+    height: 95%;
+    margin: 10px auto !important;
+}
+.image_editor_modal .modal-header{
+    height: 40px;
+    padding: 10px 15px;
+}
+.image_editor_modal .modal-footer {
+    height: 40px;
+    padding: 10px 15px;
+}
+.image_editor_modal .modal-title {
+    font-size: 14px;
+}
+.btn-default{
+    color:#4096FE !important;
+    background-color: #D7ECFC !important;
+}
+.btn-primary{
+    color: #ffffff !important;
+    background-color: #4096FE !important;
+}
+.image_editor_modal .modal-content {
+    width: 100%;
+    height: 100%;
+}
+.image_editor_modal .modal-body{
+    height: ~"calc(100% - 40px)";
+    padding: 0;
+    overflow: hidden;
+}
+.image_editor_modal .image_editor_iframe {
+    width: 100%;
+    height:100%;
+    margin: 0;
+    padding: 0;
+    border:0;
+}
+.modal-btn-group{
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    width: 140px;
+}
+.modal-btn-group button {
+    padding: 5px 15px;
+    width: 60px;
+    height: 30px;
+    border-radius: 15px;
+    border: none;
+    outline: none !important;
+}
+.quality-datasource-toobar-mark {
+    background-color: #F44336;
+    padding: 5px 5px;
+    border-radius: 5px;
+    color: #fff;
+    max-width: 150px;
+    text-align: center;
+}
+.quality-datasource-toobar-mark:before{
+    border-style: solid;
+    content: '';
+    display: block;
+    height: 0;
+    left: 15%;
+    margin-left: -8px;
+    position: absolute;
+    width: 0;
+    border-color: transparent transparent #F44336 transparent;
+    top: -8px;
+    border-width: 0 8px 8px 8px;
+}
+.hidden-mark{
+    display: none;
+}
+.zoom{
+    position: absolute;
+    bottom: 40px;
+    right: 25px;
+    user-select:none;
+}
+.zoom span{
+    display: block;
+    width: 30px;
+    height: 30px;
+    text-align: center;
+    line-height: 26px;
+    border: 1px solid #ccc;
+    border-radius: 50%;
+    background: #fff;
+    font-size: 24px;
+    cursor: pointer;
+}
+.zoomout{
+    margin: 5px 0;
+}
+.zoomout,.zoomin{
+    font-family: system-ui;
+}
+#enlargeOrShrink img{
+    width: 15px;
+}
+#interact-searchDiv .es-list li.selected{
+    background: #cac7c7;
+}
+
+.agg-modify-dialog ul, .agg-modify-dialog ul li {
+    list-style: none;
+}
+.agg-modify-dialog ul {
+    padding: 0;
+}
+.agg-modify-dialog ul li {
+    padding: 8px 0;
+}
+.style_panel{
+    height:110px !important;
+}
+#graduationRuler{
+    width: 100%;
+    position: fixed;
+    top: 68px;
+    text-align: center;
+    justify-content: center;
+    font-size: 12px;
+}
+#graduationRuler .ruler{
+     display: flex;
+     justify-content: space-between;
+     height: 30px;
+     border: 1px solid #dbb492;
+     background-image: repeating-linear-gradient(90deg, #000 0, #000 1px, transparent 0, transparent 0.25cm),
+     repeating-linear-gradient(90deg, #000 0, #000 1px, transparent 0, transparent 1cm);
+     background-repeat: no-repeat;
+     background-position: 0.5cm 100%;
+     background-size: calc(100% - 1cm) 6px,calc(100% - 1cm) 12px;
+ }
+#graduationRuler span{
+        flex: 1;
+        text-align: center;
+}
+
+ /* 签名图标放大 */
+.cke_button__signature_icon {
+    width: 18px !important;
+    height: 18px !important;
+    background-size: 18px !important;
+}
+.cke_button__signatureundo_icon {
+    width: 18px !important;
+    height: 18px !important;
+    background-size: 18px !important;
+}
+.editor-container{
+    height: 100%;
+}

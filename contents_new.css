@@ -1,0 +1,82 @@
+span[data-hm-node=dropbox] {
+    background-color: transparent;
+    padding-right: 1em;
+    background-image: url('img/drop-down1.png');
+    background-size: 16px 16px;
+    min-width: 5px;
+    border-bottom: 1px solid #3D70B2;
+}
+span[data-hm-node=timebox] {
+    background-color: transparent;
+    padding-right: 18px;
+    background-image: url('img/calendar1.png');
+    background-size: 16px 16px;
+    min-width: 40px;
+    border-bottom: 1px solid #3D70B2;
+}
+span[data-hm-node=timebox][_timeoption=date] {
+    min-width: 80px;
+}
+span[data-hm-node=timebox][_timeoption=datetime] {
+    min-width: 128px;
+}
+span[data-hm-node=searchbox] {
+    background-color: transparent;
+    padding-right: 18px;
+    background-image: url('img/search1.png');
+    background-size: 16px 16px;
+    min-width: 24px;
+    border-bottom: 1px solid #3D70B2;
+}
+span[data-hm-node=labelbox]{
+    background-color: transparent;
+}
+.new-textbox{
+    border-bottom: 1px solid #3D70B2;
+}
+.new-textbox:before,
+.new-textbox:after{
+    color: transparent;
+}
+
+.fa-circle-o:before,
+.fa-dot-circle-o:before,
+.fa-square-o:before,
+.fa-check-square-o:before{
+    color: #3D70B2;
+}
+span[data-hm-node=newtextbox][_isdisabled=true],
+span[data-hm-node=dropbox][_isdisabled=true],
+span[data-hm-node=searchbox][_isdisabled=true],
+span[data-hm-node=timebox][_isdisabled=true] {
+    background-color: #F0F0F0;
+    border-bottom: none;
+}
+.readOnlyClass span[data-hm-node=newtextbox],
+.readOnlyClass span[data-hm-node=dropbox],
+.readOnlyClass span[data-hm-node=searchbox],
+.readOnlyClass span[data-hm-node=timebox] {
+    background-color: #F0F0F0;
+    border-bottom: none;
+}
+.readOnlyClass span[data-hm-node=dropbox],
+span[data-hm-node=dropbox][_isdisabled=true]{
+    background-image: url('img/drop-down2.png');
+}
+.readOnlyClass span[data-hm-node=searchbox],
+span[data-hm-node=searchbox][_isdisabled=true]{
+    background-image: url('img/search2.png');
+}
+.readOnlyClass span[data-hm-node=timebox],
+span[data-hm-node=timebox][_isdisabled=true]{
+    background-image: url('img/calendar2.png');
+}
+span[data-hm-node=dropbox][_noshowicon=true],
+span[data-hm-node=searchbox][_noshowicon=true],
+span[data-hm-node=timebox][_noshowicon=true] {
+    background-image:none;
+    padding-right: 0;
+}
+span[data-hm-node=dropbox][_noshowicon=true]{
+    min-width: 20px;
+}

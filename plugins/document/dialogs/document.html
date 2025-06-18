@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../../../vendor/bootstrap.min.css">
+    <link rel="stylesheet" href="../../../vendor/bootstrap-treeview.min.css">
+    <link rel="stylesheet" type="text/css" href="../../../vendor/jquery-editable-select.css">
+    </link>
+    <link type="text/css" rel="stylesheet" href="../../../vendor/jquery-ui.css">
+    <title>Title</title>
+    <style>
+        html,
+        body {
+            height: 100%;
+            position: relative;
+        }
+
+        .itembox {
+            margin-bottom: 10px;
+        }
+
+        .meta_json {
+            height: calc(100vh - 50px);
+        }
+
+        .nurse_remark textarea {
+            width: 100%;
+            height: 100px;
+        }
+
+        .meta_json textarea {
+            width: 100%;
+            height: 100%;
+        }
+
+        .title {
+            margin-bottom: 10px;
+        }
+
+        .title span {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .title button {
+            margin-left: 30px;
+        }
+
+        table {
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        .table-head {
+            padding-right: 10px;
+        }
+
+        .table-body {
+            height: 300px;
+            overflow-y: scroll;
+        }
+
+        table input[type="text"] {
+            border: none;
+            width: 100%;
+        }
+
+        .table-head th,
+        .tabledata td {
+            text-align: center;
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 6px;
+            border-radius: 8px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cdcdcd;
+            border-radius: 8px;
+        }
+
+        .display_flex {
+            display: flex;
+            justify-content: space-around;
+            font-size: 12px;
+        }
+
+        select {
+            width: 98%;
+        }
+
+        .nursing-name {
+            display: block;
+            width: 100%;
+            height: 100%;
+            overflow-x: auto;
+            min-height: 1em;
+        }
+
+        #dsSel {
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #fff;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <div class="itembox nurse_header">
+            <div class="title">
+                <span>表头配置</span>
+                <button onclick="addFun('meta_nurse_header')">新增</button>
+                <span>自定义表头命名规范：以‘空白’开头</span>
+            </div>
+            <div class="table-head">
+                <table border="1" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr>
+                            <th style="width:10px">序号</th>
+                            <th style="width:40px">第一行名称</th>
+                            <th style="width:40px">第二行名称</th>
+                            <th style="width:40px">第三行名称</th>
+                            <th style="width:20px">宽度</th>
+                            <th style="width:30px">操作</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+
+            <div class="table-body">
+                <table border="1" cellspacing="0" cellpadding="0">
+                    <colgroup>
+                        <col style="width: 10px;">
+                        <col style="width: 40px;">
+                        <col style="width: 40px;">
+                        <col style="width: 40px;">
+                        <col style="width: 20px;">
+                        <col style="width: 30px;">
+                    </colgroup>
+                    <tbody class="tableheader"></tbody>
+                </table>
+            </div>
+
+        </div>
+
+        <div class="itembox nurse_data">
+            <div class="title">
+                <span>内容配置</span>
+                <button onclick="addFun('meta_nurse_data')">新增</button>
+            </div>
+            <div class="table-head">
+                <table border="1" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr>
+                            <th style="width:10px">序号</th>
+                            <th style="width:30px">字段</th>
+                            <th style="width:15px">可编辑</th>
+                            <th style="width:40px">单选/多选</th>
+                            <th style="width:40px">选项</th>
+                            <th style="width:15px">允许清空</th>
+                            <th style="width:15px">拼接符号</th>
+                            <th style="width:12px">多行文本</th>
+                            <th style="width:30px">日期格式配置</th>
+                            <th style="width:12px">护理小结</th>
+                            <th style="width:30px">护理总结</th>
+                            <th style="width:25px">护理小结边框颜色</th>
+                            <th style="width:25px">护理总结边框颜色</th>
+                            <th style="width:25px">小结、总结文字显示</th>
+                            <th style="width:35px">操作</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+            <div class="table-body">
+                <table border="1" cellspacing="0" cellpadding="0">
+                    <colgroup>
+                        <col style="width: 10px;">
+                        <col style="width: 30px;">
+                        <col style="width: 15px;">
+                        <col style="width: 40px;">
+                        <col style="width: 40px;">
+                        <col style="width: 15px;">
+                        <col style="width: 15px;">
+                        <col style="width: 12px;">
+                        <col style="width: 30px;">
+                        <col style="width: 12px;">
+                        <col style="width: 30px;">
+                        <col style="width: 25px;">
+                        <col style="width: 25px;">
+                        <col style="width: 25px;">
+                        <col style="width: 35px;">
+                    </colgroup>
+                    <tbody class="tabledata"></tbody>
+                </table>
+            </div>
+            <span>护理总结 1：是计算所有出入量总数，2：是计算上次总结到当前总数，可满足24小时总结使用。</span>
+        </div>
+
+        <div class="itembox nurse_remark">
+            <div class="title">
+                <span>护理录入页面备注配置</span>
+            </div>
+            <div id="remark">
+                <textarea placeholder="备注"></textarea>
+            </div>
+        </div>
+
+        <div class="itembox meta_js">
+            <div class="title">
+                <span>脚本配置</span>
+            </div>
+            <div class="meta_json" id="meta_js">
+                <textarea placeholder="js脚本"></textarea>
+            </div>
+        </div>
+
+        <div id="dsSel"></div>
+    </div>
+
+
+    <script type="text/javascript" charset="utf-8" src="../../../vendor/jquery.min.js"></script>
+    <script type="text/javascript" charset="utf-8" src="../../../vendor/bootstrap.min.js"></script>
+    <script type="text/javascript" charset="utf-8" src="../../../vendor/bootstrap-treeview.min.js"></script>
+    <script type="text/javascript" src="../../../vendor/jquery-editable-select.js"></script>
+    <script type="text/javascript" src="../../../vendor/jquery-ui.min.js"></script>
+    <script>
+        var dsGroup = {};
+        $(function () {
+            var dsCliTag = null;
+            var parentWindow = window.parent;
+
+            parentWindow.initDocumentInfo = function (_body, folderName) {
+                if (folderName == '护理表单') {
+                    $('.meta_js').remove();
+                } else {
+                    $('.nurse_header').remove();
+                    $('.nurse_data').remove();
+                    $('.nurse_remark').remove();
+                }
+                var meta_json = JSON.parse(decodeURIComponent(_body.getAttribute('meta_json')));
+                if (!meta_json) {
+                    return;
+                }
+                if (folderName == '护理表单') {
+                    $('.meta_js').remove();
+                    // meta_nurse_header
+                    var meta_nurse_header = meta_json['meta_nurse_header'] || {};
+                    var tableheader_tr = '';
+                    $(".tableheader").empty();
+                    if (meta_json['meta_nurse_header_html']) {
+                        $(".tableheader").append(meta_json['meta_nurse_header_html']);
+                    } else {
+                        var arr = [];
+                        var obj = {};
+                        var row1 = meta_nurse_header['1'];
+                        var row2 = meta_nurse_header['2'];
+                        var row3 = meta_nurse_header['3'];
+
+                        for (var i = 0; i < row1.length; i++) {
+                            var row1item = row1[i];
+                            obj = {};
+                            obj['第一行名称'] = row1item['header'];
+                            if (row1item['row'] == 2) {
+                                obj['第二行名称'] = row1item['header'];
+                            }
+                            if (row1item['row'] == 3) {
+                                obj['第二行名称'] = row1item['header'];
+                                obj['第三行名称'] = row1item['header'];
+                            }
+                            if (row1item['style'] && row1item['style']['width']) {
+                                obj['宽度'] = row1item['style']['width'];
+                            }
+
+                            var row1col = row1item['col'];
+                            if (!row1item['row'] && !row1col && row2) {
+                                row1col = 1;
+                            }
+
+                            if (row1col > 0) {
+                                var index = row1col;
+                                if (row3) {
+                                    var row2colSum = 0;
+                                    for (var x = 0; x < row2.length; x++) {
+                                        row2colSum += (row2[x]['col'] || 1);
+                                        if (row2colSum == row1col) {
+                                            index = x + 1;
+                                            break;
+                                        }
+                                    }
+                                }
+                                var row1colArr = row2.splice(0, index);
+                                for (var j = 0; j < row1colArr.length; j++) {
+                                    var copyobj = Object.assign({}, obj);
+
+                                    var row2item = row1colArr[j];
+                                    copyobj['第二行名称'] = row2item['header'];
+                                    if (row2item['row'] == 2) {
+                                        copyobj['第三行名称'] = row2item['header'];
+                                    }
+                                    if (row2item['style'] && row2item['style']['width']) {
+                                        copyobj['宽度'] = row2item['style']['width'];
+                                    }
+
+                                    var row2col = row2item['col'];
+                                    if (!row2item['row'] && !row2col && row3) {
+                                        row2col = 1;
+                                    }
+                                    if (row2col > 0) {
+                                        var row2colArr = row3.splice(0, row2col);
+                                        for (var z = 0; z < row2colArr.length; z++) {
+                                            var copyobj1 = Object.assign({}, copyobj);
+
+                                            var row3item = row2colArr[z];
+                                            copyobj1['第三行名称'] = row3item['header'];
+
+                                            if (row3item['style'] && row3item['style']['width']) {
+                                                copyobj1['宽度'] = row3item['style']['width'];
+                                            }
+                                            arr.push(copyobj1);
+                                        }
+                                    } else {
+                                        arr.push(copyobj);
+                                    }
+                                }
+                            } else {
+                                arr.push(obj);
+                            }
+                        }
+
+                        for (var i = 0; i < arr.length; i++) {
+                            tableheader_tr += '<tr>' +
+                                '<td>' + (i + 1) + '</td>' +
+                                '<td><input type="text" name="第一行名称" value="' + (arr[i]['第一行名称'] || '') + '"></td>' +
+                                '<td><input type="text" name="第二行名称" value="' + (arr[i]['第二行名称'] || '') + '"></td>' +
+                                '<td><input type="text" name="第三行名称" value="' + (arr[i]['第三行名称'] || '') + '"></td>' +
+                                '<td><input type="text" name="宽度" placeholder="100px" value=' + (arr[i]['宽度'] || '') + '></td>' +
+                                '<td class="display_flex"><button type="button" onclick="deleteFun(this)">删除</button><button type="button" onclick="insertFun(this)">插入</button></td>' +
+                                '</tr>';
+                        }
+                        $(".tableheader").append(tableheader_tr);
+                    }
+
+                    // meta_nurse_data
+                    var meta_nurse_data = meta_json['meta_nurse_data'] || [];
+                    var tabledata_tr = '';
+                    $(".tabledata").empty();
+                    var dateTypeOptions = ['yyyy-MM-dd HH:mm', 'MM-dd HH:mm', 'yyyy-MM-dd', 'MM-dd'];
+                    for (var i = 0; i < meta_nurse_data.length; i++) {
+                        var dateTypeOptionStr = '<option value="">请选择</option>';
+                        dateTypeOptions.forEach(function (element) {
+                            dateTypeOptionStr += '<option value="' + element + '" ' + (meta_nurse_data[i]["dateType"] == element ? 'selected' : '') + '>' + element + '</option >';
+                        });
+
+                        var field = meta_nurse_data[i]["field"];
+                        var dropOption = meta_nurse_data[i]["dropValue"] || meta_nurse_data[i]["multiDropValue"];
+                        tabledata_tr += '<tr>' +
+                            '<td>' + (i + 1) + '</td>' +
+                            '<td><span class="nursing-name" onClick="showDsSel(this)">' + field + '</span></td>' +
+                            '<td><input type="checkbox" name="editable" value=true ' + (meta_nurse_data[i]["editable"] ? 'checked' : '') + '></td>' +
+                            '<td><select name="dropType"><option value="">请选择</option><option value="单选" ' + (meta_nurse_data[i]["dropValue"] ? 'selected' : '') + '>单选</option><option value="多选" ' + (meta_nurse_data[i]["multiDropValue"] ? 'selected' : '') + '>多选</option></select></td>' +
+                            '<td><input type="text" name="dropOption" placeholder=[{"label":"","value":""}] value=' + (dropOption ? JSON.stringify(dropOption).replace(/ /g, '') : '') + '></td>' +
+                            '<td><input type="checkbox" name="clear" value=true ' + (meta_nurse_data[i]["clear"] ? 'checked' : '') + '></td>' +
+                            '<td><input type="text" name="jointSymbol" placeholder="," value="' + (meta_nurse_data[i]["jointSymbol"] || '') + '"></td>' +
+                            '<td><input type="checkbox" name="textArea" value=true ' + (meta_nurse_data[i]["textArea"] ? 'checked' : '') + '></td>' +
+                            '<td><select name="dateType">' + dateTypeOptionStr + '</td>' +
+                            '<td><input type="checkbox" name="calculateTotal" value=true ' + (meta_nurse_data[i]["calculateTotal"] ? 'checked' : '') + '></td>' +
+                            '<td><select name="calculateAll"><option value="">请选择</option><option value="1" ' + ((meta_nurse_data[i]["calculateAll"]==true||meta_nurse_data[i]["calculateAll"]=='1') ? 'selected' : '') + '>1</option><option value="2" ' + (meta_nurse_data[i]["calculateAll"]=='2' ? 'selected' : '') + '>2</option></select></td>' +
+                            '<td><input type="text" name="calculateTotalColor" placeholder="red" value="' + (meta_nurse_data[i]["calculateTotalColor"] || '') + '"></td>' +
+                            '<td><input type="text" name="calculateAllColor" placeholder="red" value="' + (meta_nurse_data[i]["calculateAllColor"] || '') + '"></td>' +
+                            '<td><input type="checkbox" name="showSumType" value=true ' + (meta_nurse_data[i]["showSumType"] ? 'checked' : '') + '></td>' +
+                            '<td class="display_flex"><button type="button" onclick="deleteFun(this)">删除</button><button type="button" onclick="insertFun(this)">插入</button></td>' +
+                            '</tr>';
+
+                    }
+                    $(".tabledata").append(tabledata_tr);
+                    if (meta_json['meta_nurse_remark']) {
+                        $('#remark').children('textarea').val(meta_json['meta_nurse_remark']);
+                    }
+                } else {
+                    $('.nurse_header').remove();
+                    $('.nurse_data').remove();
+                    $('.nurse_remark').remove();
+                    if (meta_json['meta_js']) {
+                        $('#meta_js').children('textarea').val(meta_json['meta_js']);
+                    }
+                }
+
+            };
+            parentWindow.commitDocumentInfo = function (_body, folderName) {
+                var result = '';
+                if (folderName == '护理表单') {
+                    var tableheadertrs = $('.tableheader').find('tr');
+                    var tableheaderobj = { '1': [] };
+                    var row = 1;
+                    var col1 = tableheadertrs.find('[name="第一行名称"]');
+                    var col2 = tableheadertrs.find('[name="第二行名称"]');
+                    var col3 = tableheadertrs.find('[name="第三行名称"]');
+                    var col1name = [];
+                    var col2name = [];
+                    var col3name = [];
+                    col1.each(function () {
+                        col1name.push(this.value);
+                    });
+                    col2.each(function () {
+                        // if (!col1name.includes(this.value)) {
+                            col2name.push(this.value);
+                        // }
+                    });
+                    col3.each(function () {
+                        // if (!col1name.includes(this.value) && !col2name.includes(this.value)) {
+                            col3name.push(this.value);
+                        // }
+                    });
+                    var existName1 = [];
+                    var existName2 = [];
+                    for (var i = 0; i < tableheadertrs.length; i++) {
+                        var _tr = $(tableheadertrs[i]);
+                        if (i == 0) {
+                            if (_tr.find('input:eq(1)').val()) {
+                                row = 2;
+                                tableheaderobj['2'] = [];
+                                if (_tr.find('input:eq(2)').val()) {
+                                    row = 3;
+                                    tableheaderobj['3'] = [];
+                                }
+                            }
+                        }
+                        var row1name = _tr.find('[name="第一行名称"]').val();
+                        var _width = _tr.find('[name="宽度"]').val();
+                        var _customheader = _tr.find('[name="自定义表头"]').val();
+                        if (!existName1.includes(row1name) || !row1name) {
+                            var num1 = computeNum(row1name, col1name);
+                            var row1 = 0;
+                            _tr.find('input[name*="名称"]').each(function () {
+                                if ($(this).val() == row1name) {
+                                    row1++;
+                                }
+                            });
+                            if (row1 > row) {
+                                row1 = row;
+                            }
+                            existName1.push(row1name);
+                            var obj1 = {
+                                'header': row1name
+                            }
+                            if (row1 > 1) {
+                                obj1['row'] = row1;
+                            }
+                            if (num1 > 1) {
+                                obj1['col'] = num1;
+                                var coltd = tableheadertrs.find('[value="' + row1name + '"]').closest('tr').find('[name="宽度"]');
+                                var wid = 0;
+                                coltd.each(function () {
+                                    if (this.value) {
+                                        wid += parseFloat(this.value);
+                                    }
+                                });
+                                obj1['style'] = {
+                                    'width': wid + 'px'
+                                }
+                            }
+                            if (_width && num1 == 1) {
+                                obj1['style'] = {
+                                    'width': _width
+                                }
+                            }
+                            if (row1name.indexOf('空白') != -1) {
+                                obj1['association_dataSourceName'] = row1name;
+                                obj1['editable'] = true;
+                                obj1['header'] = '';
+                            }
+                            tableheaderobj['1'].push(obj1);
+                        }
+                        var row2name = _tr.find('[name="第二行名称"]').val();
+                        if (row2name!=row1name) {
+                            if (!existName2.includes(row1name+row2name) && tableheaderobj['2']) {
+                                var num2 = computeNum(row2name, col2name);
+                                var row2 = 0;
+                                _tr.find('input[name*="名称"]').each(function () {
+                                    if ($(this).val() == row2name) {
+                                        row2++;
+                                    }
+                                });
+                                existName2.push(row1name+row2name);
+                                var obj2 = {
+                                    'header': row2name
+                                }
+                                if (row2 > 1) {
+                                    obj2['row'] = row2;
+                                }
+                                if (num2 > 1) {
+                                    obj2['col'] = num2;
+                                }
+                                if (_width && num2 == 1) {
+                                    obj2['style'] = {
+                                        'width': _width
+                                    }
+                                }
+                                if (row2name.indexOf('空白') != -1) {
+                                    obj2['association_dataSourceName'] = row2name;
+                                    obj2['editable'] = true;
+                                    obj2['header'] = '';
+                                }
+                                tableheaderobj['2'].push(obj2);
+                            }
+                        }
+                        var row3name = _tr.find('[name="第三行名称"]').val();
+                        if (row3name!=row1name && row3name!=row2name && tableheaderobj['3']) {
+                            var obj3 = {
+                                'header': row3name
+                            }
+                            if (_width) {
+                                obj3['style'] = {
+                                    'width': _width
+                                }
+                            }
+                            if (row3name.indexOf('空白') != -1) {
+                                obj3['association_dataSourceName'] = row3name;
+                                obj3['editable'] = true;
+                                obj3['header'] = '';
+                            }
+                            tableheaderobj['3'].push(obj3);
+                        }
+                    }
+
+                    var tabledatatrs = $('.tabledata').find('tr');
+                    var tabledataArr = [];
+                    var arr = ['editable', 'dropType', 'clear', 'jointSymbol', 'textArea', 'dateType', 'calculateTotal', 'calculateAll',
+                        'calculateTotalColor', 'calculateAllColor', 'showSumType'];
+                    for (var i = 0; i < tabledatatrs.length; i++) {
+                        var _tr = $(tabledatatrs[i]);
+                        var field = _tr.find('.nursing-name').text() || '';
+                        if (!field) {
+                            result = '名称不能为空';
+                            break;
+                        }
+
+                        var o = {
+                            'field': field,
+                            'style': {
+                                'width': $(tableheadertrs[i]).find('[name="宽度"]').val()
+                            }
+                        }
+                        if (field.indexOf('签名') != -1) {
+                            o['search'] = true;
+                        }
+                        for (var j = 0; j < arr.length; j++) {
+                            var name = arr[j];
+                            var val = _tr.find('[name="' + name + '"]').val();
+                            if (name == 'editable' || name == 'textArea' || name == 'calculateTotal' || name == 'showSumType' || name == 'clear' ) {
+                                val = _tr.find('[name="' + name + '"]:checked').val();
+                                if (val) {
+                                    val = true;
+                                } else {
+                                    val = false;
+                                }
+                            }
+                            if (val) {
+                                if (name == 'dropType') {
+                                    if (_tr.find('[name="dropOption"]').val()) {
+                                        if (val == '单选') {
+                                            o['dropValue'] = JSON.parse(_tr.find('[name="dropOption"]').val());
+                                        } else if (val == '多选') {
+                                            o['multiDropValue'] = JSON.parse(_tr.find('[name="dropOption"]').val());
+                                        }
+                                    } else {
+                                        result = '单选/多选  选项不能为空';
+                                    }
+
+                                } else {
+                                    o[name] = val;
+                                    if (name == 'dateType' && val) {
+                                        o['textFormat'] = true;
+                                    }
+                                }
+                            }
+
+                        }
+                        tabledataArr.push(o);
+                    }
+                    var ele = $('.tableheader').clone();
+                    ele.find('input').each(function () {
+                        $(this).attr('value', $(this).val());
+                    });
+                    var _meta_json = {
+                        'meta_nurse_header': tableheaderobj,
+                        'meta_nurse_header_html': ele.html(),
+                        'meta_nurse_data': tabledataArr,
+                        'meta_nurse_remark': $('#remark').children('textarea').val()
+                    };
+                    console.log(_meta_json);
+                    if ($('.tabledata').find('tr').length != $('.tableheader').find('tr').length) {
+                        result = '表头和内容不对应';
+                    }
+                    _body.setAttribute('meta_json', encodeURIComponent(JSON.stringify(_meta_json)));
+                } else {
+                    var meta_js = $('#meta_js').children('textarea').val();
+                    var meta_json = { 'meta_js': meta_js };
+                    _body.setAttribute('meta_json', encodeURIComponent(JSON.stringify(meta_json)));
+                }
+                return result;
+            }
+
+        });
+        function addFun(type) {
+            var index = 0;
+            if (type == 'meta_nurse_header') {
+                index = $(".tableheader").find('tr').length + 1;
+                $(".tableheader").append(
+                    '<tr>' +
+                    '<td>' + index + '</td>' +
+                    '<td><input type="text" name="第一行名称" value=""></td>' +
+                    '<td><input type="text" name="第二行名称" value=""></td>' +
+                    '<td><input type="text" name="第三行名称" value=""></td>' +
+                    '<td><input type="text" name="宽度" value="40px" placeholder="100px"></td>' +
+                    '<td class="display_flex"><button type="button" onclick="deleteFun(this)">删除</button><button type="button" onclick="insertFun(this)">插入</button></td>' +
+                    '</tr>'
+                );
+            } else if (type == 'meta_nurse_data') {
+                index = $(".tabledata").find('tr').length + 1;
+                $(".tabledata").append(
+                    '<tr>' +
+                    '<td>' + index + '</td>' +
+                    '<td><span class="nursing-name" onClick="showDsSel(this)"></span></td>' +
+                    '<td><input type="checkbox" name="editable" value=true></td>' +
+                    '<td><select name="dropType"><option value="">请选择</option><option value="单选">单选</option><option value="多选">多选</option></select></td>' +
+                    '<td><input type="text" name="dropOption" placeholder=[{"label":"","value":""}] value=""></td>' +
+                    '<td><input type="checkbox" name="clear" value=true></td>' +
+                    '<td><input type="text" name="jointSymbol" value="" placeholder=","></td>' +
+                    '<td><input type="checkbox" name="textArea" value=true></td>' +
+                    '<td><select name="dateType"><option value="">请选择</option><option value="yyyy-MM-dd HH:mm">yyyy-MM-dd HH:mm</option><option value="MM-dd HH:mm">MM-dd HH:mm</option><option value="yyyy-MM-dd">yyyy-MM-dd</option><option value="MM-dd">MM-dd</option></select></td>' +
+                    '<td><input type="checkbox" name="calculateTotal" value=true></td>' +
+                    // '<td><input type="checkbox" name="calculateAll" value=true></td>' +
+                    '<td><select name="calculateAll"><option value="">请选择</option><option value="1">1</option><option value="2">2</option></select></td>' +
+                    '<td><input type="text" name="calculateTotalColor" value="" placeholder="red"></td>' +
+                    '<td><input type="text" name="calculateAllColor" value="" placeholder="red"></td>' +
+                    '<td><input type="checkbox" name="showSumType" value=true></td>' +
+                    '<td class="display_flex"><button type="button" onclick="deleteFun(this)">删除</button><button type="button" onclick="insertFun(this)">插入</button></td>' +
+                    '</tr>'
+                );
+            }
+
+        }
+        function showDsSel(that) {
+            dsCliTag = that;
+            var $div = $('#dsSel');
+            $div.html('');
+            initDsSel();
+            $('#interact-search').val($(that).text() || '');
+            var $node = $(that);
+            var $iframe = $(window.document.body);
+
+            $div.css('top', $node.offset().top);
+            $div.css('left', $node.offset().left);
+            $div.css('display', 'block');
+
+            $div.find('input').blur(function () {
+                $div.css('display', 'none');
+            });
+            $div.find('input').focus();
+
+            // setTimeout(function () {
+
+            //     var divTop = $node.offset().top - $($node[0].ownerDocument).scrollTop() + $iframe.offset().top;
+            //     var divLeft = $node.offset().left - $($node[0].ownerDocument).scrollLeft() + $iframe.offset().left;
+
+            //     $div.css('top', 0);
+            //     $div.css('left', 0);
+            //     $div.css('display', 'block');
+
+            //     if ((divTop - $div.height() >= $iframe.offset().top) && ($iframe.height() - $div.height() < divTop - $iframe.offset().top)) {
+            //         $div.css('top', divTop - $div.height());
+            //     } else {
+            //         $div.css('top', divTop + $node.height());
+            //     }
+            //     if ($iframe.width() - $div.width() < divLeft) {
+            //         $div.css('left', divLeft - $div.width());
+            //     }
+            //     else {
+            //         $div.css('left', divLeft);
+            //     }
+            // }, 100);
+        }
+        function deleteFun(btn) {
+            $(btn).closest('tr').nextAll().each(function(){
+                $(this).find('td:eq(0)').text(parseInt($(this).find('td:eq(0)').text())-1);
+            });
+            $(btn).closest('tr').remove();
+        }
+        function insertFun(btn) {
+            var insertTr = $(btn).closest('tr').clone();
+            insertTr.find('.nursing-name').text('');            
+            insertTr.find('input').val('');
+            insertTr.find('select').val('');
+            insertTr.find('[name="宽度"]').val('40px');
+            $(btn).closest('tr').after(insertTr);
+            $(btn).closest('tr').nextAll().each(function(){
+                $(this).find('td:eq(0)').text(parseInt($(this).find('td:eq(0)').text())+1);
+            });
+
+        }
+        function computeNum(name, arr) {
+            var result = arr.filter(function (item) {
+                return item == name;
+            });
+            var num = result.length;            
+            if (result.length > 1) {
+                var index = arr.indexOf(name);
+                for (var i = 0; i < result.length+1; i++) {
+                    if (arr[index+i] !=name) {
+                        num = i;
+                        break;
+                    }
+                }
+            }
+            return num;
+        }
+        function initDsSel() {
+            $('#dsSel').html('<div id="interact-searchDiv" class="panel-body"><select id="interact-search" style="width: 100%;"></select></div>');
+            var $div = $('#interact-searchDiv');
+            var selectable = $div.find('select').editableSelect({
+                filter: false,
+                onInput: function (self, that) {
+                    initDsOptopns(that);
+                }
+            });
+
+            function initDsOptopns(that) {
+                var datas = window.parent.global_ds_list || [];
+                if (datas && datas.length > 0) {
+                    // if (datas.length > 100) datas = datas.slice(0, 100);
+                    var li = "";
+                    var fk = $('#interact-search').val().replace(/\s*/g, '');
+                    $.each(datas, function (index, obj) {
+
+                        var n = obj['name'];
+                        var c = obj['code'];
+                        var dc = obj['dictCode'] || '';
+
+                        if (!dsGroup[n]) {
+                            dsGroup[n] = obj;
+                        }
+                        if (!fk || n.indexOf(fk) > -1 || c.indexOf(fk) > -1) {
+                            li += "<li class=es-visible code='" + c + "' name='" + n + "'>" + n + "</li>";
+                        }
+
+                    })
+                    $div.find('ul').html(li);
+                    //that.highlight(0);
+                } else {
+                    $div.find('ul').html('<li class="no-result-tit">暂未搜索到对应结果!</li>');
+                }
+            }
+            initDsOptopns(this);
+            selectable.on('select.editable-select', function (e, li) {
+                var code = li.attr("code");
+                var name = li.attr("name") || '';
+                $(dsCliTag).text(name.replace('[$日期_时间$]', ''));
+                var selDs = dsGroup[name] || {};
+                if (selDs['dictList'] && selDs['dictList'].length > 0) {
+
+                    var dropVal = [];
+
+                    for (var ci = 0; ci < selDs['dictList'].length; ci++) {
+                        dropVal.push({ "label": selDs['dictList'][ci]['description'], "value": selDs['dictList'][ci]['val'] });
+                    }
+                    $($(dsCliTag).parents('tr')).find('input[name="dropOption"]').val(JSON.stringify(dropVal));
+                }
+            })
+
+
+        }
+        //initDsSel();
+    </script>
+</body>
+
+</html>

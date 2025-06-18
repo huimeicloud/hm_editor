@@ -1,0 +1,57 @@
+/*-------------------------------- 提示框样式 --------------------------------------*/
+#hmGrowl {
+    position: absolute;
+    width: 400px;
+    bottom: calc(50% - 35px);
+    left: calc(50% - 225px);
+    text-align: justify;
+    /* z-index: 1099; */
+    z-index: 11111;
+}
+
+#hmGrowl .growl {
+    display: flex;
+    align-items: center;
+    width: 450px;
+    height: 100px;
+    margin-bottom: 10px;
+    padding: 20px;
+    border-radius: 10px;
+    color: #fff;
+    opacity: 0.9;
+}
+
+#hmGrowl .growl.info {
+    background: #4096FE;
+}
+#hmGrowl .growl.success {
+    background: #36BE6E;
+}
+#hmGrowl .growl.error {
+    background: #EB564A;
+}
+
+#hmGrowl .growl i {
+    font-size: 60px;
+}
+
+#hmGrowl .growl .growl-content {
+    width: 80%;
+    flex-grow: 1;
+    padding: 0 15px;
+    word-break: break-all;
+}
+
+#hmGrowl .growl .growl-content .title {
+  font-size: 20px;
+    margin-bottom: 5px;
+}
+
+#hmGrowl .growl .growl-content .desc {
+    font-weight: lighter;
+}
+
+#hmGrowl .growl span {
+    align-self: self-start;
+    cursor: pointer;
+}

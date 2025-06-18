@@ -1,0 +1,191 @@
+html {
+	background: #ffffff;
+}
+body {
+	margin-bottom: 0px !important;
+	box-shadow: none;
+}
+
+table.dashed-border td,table.dashed-border th{
+    border: 0px;
+}
+
+td[_emrstyle ~='_if(overflow){breakparagraph}']{
+    white-space: normal;word-break:break-all;line-height: 1;
+}
+
+span[data-hm-node]{
+	color:black !important;
+	background-image:none !important;
+}
+
+.new-textbox:before,.new-textbox:after{
+    visibility: hidden!important;
+    /*display: none !important;*/
+}
+
+[_print_underline]{
+	border-bottom:1px solid !important;
+}
+[_print_cascade]{
+	display: none !important;
+}
+/*[_underline]{*/
+/*	border-bottom:1px solid !important;*/
+/*}*/
+[_print_color=red]{
+	color: red !important;
+}
+span.fa-check-square-o[data-hm-node=checkbox][_color=red]{
+    color: red !important;
+}
+span.fa-dot-circle-o[data-hm-node=radiobox][_color=red]{
+    color: red !important;
+}
+[_print_datasource=none]{
+	display: none !important;
+}
+
+[_paperheader]{
+	background-color: white !important;
+}
+
+[_paperfooter]{
+	background-color: white !important;
+}
+[data-hm-node] {
+	background-color: transparent !important;
+}
+
+div.emrWidget{
+	border: 0px !important;
+}
+
+div.emrWidget-content{
+	outline: none !important;
+}
+
+._paragraphHide{
+	display: none !important;
+}
+
+._printHide{
+	display: none !important;
+}
+/* 病历中下拉菜单边框显示样式 */
+span[data-hm-node=dropbox][_border] {
+    width: 14px;
+    height: 14px;
+    line-height: 1;
+    min-width: 14px;
+    min-height: 14px;
+    text-align: center;
+    font-size: 14px;
+    border: 1px solid #000;
+    vertical-align: text-bottom;
+}
+span[type='button']{
+	text-rendering: auto;
+
+    letter-spacing: normal;
+    word-spacing: normal;
+    line-height: normal;
+    text-transform: none;
+    text-indent: 0px;
+    text-shadow: none;
+    display: inline-block;
+    text-align: center;
+    align-items: flex-start;
+    cursor: default;
+    box-sizing: border-box;
+    background-color: unset;
+    margin: 0em;
+    padding: 1px 6px;
+    /* border-width: 1px;
+    border-style: outset;
+    border-color: #5c5959;; */
+    border:unset;
+
+}
+.hm-readonly-bgcolor{
+    background-color: transparent !important;
+}
+
+span[data-hm-node=searchbox],
+span[data-hm-node=expressionbox] {
+    vertical-align: bottom;
+}
+
+
+/* region 分页打印样式 */
+html {
+    padding: 0;
+}
+
+body {
+    margin: 0;
+    background: white;
+}
+
+/* TODO 暂时解决聚合病历中由于行末过多空格引起的打印缩放问题, 未根治 */
+body {
+    overflow: hidden;
+}
+
+/* 每页页面 */
+.hm-logic-page{
+    background: white;
+    margin-bottom: 0;
+    box-shadow: none;
+    /*cursor: text;*/
+    overflow-x: hidden;
+    overflow-y: visible;
+}
+
+/* 页面之间的部分打印时不能占位 */
+.hm-page-splitter {
+    display: none;
+}
+
+/*当前鼠标移动到病历上的边框 与 在左侧点击病历时的边框*/
+.cke_widget_wrapper:hover > .cke_widget_element, .emrWidget-content {
+    outline: none !important;
+}
+
+.justify-last {
+    text-align-last: justify;
+}
+
+/* chrome 宋体: 打印样式不支持宋体的加粗, 所以加个阴影以假乱真 */
+strong, .simsun-bold-print {
+    text-shadow:0.1pt 0px 0px black,0.2pt 0px 0px black,0.3pt 0px 0px black,-0.2pt 0px 0px black,0px 0.2pt 0px black,0px -0.2pt 0px black;
+    /*text-shadow:0.15pt 0px 0px black,0.25pt 0px 0px black,0.35pt 0px 0px black,-0.25pt 0px 0px black,0px 0.25pt 0px black,0px -0.25pt 0px black;*/
+    /*font-weight: normal;*/
+}
+
+.cke_page_split_mark {
+    display: none;
+}
+/* 新续打 */
+.breakLineEleNew{
+    display: none;
+}
+button[data-hm-id]{
+    border:unset;
+}
+/* endregion */
+
+.check-error-backcolor{
+    background-color: unset;
+}
+
+.cell-bottom-line{
+    border-bottom: 1px solid #000 !important;
+}
+span[diag='1']{
+    display: none !important;
+}
+
+span[operation='1']{
+    display: none !important;
+}
