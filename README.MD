@@ -1,4 +1,4 @@
-# 开源编辑器说明文档
+# 惠每电子病历编辑器
 
 # 1、简介
 
@@ -28,7 +28,8 @@ AI时代已到来，医疗行业急需智能化工具提升效率。然而，市
 
 2、下载 docker-compose.yml
 
-3、执行命令：docker-compose -f /path/to/docker-compose.prod.yml up -d
+3、执行命令：
+ docker-compose -f /path/to/docker-compose.prod.yml up -d
 
 ### 2.1.2 源码编译部署
 
@@ -37,59 +38,14 @@ AI时代已到来，医疗行业急需智能化工具提升效率。然而，市
 2、部署编辑器
 
 进入hm_editor目录下执行一下命令：
-
+```shell
 -- 安装依赖包
-
 npm install
-
 -- 编译
-
 grunt release
-
 -- 启动
-
 nodemon index.js
-
-（如果不使用自带的数据元管理和模板制作功能，可跳过后续步骤）
-
-3、安装mongodb4.0，并导入脚本。
-
-4、安装后台管理后台部分
-
-（确保已安装Java环境，本系统使用Java1.8）
-
-进入hm_editor.service目录下执行以下命令：
-
--- 编译
-
-mvn clean compile
-
--- 启动
-
--- 修改配置文件application.yml中的数据库地址
-
-cd admin-service
-
-mvn spring-boot:run
-
-5、安装后台管理前端
-
-（确保已安装node环境，本系统使用node14.18）
-
-进入hm_editor.admin.client目录执行以下命令：
-
--- 安装依赖包
-
-npm install
-
--- 启动
-
-npm start
-
-6、安装Nginx，统一端口来转发服务
-
-修改配置文件nginx.conf，启动nginx。
-
+```
 ## 2.2 页面
 
 部署完成后可以打开以下两个页面试用系统。
@@ -105,189 +61,51 @@ npm start
 ![image.png](https://alidocs.oss-cn-zhangjiakou.aliyuncs.com/res/2M9qP5joJg2VDO01/img/0ecb5b26-c43d-4f44-9622-9a62e3cc330f.png)
 
 ## 2.3 对接
-
-#### 1. 引入SDK核心文件
-
-在HTML页面头部引入HMEditor的iframe加载器：
-
+15行核心代码，实现：Hello HmEditor!
+完整的HTML代码如下：
 ```html
-<script src="http://ip:port/hmEditor/iframe/HmEditorIfame.js"></script>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Hello HmEditor</title>
+    <script src="https://editor.huimei.com/hmEditor/iframe/HmEditorIfame.js"></script>
+</head>
+<body>
+    <h2>Hello HmEditor</h2>
+    <div id="editorContainer" style="width: 850px; height: calc(100vh - 85px); border: 1px solid #ccc;"></div>
+    <script>
+        HMEditorLoader.createEditorAsync({
+            container: "#editorContainer",
+            sdkHost: "https://editor.huimei.com/hmEditor"
+        })
+        .then(function(editor) {
+            var editorInstance = editor;
+            mockDemoContent().then(function(demoContent) {
+                // 设置病历内容
+                editorInstance.setDocContent({
+                    code: 'doc001', // 病历ID
+                    docTplName: '测试病历名称',
+                    docContent: demoContent
+                });
+            })
+        })
+        .catch(function(error) {
+            console.error("编辑器初始化失败:", error);
+        });
+        // 获取测试用数据
+        function mockDemoContent() {
+            return fetch('https://editor.huimei.com/hmEditor/demo/file/admission_record.html')
+                .then(function(response) { return response.text(); });
+        }
+    </script>
+</body>
+</html>
 ```
+效果如图：
 
-#### 2. 创建编辑器实例
-
-```javascript
-HMEditorLoader.createEditorAsync({
-    container: "#editorContainer",
-    sdkHost: "https://your-domain.com/static",
-    // 模式设置
-    designMode: false,  // 是否启用设计模式
-    reviseMode: false,  // 是否启用修订模式
-    readOnly: true,     // 是否启用只读模式
-})
-.then(function(result) {
-    // 编辑器初始化完成
-    var editorId = result.id;
-    var editorInstance = result.instance;
-
-    // 执行编辑器操作
-    // 调用editorInstance方法完成文档操作
-    // 例如：editorInstance.setContent("<p>编辑器内容</p>");
-})
-.catch(function(error) {
-    console.error("编辑器初始化失败:", error);
-});
+```markdown
+![效果图](http://hm-img-storage.oss-cn-hangzhou.aliyuncs.com/help_img/1750069105344.png)
 ```
-
-#### 3. 实例获取与操作
-
-```javascript
-HMEditorLoader.getEditorInstanceAsync(editorId)
-    .then(editor => {
-        // 基础操作
-        editor.setDocContent({ /* 文档内容对象 */ });
-
-        // 高级操作示例
-        editor.execCommand("bold");               // 执行加粗命令
-        editor.insertDataAtCursor("新插入内容");  // 光标位置插入文本
-        editor.downloadPdf();                     // 导出PDF
-    })
-    .catch(error => console.error(error));
-```
-
-#### 4. 核心功能实现
-
-##### 4.1 文档内容管理
-
-```javascript
-// 设置完整文档内容
-editor.setDocContent({
-    code: 'doc001',
-    docTplName: '病历模板',
-    docContent: '<p>患者姓名：<span data-key="name">张三</span></p>',
-    data: [
-        { keyCode: 'name', keyValue: '李四' }
-    ]
-});
-
-// 在指定位置插入新文档
-editor.insertDocContent(1, [
-    {
-        code: 'doc002',
-        docTplName: '检查报告',
-        docContent: '<p>体温：36.5℃</p>'
-    }
-]);
-```
-
-##### 4.2 功能扩展(水印、只读)
-
-```javascript
-// 添加自定义菜单
-editor.addCustomMenu([
-    {
-        label: '插入签名',
-        onClick: () => editor.insertImageAtCursor({ src: '/signature.png' })
-    }
-]);
-
-// 设置文档水印
-editor.setDocWatermark({
-    text: '张三-XX人民医院',
-    color: '#999',
-    opacity: 0.3
-});
-```
-
-##### 4.3 获取病历内容
-
-##### 4.3.1获取文档HTML
-
-**方法名**：`getDocHtml(code)`
-
-**参数**：
-
-*   `code`：字符串类型，文档唯一编号。
-
-
-**功能**：根据文档编号获取对应文档的HTML内容。
-
-**示例**：
-
-```javascript
-var docHtml = editorInstance.getDocHtml('doc001');
-```
-
-**返回格式**：
-返回一个数组，包含一个对象，对象结构如下：
-
-```javascript
-[
-  {
-    code: '文档唯一编号',  // 文档编号
-    html: '文档html文本'   // 文档的HTML内容
-  }
-]
-```
-
-##### 4.3.2 获取文档数据元值
-
-**方法名**：`getDocData(code, keyList)`
-
-**参数**：
-
-*   `code`：字符串类型，文档唯一编号。
-
-*   `keyList`：数组类型，指定需要获取的数据元键（如`['name', 'age']`）。
-
-
-**功能**：根据文档编号和指定的数据元键列表，获取对应文档的结构化数据元信息。
-
-**示例**：
-
-```javascript
-var docData = editorInstance.getDocData('doc001', ['name', 'age']);
-```
-
-**返回格式**：
-返回一个数组，包含一个对象，对象结构如下：
-
-```javascript
-[
-  {
-    code: '文档唯一编号',  // 文档编号
-    data: [
-      {
-        keyCode: '数据元编码',    // 数据元唯一编码
-        keyValue: '数据元内容或数据元内容数组', // 数据元内容（可能为字符串或数组）
-        keyId: '数据元id',       // 数据元标识符
-        keyName: '数据元名称'     // 数据元显示名称
-      },
-      ... // 其他数据元对象
-    ]
-  }
-]
-```
-
-**说明**：
-
-*   `keyValue`字段的值类型取决于数据元定义，可能为字符串或数组。
-
-*   若`keyList`未指定或为空，可能返回所有数据元（需根据实际实现逻辑确认）。
-
-
-##### 4.4 其他常用方法
-
-|  操作类型  |  方法名  |  主要用途  |
-| --- | --- | --- |
-|  内容操作  |  `setDocContent`  |  初始化或更新文档内容  |
-|   |  `insertDocContent`  |  在指定位置插入新文档  |
-|   |  `getDocHtml`  |  获取文档HTML内容  |
-|   |  `getDocData`  |  或去病历数据元值  |
-|  功能控制  |  `setDocReadOnly`  |  设置文档只读状态  |
-|   |  `downloadPdf`  |  导出PDF文件  |
-|  扩展功能  |  `addCustomMenu`  |  添加自定义菜单项  |
-|   |  `execCommand`  |  执行编辑器原生命令  |
 
 全部方法请参考API文档(https://editor.huimei.com/)
 
