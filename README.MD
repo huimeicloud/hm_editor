@@ -1,4 +1,5 @@
-# 惠每电子病历编辑器
+# HMEditor
+![Static Badge](https://img.shields.io/badge/pricing-free-blue)
 
 # 1、简介
 
