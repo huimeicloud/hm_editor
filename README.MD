@@ -1,9 +1,10 @@
 # 惠每电子病历编辑器 HmEditor
 
 [![License: LGPL v2.1](https://img.shields.io/badge/License-LGPL%20v2.1-blue.svg)](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
-![Java](https://img.shields.io/badge/Java-1.8-orange)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.6.14-brightgreen)
-![MongoDB](https://img.shields.io/badge/MongoDB-4.0%2B-green)
+![CKEditor4](https://img.shields.io/badge/CKEditor-4.x-blue)
+![JavaScript](https://img.shields.io/badge/JavaScript-ES6%2B-yellow)
+![Node.js](https://img.shields.io/badge/Node.js-%3E%3D12.0.0-brightgreen)
+![AI](https://img.shields.io/badge/AI-Ready-red)
 
 > 集成AI、满足信创、开源的医疗电子病历编辑器
 
