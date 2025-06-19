@@ -102,10 +102,8 @@ nodemon index.js
 </html>
 ```
 效果如图：
-
-```markdown
 ![效果图](http://hm-img-storage.oss-cn-hangzhou.aliyuncs.com/help_img/1750069105344.png)
-```
+
 
 全部方法请参考API文档(https://editor.huimei.com/)
 
