@@ -9,7 +9,6 @@ class TabEditorManager {
         this.editors = {}; // 存储编辑器实例
         this.currentTabId = null; // 当前激活的标签页ID
         this.tabCounter = 0; // 标签计数器
-
         this.init();
     }
 
@@ -43,16 +42,18 @@ class TabEditorManager {
      * @param {String} title 标签页标题
      * @param {Object} editorOptions 编辑器配置项
      * @param {Object} content 文档内容
+     * @param {String} serialNumber 序列号
      * @returns {Promise} 返回Promise对象
      */
-    async createTab(title, editorOptions = {}, content = null) {
+    async createTab(title, editorOptions = {}, content = null, docParam = {}) {
+        console.log('docParam', docParam)
         this.tabCounter++;
         const tabId = 'tab_' + this.tabCounter;
         const editorId = 'editor_' + this.tabCounter;
 
         // 创建标签和内容容器
-        const tabItem = $(`<div class="tab-item" data-id="${tabId}">${title}<span class="tab-close-btn">×</span></div>`);
-        const tabContent = $(`<div class="tab-content" data-id="${tabId}"><div id="${editorId}" class="editor-container"></div></div>`);
+        const tabItem = $(`<div class="tab-item" data-id="${tabId}" data-serial-number="${docParam.serialNumber||''}">${title}<span class="tab-close-btn">×</span></div>`);
+        const tabContent = $(`<div class="tab-content" data-id="${tabId}" data-name="${title.trim()}" data-record-name="${docParam.recordName||''}" data-serial-number="${docParam.serialNumber||''}"><div id="${editorId}" class="editor-container"></div></div>`);
 
         // 添加标签和内容
         this.tabHeader.append(tabItem);
@@ -60,36 +61,16 @@ class TabEditorManager {
 
         // 显示新标签
         this.activateTab(tabId);
-        var sdkHost;
-        var protocol = window.location.protocol;
-        if (/locale|127.0.0.1/.test(window.location.host)) {
-            sdkHost = protocol + '//127.0.0.1:3071';
-        } else {
-            sdkHost = protocol + '//' + window.location.host + '/hmEditor';
-        }
         // 创建编辑器
         try {
             const mergedOptions = Object.assign({}, {
                 container: `#${editorId}`,
                 id: editorId,
-                sdkHost: sdkHost,
-                // sdkHost: "http://172.16.8.32:9090/hmEditor",
                 style: {
                     width: '100%',
                     height: '100%',
                     border: '1px solid #ddd'
-                },
-                customToolbar: [{
-                    name: 'customButton',
-                    label: '自定义按钮',
-                    icon: 'http://127.0.0.1:3071/plugins/save/icons/save.png',
-                    toolbarGroup: 'insert',
-                    onExec: function (editor) {
-                        // 点击按钮时执行的代码
-                        console.log('自定义按钮被点击了');
-                    }
-
-                }]
+                }
             }, editorOptions);
             // 存储编辑器实例
             this.editors[tabId] = {
@@ -140,8 +121,45 @@ class TabEditorManager {
 
         // 更新当前标签ID
         this.currentTabId = tabId;
-    }
 
+        // 获取当前标签页的serialNumber
+        const $currentTab = this.tabHeader.find(`.tab-item[data-id="${tabId}"]`);
+        const serialNumber = $currentTab.data('serial-number') || '';
+
+        // 根据serialNumber状态控制AI相关按钮
+        controlAiButtons(!!serialNumber);
+
+        // 自动滚动tab-header，使新tab可见
+        setTimeout(() => {
+            this.scrollTabIntoView(tabId);
+        }, 0);
+    }
+    scrollTabIntoView(tabId) {
+        const $tabHeader = this.tabHeader;
+        const $newTab = $tabHeader.find(`.tab-item[data-id="${tabId}"]`);
+        if ($newTab.length) {
+            // 计算新tab相对tab-header的偏移
+            const tabLeft = $newTab.position().left;
+            const tabWidth = $newTab.outerWidth(true);
+            const headerScroll = $tabHeader.scrollLeft();
+            const headerWidth = $tabHeader.width();
+
+            // 如果新tab超出右侧，则滚动到新tab
+            if (tabLeft + tabWidth > headerWidth) {
+                $tabHeader.animate({
+                    scrollLeft: headerScroll + (tabLeft + tabWidth - headerWidth)
+                }, 200);
+            }
+            // 如果新tab超出左侧，则滚动到新tab
+            else if (tabLeft < 0) {
+                // 让tab正好贴到左侧
+                const absoluteLeft = $newTab.offset().left - $tabHeader.offset().left + headerScroll - 50;
+                $tabHeader.animate({
+                    scrollLeft: absoluteLeft
+                }, 200);
+            }
+        }
+    }
     /**
      * 获取当前激活的编辑器实例
      * @returns {Object} 编辑器实例
@@ -186,6 +204,11 @@ class TabEditorManager {
             } else {
                 this.currentTabId = null;
             }
+        }
+        if (this.tabHeader.find('.tab-item').length == 0) {
+            window.mayson && window.mayson.closeIntellPanel();
+            $('.smart-remind-content').show();
+            $('#btnExpand').click();
         }
     }
 
@@ -323,10 +346,19 @@ class DocumentTreeManager {
             docName: docName
         });
 
+        // 通过docCode查找节点获取serialNumber，同时在两个数据源中查找
+        let node = findNodeByDocCode(docCode, window.documentTreeData);
+        if (!node) {
+            node = findNodeByDocCode(docCode, window.aiDocumentTreeData);
+        }
+        const serialNumber = node ? node.serialNumber : '';
+
         const docParams = [{
             "code": docCode,
             "docTplName": docName,
-            "docContent": ""
+            "docContent": "",
+            "serialNumber": serialNumber,
+            "recordName": node.recordName || ''
         }];
 
         // 如果有docPath，则读取对应的HTML文件内容
@@ -355,7 +387,7 @@ class DocumentTreeManager {
                         status: textStatus,
                         error: errorThrown
                     });
-                    alert(`加载文档内容失败: ${docPath}\n错误: ${textStatus}`);
+                    showAlertDialog(`加载文档内容失败: ${docPath}\n错误: ${textStatus}`);
                 });
         } else {
             console.log('节点没有有效的文档路径');
@@ -366,7 +398,25 @@ class DocumentTreeManager {
     async onDocumentLoaded(docParam) {
         console.log('文档加载完成:', docParam);
         const title = docParam[0].docTplName;
-        await window.tabManager.createTab(title, {}, docParam);
+        // const serialNumber = docParam[0].serialNumber || '';
+        await window.tabManager.createTab(title, {}, docParam, docParam[0]);
+        console.log('文档打开完成:=======', title);
+        if (this.container.attr('id') == 'aiDocumentTree') {
+            // 如果是AI病历列表，则AI认证
+            // 显示加载遮罩
+            const loadingMask = $('<div class="loading-mask" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:9999;display:flex;justify-content:center;align-items:center;"><div style="background:#fff;padding:20px;border-radius:4px;font-size:16px;">加载中...</div></div>');
+            // $('body').append(loadingMask);
+
+            // 创建tab后移除遮罩
+            const removeMask = function () {
+                loadingMask.remove()
+            };
+            console.log('调用initAiAuth，docCode:', docParam[0].code);
+            await initAiAuth(docParam[0].code);
+            console.log('initAiAuth执行完成');
+            removeMask();
+        }
+
     }
 
     expandAll() {
@@ -389,13 +439,26 @@ class DocumentTreeManager {
 
 // 使用jQuery的DOM加载完成事件
 $(document).ready(function () {
-    // 获取URL中的isTest参数
+    const inAuthSerialNumber = ['S2VPWB3391943', 'S2VT794334788', 'S2VTOMT739144', 'S2W0MMZ611031', 'S2W30YS290548', 'S2W6JMO856722', 'S2WBSDM981989', 'S2WDU6T614595', 'S2WE36F582881']; // AI病历序列号列表
+    // 页面加载完成，自动计算assistant-panel高度，自动生成时需要高度
+    function autoAssistantPanelHeight() {
+        var headerHeight = $('.assistant-header').outerHeight() || 0;
+        var panelHeight = $('.assistant-block').height() || 0;
+        $('.assistant-panel').height(panelHeight - headerHeight);
+    }
+    autoAssistantPanelHeight();
+    // 窗口大小变化时重新计算
+    $(window).on('resize', function () {
+        autoAssistantPanelHeight();
+    });
+    // 获取URL中的ai参数
     const urlParams = new URLSearchParams(window.location.search);
-    var isTest = urlParams.get('isTest') === '1';
-    console.log('浏览器传入的测试参数:', isTest);
-    if(isTest){
-        $('#btnHmAiQc').removeAttr('disabled');
-        $('#btnHmAiQc').removeClass('next-feature-btn');
+    const ai = urlParams.get('ai');
+    if (ai == 1) {
+        $('.assistant-float-tab-btn[data-tab="smart"]').show();
+    }
+    if (ai == 99) {
+        $('.assistant-float-tab-btn[data-tab="ai"]').show();
     }
     // 初始化标签页管理器
     window.tabManager = new TabEditorManager({
@@ -404,49 +467,54 @@ $(document).ready(function () {
 
     // 初始化文档树
     window.documentTree = new DocumentTreeManager('#documentTree', documentTreeData);
+    window.aiDocumentTree = new DocumentTreeManager('#aiDocumentTree', aiDocumentTreeData);
 
     // 默认展开所有节点
     window.documentTree.expandAll();
-    async function initHMAuth() {
-        var aiServer;
-        var protocol = window.location.protocol;
-        if (/locale|127.0.0.1/.test(window.location.host)) {
-            aiServer = protocol + '//172.16.3.51';
-        } else {
-            aiServer = protocol + '//' + window.location.host;
-        }
-        // 定义认证信息
-        var autherEntity = {
-            aiServer: aiServer,
-            autherKey: 'D7928B9182ABF6E0A6A6EBB71B353585',
-            userGuid: '',
-            userName: '',
-            doctorGuid: 'hmpm',
-            serialNumber: '',
-            department: '', //科室（如"妇产科"，"儿科"）
-            doctorName: '', //医生名字
-            hospitalGuid: '', //自定义非必要字段
-            hospitalName: '', //自定义非必要字段
-            customEnv: '1',
-            flag: 'm'
-        };
+    window.aiDocumentTree.expandAll();
 
-        // 使用Promise处理认证初始化
-        const mayson = await HMEditorLoader.initAutherEntity(autherEntity);
-        window.mayson = mayson;
-    };
-    initHMAuth(); // 初始化认证
+    // 初始化工具栏快捷键控制
+    initToolbarShortcuts();
+
+    // 页面加载时默认隐藏工具栏（因为默认选中AI病历演示）
+    hideBtnPanel();
+
+    // 添加tab切换逻辑
+    $('.tree-tab').on('click', function () {
+        const tabType = $(this).data('tab');
+
+        // 移除所有活动状态
+        $('.tree-tab').removeClass('active');
+        $('.tree-tab-content').removeClass('active');
+
+        // 激活当前tab
+        $(this).addClass('active');
+        if (tabType === 'normal') {
+            $('#normalDocumentTree').addClass('active');
+            // 选中"常用病历模板"时显示工具栏
+            showBtnPanel();
+        } else if (tabType === 'ai') {
+            $('#aiDocumentTree').addClass('active');
+            // 选中"AI病历演示"时隐藏工具栏
+            hideBtnPanel();
+        }
+
+        console.log('切换到', tabType === 'normal' ? '普通病历' : 'AI病历', '文档列表');
+    });
+
+    window.aiServer = (window.location.host.includes('editor.huimei.com')) ?
+        'https://editor.huimei.com' :
+        'http://172.16.8.150';
+
+    console.log('AI Server:', window.aiServer);
+
     // 绑定按钮事件
     $('#btnAddTab').on('click', function () {
         // 显示文档信息输入对话框
         $('.documentInfo').show();
 
-        // 如果当前没有标签页，自动选中"在新标签中打开"选项
-        if (!window.tabManager.currentTabId) {
-            $('#openInNewTab').prop('checked', true);
-        } else {
-            $('#openInNewTab').prop('checked', false);
-        }
+        // 默认总是选中"在新标签中打开"选项
+        $('#openInNewTab').prop('checked', true);
     });
 
     // 确认文档信息
@@ -458,7 +526,7 @@ $(document).ready(function () {
             try {
                 content = JSON.parse(textContent);
             } catch (e) {
-                alert('输入的内容不是有效的JSON格式！');
+                showAlertDialog('输入的内容不是有效的JSON格式！');
                 return;
             }
         }
@@ -503,10 +571,8 @@ $(document).ready(function () {
         const $textarea = $('.documentInfo textarea');
         console.debug('加载中...');
 
-        // 如果当前没有标签页，自动选中"在新标签中打开"选项
-        if (!window.tabManager.currentTabId) {
-            $('#openInNewTab').prop('checked', true);
-        }
+        // 默认总是选中"在新标签中打开"选项
+        $('#openInNewTab').prop('checked', true);
 
         // 加载JSON文件
         $.getJSON(filePath)
@@ -541,10 +607,8 @@ $(document).ready(function () {
         const originalText = $textarea.val(); // 保存原始文本
         $textarea.val('加载中...');
 
-        // 如果当前没有标签页，自动选中"在新标签中打开"选项
-        if (!window.tabManager.currentTabId) {
-            $('#openInNewTab').prop('checked', true);
-        }
+        // 默认总是选中"在新标签中打开"选项
+        $('#openInNewTab').prop('checked', true);
 
         // 读取文件内容
         const reader = new FileReader();
@@ -565,7 +629,7 @@ $(document).ready(function () {
                 // 处理失败时恢复原始文本
                 $textarea.val(originalText);
                 console.error('文件处理失败:', error);
-                alert('文件处理失败: ' + error.message);
+                showAlertDialog('文件处理失败: ' + error.message);
             }
 
             // 清空文件选择，以便下次选择同一文件时能够触发change事件
@@ -577,7 +641,7 @@ $(document).ready(function () {
             $textarea.val(originalText);
             $('#templateFileInput').val('');
             console.error('文件读取失败:', error);
-            alert('文件读取失败');
+            showAlertDialog('文件读取失败');
         };
 
         // 以文本方式读取文件
@@ -588,14 +652,14 @@ $(document).ready(function () {
             $textarea.val(originalText);
             $('#templateFileInput').val('');
             console.error('文件读取失败:', error);
-            alert('文件读取失败');
+            showAlertDialog('文件读取失败');
         }
     });
 
     //自定义菜单
     $('#btnMenu').on('click', async function () {
         $('.customMenuDialog #customMenuJson').val(
-`[
+            `[
     {
         "name": "customMenu",
         "label": "自定义菜单1",
@@ -616,7 +680,14 @@ $(document).ready(function () {
         }
         // 重置弹窗状态
         $('#readOnlyCode').val('');
-        $('#readOnlyFlag').prop('checked', true);
+        $('#readOnlyFlag').prop('checked', false);
+        // 同步开关按钮的样式状态
+        const slider = $('#readOnlyFlag').siblings('.slider');
+        const sliderCircle = slider.find('.slider-circle');
+        const labelText = $('#readOnlyFlag').closest('label').find('.switch-label-text');
+        slider.css('background-color', '#ccc');
+        sliderCircle.css('transform', 'translateX(0)');
+        labelText.text('关闭');
         $('.readOnlyDialog').show();
     });
     //修订模式
@@ -635,10 +706,12 @@ $(document).ready(function () {
         const sliderCircle = slider.find('.slider-circle');
         const labelText = $(this).closest('label').find('.switch-label-text');
         if (this.checked) {
+            // 开关打开时，启用只读模式
             slider.css('background-color', '#4CAF50');
             sliderCircle.css('transform', 'translateX(26px)');
             labelText.text('启用');
         } else {
+            // 开关关闭时，关闭只读模式
             slider.css('background-color', '#ccc');
             sliderCircle.css('transform', 'translateX(0)');
             labelText.text('关闭');
@@ -655,11 +728,9 @@ $(document).ready(function () {
             // 隐藏对话框
             $('.reviseDialog').hide();
 
-            // 显示操作结果
-            // alert(isReviseMode ? '已开启修订模式' : '已关闭修订模式');
         } catch (e) {
             console.error('设置修订模式失败:', e);
-            alert('设置修订模式失败: ' + e.message);
+            showAlertDialog('设置修订模式失败: ' + e.message);
         }
     });
 
@@ -672,7 +743,7 @@ $(document).ready(function () {
         if (window.tabManager.currentTabId) {
             window.tabManager.closeTab(window.tabManager.currentTabId);
         } else {
-            alert('没有激活的标签页');
+            showAlertDialog('请先打开并选中一个文档！');
         }
     });
 
@@ -702,7 +773,7 @@ $(document).ready(function () {
     $('#btnConfirmData').on('click', async function () {
         const textContent = $('.dataInputDialog textarea').val();
         if (!textContent) {
-            alert('请输入数据');
+            showAlertDialog('请输入数据');
             return;
         }
 
@@ -713,7 +784,7 @@ $(document).ready(function () {
             $('.dataInputDialog').hide();
             $('.dataInputDialog textarea').val('');
         } catch (e) {
-            alert('JSON格式错误: ' + e.message);
+            showAlertDialog('JSON格式错误: ' + e.message);
         }
     });
 
@@ -737,7 +808,7 @@ $(document).ready(function () {
     $('#btnConfirmInsertData').on('click', async function () {
         const textContent = $('.insertDataAtCursorDialog textarea').val();
         if (!textContent) {
-            alert('请输入要插入的内容');
+            showAlertDialog('请输入要插入的内容');
             return;
         }
 
@@ -747,7 +818,7 @@ $(document).ready(function () {
             $('.insertDataAtCursorDialog').hide();
             $('.insertDataAtCursorDialog textarea').val('');
         } catch (e) {
-            alert('插入数据失败: ' + e.message);
+            showAlertDialog('插入数据失败: ' + e.message);
         }
     });
 
@@ -771,7 +842,7 @@ $(document).ready(function () {
             closeGetDataDialog();
         } catch (e) {
             console.error('获取HTML失败:', e);
-            alert('获取HTML失败: ' + e.message);
+            showAlertDialog('获取HTML失败: ' + e.message);
         }
     }
     async function getText() {
@@ -789,7 +860,7 @@ $(document).ready(function () {
             closeGetDataDialog();
         } catch (e) {
             console.error('获取Text失败:', e);
-            alert('获取Text失败: ' + e.message);
+            showAlertDialog('获取Text失败: ' + e.message);
         }
     }
     async function getData() {
@@ -800,7 +871,7 @@ $(document).ready(function () {
                 try {
                     params = JSON.parse(_val);
                 } catch (e) {
-                    alert('输入的JSON格式不正确，请检查格式！');
+                    showAlertDialog('输入的JSON格式不正确，请检查格式！');
                     return;
                 }
             }
@@ -818,7 +889,7 @@ $(document).ready(function () {
             closeGetDataDialog();
         } catch (e) {
             console.error('获取Data失败:', e);
-            alert('获取Data失败: ' + e.message);
+            showAlertDialog('获取Data失败: ' + e.message);
         }
     }
 
@@ -852,7 +923,7 @@ $(document).ready(function () {
             $('.getHtmlDialog textarea').val('');
         } catch (e) {
             console.error('获取HTML失败:', e);
-            alert('获取HTML失败: ' + e.message);
+            showAlertDialog('获取HTML失败: ' + e.message);
         }
     });
 
@@ -916,7 +987,7 @@ $(document).ready(function () {
 
         // 检查内容是否为空
         if (!content) {
-            alert('没有内容可复制');
+            showAlertDialog('没有内容可复制');
             return;
         }
 
@@ -986,11 +1057,10 @@ $(document).ready(function () {
         copyToClipboard(content)
             .then((message) => {
                 console.log(message);
-                alert('已复制到剪贴板');
+                showAlertDialog('已复制到剪贴板');
             })
             .catch((err) => {
                 console.error('复制失败:', err);
-                alert('复制失败，请手动选择文本复制');
 
                 // 复制失败时，选中文本框内容让用户手动复制
                 const textarea = document.getElementById('contentDisplay');
@@ -1053,7 +1123,7 @@ $(document).ready(function () {
             }
 
             if (!htmlRaw) {
-                alert('未找到HTML内容');
+                showAlertDialog('未找到HTML内容');
                 return;
             }
 
@@ -1081,7 +1151,7 @@ $(document).ready(function () {
 
         } catch (e) {
             console.error('保存HTML原文失败:', e);
-            alert('保存HTML原文失败: ' + e.message);
+            showAlertDialog('保存HTML原文失败: ' + e.message);
         }
     });
 
@@ -1137,7 +1207,7 @@ $(document).ready(function () {
                     console.log('解析后的数据元数量:', (datasources || []).length);
                 } catch (e) {
                     console.error('JSON解析失败:', e);
-                    alert('输入的内容不是有效的JSON格式！');
+                    showAlertDialog('输入的内容不是有效的JSON格式！');
                     return;
                 }
             } else {
@@ -1166,9 +1236,14 @@ $(document).ready(function () {
             showEditorNotOpenDialog('插入文档');
             return;
         }
-        $('.insertDocDialog textarea').val(JSON.stringify([
-            { code: '新插入文档_1', docContent: "<body><p>新插入文档_1</p></body>" },
-            { code: '新插入文档_2', docContent: "<body><p>新插入文档_2</p></body>" }
+        $('.insertDocDialog textarea').val(JSON.stringify([{
+                code: '新插入文档_1',
+                docContent: "<body><p>新插入文档_1</p></body>"
+            },
+            {
+                code: '新插入文档_2',
+                docContent: "<body><p>新插入文档_2</p></body>"
+            }
         ], null, 2));
         $('.insertDocDialog').show();
     });
@@ -1191,7 +1266,7 @@ $(document).ready(function () {
             $('.insertDocDialog').hide();
             $('.insertDocDialog textarea').val('');
         } catch (e) {
-            alert('JSON格式错误，请检查输入');
+            showAlertDialog('JSON格式错误，请检查输入');
         }
     });
 
@@ -1307,14 +1382,14 @@ $(document).ready(function () {
 
         // 验证文件类型
         if (!file.type.startsWith('image/')) {
-            alert('请选择图片文件');
+            showAlertDialog('请选择图片文件');
             $(this).val('');
             return;
         }
 
         // 验证文件大小（限制为2MB）
         if (file.size > 2 * 1024 * 1024) {
-            alert('图片文件大小不能超过2MB');
+            showAlertDialog('图片文件大小不能超过2MB');
             $(this).val('');
             return;
         }
@@ -1333,7 +1408,7 @@ $(document).ready(function () {
         };
 
         reader.onerror = function () {
-            alert('图片读取失败');
+            showAlertDialog('图片读取失败');
             $(this).val('');
         };
 
@@ -1372,7 +1447,7 @@ $(document).ready(function () {
             // 文本水印
             const watermarkText = $('#watermarkText').val();
             if (!watermarkText) {
-                alert('请输入水印文本');
+                showAlertDialog('请输入水印文本');
                 return;
             }
             watermarkConfig.watermarkText = watermarkText;
@@ -1381,7 +1456,7 @@ $(document).ready(function () {
             // 图片水印
             const base64Data = $('#watermarkImageFile').data('base64');
             if (!base64Data) {
-                alert('请选择水印图片');
+                showAlertDialog('请选择水印图片');
                 return;
             }
             watermarkConfig.watermarkImg = base64Data;
@@ -1399,7 +1474,7 @@ $(document).ready(function () {
             resetWatermarkDialog();
         } catch (e) {
             console.error('设置水印失败:', e);
-            alert('设置水印失败: ' + e.message);
+            showAlertDialog('设置水印失败: ' + e.message);
         }
     });
 
@@ -1447,7 +1522,7 @@ $(document).ready(function () {
         const imageHeight = $('#imageHeight').val();
 
         if (!imageUrl || imageUrl.indexOf('data:image/') != 0) {
-            alert('请输入图片的base64数据');
+            showAlertDialog('请输入图片的base64数据');
             return;
         }
 
@@ -1467,15 +1542,15 @@ $(document).ready(function () {
             $('#imageHeight').val('');
             $('.insertImageAtCursorDialog').hide();
         } catch (e) {
-            alert('插入数据失败: ' + e.message);
+            showAlertDialog('插入数据失败: ' + e.message);
         }
     });
 
     //自定义菜单演示弹框
-    $('#customMenuCancelBtn').on('click', function() {
+    $('#customMenuCancelBtn').on('click', function () {
         $('.customMenuDialog').hide();
     });
-    $('#customMenuOkBtn').on('click', async function() {
+    $('#customMenuOkBtn').on('click', async function () {
         try {
             const val = $('#customMenuJson').val();
             // 加括号，兼容多行 function
@@ -1502,24 +1577,17 @@ $(document).ready(function () {
             // 隐藏对话框并清空输入
             $('.readOnlyDialog').hide();
             $('#readOnlyCode').val('');
-            $('#readOnlyFlag').prop('checked', true);
-
-            // // 显示操作结果
-            // const codeText = code ? `病历编码: ${code}` : '所有文档';
-            // const statusText = isReadOnly ? '已设置为只读模式' : '已取消只读模式';
-            // alert(`${codeText} ${statusText}`);
 
         } catch (e) {
             console.error('设置只读模式失败:', e);
-            alert('设置只读模式失败: ' + e.message);
+            showAlertDialog('设置只读模式失败: ' + e.message);
         }
     });
 
     // 取消设置只读模式
     $('#btnCancelReadOnly').on('click', function () {
         $('.readOnlyDialog').hide();
-        $('#readOnlyCode').val('');
-        $('#readOnlyFlag').prop('checked', true);
+        $('#readOnlyCode').val(''); 
     });
 
     // ==================== 质控提醒相关代码 ====================
@@ -1529,48 +1597,72 @@ $(document).ready(function () {
             showEditorNotOpenDialog('质控提醒');
             return;
         }
+        if (!window.isInitHMAuth) {
+            showAlertDialog('请先进行AI认证！');
+            return;
+        }
         // 重置弹窗状态
         $('.hmAiQcDialog textarea').val('');
         $('.hmAiQcDialog').show();
     });
 
     // 快速载入质控参数链接点击事件
-    $('.quick-link-hmAi').on('click', function () {
+    $('.quick-link-hmAi').on('click', async function () {
+        const editor = await window.tabManager.getCurrentEditor();
+        const recordName = $('#' + editor.frameId).parent().attr('data-record-name');
+        const serialNumber = $('#' + editor.frameId).parent().attr('data-serial-number');
+        let progressNoteList = [];
+        // 检查recordName是否存在于recordMapData中
+        if (recordMapData.some(item => {
+                if (Array.isArray(item.recordName)) {
+                    return item.recordName.includes(recordName);
+                }
+                return item.recordName === recordName;
+            })) {
+            const recordInfo = getRecordInfo(recordName); // 根据当前tab的名称获取病历类型
+            const textContent = await editor.getDocText('');
+            if (textContent.length > 0) {
+                // 循环处理
+                for (let i = 0; i < textContent.length; i++) {
+                    const item = textContent[i];
+                    const obj = {
+                        progressGuid: item.code,
+                        progressTypeName: recordName,
+                        progressType: recordInfo.recordType,
+                        doctorGuid: "privateTesting",
+                        doctorName: "privateTesting",
+                        progressMessage: item.text,
+                        msgType: 0
+                    }
+                    progressNoteList.push(obj);
+                }
+            }
+        }
         const params = {
-            "userGuid": "201787",
-            "serialNumber": "100003001",
-            "caseNo": "100003",
+            "userGuid": "P2813DG68623",
+            "serialNumber": serialNumber,
+            "caseNo": "M-2VPWB302031",
             "currentBedCode": "+002",
-            "patientName": "朱**",
-            "doctorGuid": "362851",
-            "doctorName": "李**",
+            "patientName": "张*三",
+            "doctorGuid": "privateTesting",
+            "doctorName": "privateTesting",
             "admissionTime": "2024-01-03 16:30:11",
-            "inpatientDepartment": "综合内科组",
-            "inpatientArea": "内科病区",
-            "inpatientDepartmentId": "18",
-            "divisionId": "250302",
+            "inpatientDepartment": "心脏科",
+            "inpatientArea": "",
+            "inpatientDepartmentId": "心脏科",
+            "divisionId": null,
             "pageSource": "2",
             "openInterdict": 0,
             "triggerSource": 1,
             "patientInfo": {
-                "gender": "女",
-                "birthDate": "1996-11-02",
-                "age": "27",
+                "gender": 0,
+                "birthDate": "1980-07-09",
+                "age": "45",
                 "ageType": "岁",
-                "maritalStatus": 1,
+                "maritalStatus": 2,
                 "pregnancyStatus": 0
             },
-            "progressNoteList": [{
-                "progressGuid": "036a56f67e704e68bc44cc2c93b07353",
-                "progressType": 10,
-                "progressTypeName": "出院记录",
-                "progressTitleName": "base.guangdong_jy.250302-250302.出院记录@V102",
-                "recordTime": 1741146266109,
-                "doctorGuid": "15648",
-                "doctorName": "蒋**",
-                "msgType": 0,
-                "progressMessage": "​​********人民医院​出院记录姓名：​​朱** ​科室：​​内科病区​(​​综合内科组​)床位号：​​+002​住院号：​​100003001​姓名：​​朱** ​入院日期：​2024-01-03 16:30​性别：​​女​出院日期：​​​年龄：​​27岁​住院天数：​​​住院天数​天​　　入院情况：患者因​​​主诉​入院，​​现病史情况：​​患者于1996年起，每年春季 出现 咳嗽咳痰。给予抗感染、止咳祛痰治疗后好转。每年冬季转冷后，间断出现咳嗽，气急伴胸闷。给予沙丁胺醇气雾剂病情好转。每年发作1-2次，严重时于外院门诊输液治疗（具体用药不详）。于2014年起，每次发作时病情时间延长，并伴有心悸、胸闷、下肢浮肿。自行复用氨茶碱片2片，3次/天。患者自发病以来，神清，精神可，睡眠可，二便正常，体重无明显下降。​​，入院后查体：​​T：​​36​​℃，P：​​80​​次/分，R：​​20​​次/分，BP：​​130​​/​​80​​​mmHg，体重：​​60​​kg，指脉氧：​​98​​%​​，辅助检查​​WBC：5.99*10^9/L​​：​​​。　　入院诊断：​​支气管哮喘，睡眠障碍、支气管哮喘急性发作（中度）​　　诊断依据：​​​诊断依据​　　诊疗经过：​​患者入院后行抗炎、平喘、止咳等治疗，后患者病情较前明显好转。​　　出院诊断：​​​支气管哮喘，睡眠障碍​​　　手术名称：​​​手术名称​　　出院情况：​​​​​​　　出院医嘱：​​门诊定期复查。​　　主要治疗措施：​​​治疗方案​　　出院医嘱：​​门诊定期复查。​　　复诊时间：时间地点复诊目的科室　上级医师：​​上级医师签名​　医师：​​蒋** 记录时间：​​2025-03-05​​第 页 "
-            }]
+            "progressNoteList": progressNoteList
         };
 
         // 将参数格式化显示在文本框中
@@ -1585,24 +1677,33 @@ $(document).ready(function () {
             try {
                 params = JSON.parse(textContent);
             } catch (e) {
-                alert('输入的JSON格式不正确，请检查格式！');
+                showAlertDialog('输入的JSON格式不正确，请检查格式！');
                 return;
             }
         }
 
         try {
             const editor = await window.tabManager.getCurrentEditor();
-            // 调用hmAi.qc方法
-            editor.hmAi.qc(params);
+            // 调用qc方法
+            editor.hmAi.awekenAiWidget = {}; // 重置指尖ai唤醒widget
+            editor.qc(params);
+            const bean = formatQualityRemindParams(params);
+            console.log(bean)
+            // mayson 内嵌展示，先不发布
+            if (ai == 1) {
+                window.mayson && window.mayson.ai(bean);
+                // 默认打开智能提醒tab栏
+                $('.assistant-float-tab-btn[data-tab="smart"]').click();
+                // 隐藏对话框并清空输入
+            }
 
-            // 隐藏对话框并清空输入
             $('.hmAiQcDialog').hide();
             $('.hmAiQcDialog textarea').val('');
 
-            alert('质控提醒已启动');
+            showAlertDialog('质控提醒已启动');
         } catch (e) {
             console.error('质控提醒失败:', e);
-            alert('质控提醒失败: ' + e.message);
+            showAlertDialog('质控提醒失败: ' + e.message);
         }
     });
 
@@ -1615,26 +1716,26 @@ $(document).ready(function () {
     updateDestroyEditorBtnState();
     // 标签切换时也更新
     const origActivateTab = window.tabManager.activateTab.bind(window.tabManager);
-    window.tabManager.activateTab = function(tabId) {
+    window.tabManager.activateTab = function (tabId) {
         origActivateTab(tabId);
         updateDestroyEditorBtnState();
     };
     // 关闭标签页后也更新
     const origCloseTab = window.tabManager.closeTab.bind(window.tabManager);
-    window.tabManager.closeTab = function(tabId) {
+    window.tabManager.closeTab = function (tabId) {
         origCloseTab(tabId);
         updateDestroyEditorBtnState();
     };
     // 新建标签页后也更新
     const origCreateTab = window.tabManager.createTab.bind(window.tabManager);
-    window.tabManager.createTab = async function(...args) {
+    window.tabManager.createTab = async function (...args) {
         const result = await origCreateTab(...args);
         updateDestroyEditorBtnState();
         return result;
     };
 
     // 树收起/展开切换图标
-    $('.tree-header').on('click', function() {
+    $('.tree-header').on('click', function () {
         var $icon = $(this).find('.tree-icon');
         if ($(this).hasClass('collapsed')) {
             $(this).removeClass('collapsed');
@@ -1644,8 +1745,550 @@ $(document).ready(function () {
             $icon.removeClass('fa-folder-open').addClass('fa-folder');
         }
     });
+
+    // ==================== AI认证相关代码 ====================
+    // AI认证按钮点击事件
+    $('#btnHmAiAuth').on('click', function () {
+        // 检查AI令牌
+        const token = localStorage.getItem('HMAccessToken');
+        if (!token) {
+            showAlertDialog('请先设置AI令牌', function () {
+                // 点击确定后直接打开AI令牌设置对话框
+                $('.aiTokenDialog').show();
+            });
+            return;
+        }
+        // 重置弹窗状态
+        $('.hmAiAuthDialog textarea').val('');
+        $('.hmAiAuthDialog').show();
+    });
+    window.isInitHMAuth = false;
+    // 快速载入AI认证参数链接点击事件
+    $('.quick-link-hmAiAuth').on('click', function () {
+        const params = {
+            aiServer: window.aiServer,
+            authToken: localStorage.getItem('HMAccessToken') || '',
+            userGuid: 'P2813DG68623',
+            userName: '张*三',
+            doctorGuid: 'privateTesting',
+            serialNumber: 'S2VPWB3391943',
+            department: '心脏科',
+            doctorName: 'privateTesting',
+            hospitalGuid: 'demohospital',
+            hospitalName: '演示医院',
+            customEnv: '1',
+            flag: 'm'
+        };
+        $('.hmAiAuthDialog textarea').val(JSON.stringify(params, null, 2));
+    });
+
+    // 确认执行AI认证
+    $('#btnConfirmHmAiAuth').on('click', async function () {
+        const textContent = $('.hmAiAuthDialog textarea').val();
+        let params = {};
+        if (textContent) {
+            try {
+                params = JSON.parse(textContent);
+            } catch (e) {
+                showAlertDialog('输入的JSON格式不正确，请检查格式！');
+                return;
+            }
+        }
+        try {
+            if (!inAuthSerialNumber.includes(params.serialNumber)) {
+                showAlertDialog('请使用左侧病历树中的病历进行功能演示！');
+                return;
+            }
+            // 使用Promise处理认证初始化
+            const mayson = await HMEditorLoader.aiAuth(params, params.recordMap || recordMapData, ai);
+            window.mayson = mayson;
+            ai == 1 && maysonListenWindowSize(); // mayson 内嵌展示，先不发布
+            window.isInitHMAuth = true;
+            // 隐藏对话框并清空输入
+            $('.hmAiAuthDialog').hide();
+            $('.hmAiAuthDialog textarea').val('');
+
+            showAlertDialog('AI认证成功');
+        } catch (e) {
+            console.error('AI认证失败:', e);
+            showAlertDialog('AI认证失败: ' + e.message);
+        }
+    });
+
+    // 取消AI认证
+    $('#btnCancelHmAiAuth').on('click', function () {
+        $('.hmAiAuthDialog').hide();
+        $('.hmAiAuthDialog textarea').val('');
+    });
+
+    // ==================== 唤醒AI相关代码 ====================
+    // 唤醒AI按钮点击事件
+    $('#btnHmAiGen').on('click', function () {
+        if (!window.tabManager.currentTabId) {
+            showEditorNotOpenDialog('唤醒AI');
+            return;
+        }
+        if (!window.isInitHMAuth) {
+            showAlertDialog('请先进行AI认证！');
+            return;
+        }
+        // 重置弹窗状态
+        $('.hmAiGenDialog textarea').val('');
+        $('.hmAiGenDialog').show();
+    });
+
+    // 快速载入AI参数链接点击事件
+    $('.quick-link-hmAiGen').on('click', function () {
+        const params = {
+            recordType: 10,
+            progressGuid: 'discharge_record'
+        };
+        $('.hmAiGenDialog textarea').val(JSON.stringify(params, null, 2));
+    });
+
+    // 确认执行唤醒AI
+    $('#btnConfirmHmAiGen').on('click', async function () {
+        const textContent = $('.hmAiGenDialog textarea').val();
+        let params = {};
+        if (textContent) {
+            try {
+                params = JSON.parse(textContent);
+            } catch (e) {
+                showAlertDialog('输入的JSON格式不正确，请检查格式！');
+                return;
+            }
+        }
+
+        try {
+
+            const editor = await window.tabManager.getCurrentEditor();
+            // 调用hmAi.ai方法
+            editor.aiActive(params);
+
+            // 新增：如果有progress_guid，修改聚焦或第一个病历div的属性
+            if (params.progress_guid) {
+                const $body = $(editor.editor.document.getBody().$);
+                // 先找聚焦的病历div（TODO:识别聚焦），否则取第一个
+                let $targetDiv = $body.find('div[data-hm-widgetid].focused').first();
+                if ($targetDiv.length === 0) {
+                    $targetDiv = $body.find('div[data-hm-widgetid]').first();
+                }
+                if ($targetDiv.length > 0) {
+                    $targetDiv.attr('data-hm-widgetid', params.progress_guid);
+                    $targetDiv.attr('doc_code', params.progress_guid);
+                }
+            }
+
+            // 隐藏对话框并清空输入
+            $('.hmAiGenDialog').hide();
+            $('.hmAiGenDialog textarea').val('');
+
+            showAlertDialog('指尖AI已启动');
+        } catch (e) {
+            console.error('指尖AI启动失败:', e);
+            showAlertDialog('指尖AI启动失败: ' + e.message);
+        }
+    });
+
+    // 取消唤醒AI
+    $('#btnCancelHmAiGen').on('click', function () {
+        $('.hmAiGenDialog').hide();
+        $('.hmAiGenDialog textarea').val('');
+    });
+    // ==================== 节点生成相关代码 ====================
+    // 节点生成按钮点击事件
+    $('#btnNodeGen').on('click', async function () {
+        if (!window.tabManager.currentTabId) {
+            showEditorNotOpenDialog('节点生成');
+            return;
+        }
+        if (!window.isInitHMAuth) {
+            showAlertDialog('请先进行AI认证！');
+            return;
+        }
+        try {
+            const editor = await window.tabManager.getCurrentEditor();
+            var selection = editor.editor.getSelection().getRanges()[0];
+            if (!selection) {
+                console.error('未找到光标位置');
+                return;
+            }
+            var target = selection.startContainer.$;
+            editor.generateSection(target);
+
+            showAlertDialog('节点生成已启动');
+        } catch (e) {
+            console.error('段落生成失败:', e);
+            showAlertDialog('段落生成失败: ' + e.message);
+        }
+    });
+
+    // ==================== 病历生成相关代码 ====================
+    // 病历生成按钮点击事件
+    $('#btnDocGen').on('click', async function () {
+        if (!window.tabManager.currentTabId) {
+            showEditorNotOpenDialog('病历生成');
+            return;
+        }
+        if (!window.isInitHMAuth) {
+            showAlertDialog('请先进行AI认证！');
+            return;
+        }
+        try {
+            const editor = await window.tabManager.getCurrentEditor();
+            // 调用generateDocument方法进行病历生成
+            editor.generateDocument();
+
+            showAlertDialog('病历生成已启动');
+        } catch (e) {
+            console.error('病历生成失败:', e);
+            alshowAlertDialogert('病历生成失败: ' + e.message);
+        }
+    });
+
+    // ==================== AI对话设置弹窗关闭事件 ====================
+    $('#closeAiSettingsBtn').on('click', function () {
+        $('#chatSettingsModal').hide();
+    });
+
+
+    // 智能提醒弹框关闭按钮
+    $('#btnSmartClose').on('click', function () {
+        $('.assistant-smart-block').hide();
+    });
+
+    // tab切换逻辑
+    $('.assistant-float-tab-btn').on('click', function () {
+        var tab = $(this).data('tab');
+        // 激活tab按钮
+        $('.assistant-float-tab-btn').removeClass('active');
+        $(this).addClass('active');
+        $('.assistant-panel').hide();
+        // 标题和按钮
+        if (tab === 'log') {
+            $('#assistantTitle').text('API日志');
+            $('#btnClear').show();
+            $('#assistantLogPanel').show();
+            // 恢复侧边栏宽度
+        } else if (tab === 'ai') {
+            $('#assistantTitle').text('AI对话');
+            $('#btnClear').hide();
+            $('#assistantAiPanel').show();
+            // 恢复侧边栏宽度
+        } else if (tab === 'smart') {
+            $('#assistantTitle').text('智能提醒');
+            $('#btnClear').hide();
+            $('#assistantSmartPanel').show();
+            // 检查是否存在hm-mayson-iframe-part元素
+            const $maysonIframe = $('#assistantSmartPanel').find('#hm-mayson-iframe-part');
+            if ($maysonIframe.length > 0 && $maysonIframe.width() > 0) {
+                // 获取iframe宽度并调用autoRightPanel
+                const width = $maysonIframe.width();
+                $('.assistant-block').css({
+                    'width': width + 'px'
+                });
+            }
+            $('.assistant-smart-block').show();
+        }
+        // 显示侧边弹窗
+        $('.assistant-block').show();
+        $('.main-page').css('padding-right', "0");
+        // 初始化和窗口变化时判断
+        setTimeout(function () {
+            updateCenterBtnToggle();
+        }, 100)
+    });
+    // 关闭按钮，隐藏整个弹窗
+    $('#btnExpand').on('click', function () {
+        $('.assistant-block').hide();
+        $('.assistant-float-tab-btn').removeClass('active');
+        $('.tab-container').removeAttr('style')
+        // 移除这行代码，避免影响工具栏的隐藏状态
+        // $('.btn-panel').removeAttr('style');
+        $('.assistant-block').removeAttr('style');
+        $('.main-page').css('padding-right', "20px")
+        setTimeout(function () {
+            updateCenterBtnToggle();
+        }, 100)
+    });
+    window.isClickCollapse = false;
+    $('#toggleLeftPanel').on('click', function () {
+        $('.left-panel').toggleClass('collapsed');
+        if ($('.left-panel').hasClass('collapsed')) {
+            window.isClickCollapse = true; // 如果主动点击收起，则不自动展开
+        } else {
+            window.isClickCollapse = false;
+        }
+        // 可选：切换按钮图标方向
+        toggleLeftPanelIcon();
+        setTimeout(function () {
+            updateCenterBtnToggle();
+        }, 150)
+    });
+
+    // 展开/收起按钮事件
+    $('.center-btn-toggle').on('click', function () {
+        var $container = $(this).siblings('.center-btn-container');
+        if ($container.hasClass('expanded')) {
+            $container.removeClass('expanded');
+            $(this).find('i').removeClass('fa-caret-up').addClass('fa-caret-down');
+        } else {
+            $container.addClass('expanded');
+            $(this).find('i').removeClass('fa-caret-down').addClass('fa-caret-up');
+        }
+    });
+    // 初始化和窗口变化时判断
+    updateCenterBtnToggle();
+    $(window).on('resize', updateCenterBtnToggle);
+
+    // ==================== AI令牌弹窗相关代码 ====================
+    // AI令牌按钮点击事件
+    $('#btnHmAiToken').on('click', function () {
+        $('.aiTokenDialog').show();
+    });
+    // 复制AI令牌
+    $('#btnSetAiToken').on('click', function () {
+        const token = $('#aiTokenTextarea').val();
+        if (!token) {
+            showAlertDialog('没有输入有效AI令牌');
+            return;
+        }
+        console.log('验证AI令牌...');
+        var valid = checkAiToken(token);
+        if (!valid) {
+            showAlertDialog('AI令牌无效,请确认令牌是否正确！');
+            return;
+        }
+        console.log('AI令牌验证成功，设置令牌');
+        // 获取编辑器实例并设置AI令牌
+        HMEditorLoader.setAiToken(token);
+        showAlertDialog('AI令牌已设置');
+        $('.aiTokenDialog').hide();
+        
+        console.log('触发aiTokenSet事件');
+        // 触发自定义事件，通知令牌设置完成
+        $(document).trigger('aiTokenSet');
+    });
+    // 关闭AI令牌弹窗
+    $('#btnCloseAiToken').on('click', function () {
+        $('.aiTokenDialog').hide();
+        $('#aiTokenTextarea').val('');
+    });
 });
 
+// 根据病历名称获取病历类型
+function getRecordInfo(recordName) {
+    return recordInfo = recordMapData.find(item => {
+        if (Array.isArray(recordName)) {
+            return item.recordName.includes(recordName);
+        }
+        return item.recordName === recordName;
+    });
+}
+
+// 控制AI相关按钮状态
+function controlAiButtons(enabled) {
+    const aiButtons = ['#btnHmAiAuth', '#btnHmAiGen', '#btnNodeGen', '#btnDocGen', '#btnHmAiQc', '#btnHmAiToken'];
+    aiButtons.forEach(btnId => {
+        if (enabled) {
+            $(btnId).prop('disabled', false).removeClass('next-feature-btn');
+        } else {
+            $(btnId).prop('disabled', true).addClass('next-feature-btn');
+        }
+    });
+}
+// 格式化质控提醒参数
+function formatQualityRemindParams(params) {
+    // 格式化病历列表
+    const progressNoteList = params.progressNoteList.map(item => {
+        return {
+            progressGuid: item.progressGuid, // 病历唯一标识
+            progressTypeName: item.progressTypeName, // 病历类型名称
+            progressType: item.progressType, // 病历类型编码
+            doctorGuid: item.doctorGuid, // 医生ID
+            doctorName: item.doctorName, // 医生姓名
+            progressMessage: item.progressMessage, // 病历内容
+            msgType: item.msgType // 消息类型
+        };
+    });
+
+    // 返回格式化后的参数对象
+    return {
+        userGuid: params.userGuid, // 用户ID
+        serialNumber: params.serialNumber, // 就诊流水号
+        caseNo: params.caseNo, // 病案号
+        currentBedCode: params.currentBedCode, // 当前床号
+        patientName: params.patientName, // 患者姓名
+        doctorGuid: params.doctorGuid, // 医生ID
+        doctorName: params.doctorName, // 医生姓名
+        admissionTime: params.admissionTime, // 入院时间
+        inpatientDepartment: params.inpatientDepartment, // 住院科室
+        inpatientArea: params.inpatientArea, // 病区
+        inpatientDepartmentId: params.inpatientDepartmentId, // 科室ID
+        divisionId: params.divisionId, // 病区ID
+        pageSource: params.pageSource, // 页面来源
+        openInterdict: params.openInterdict, // 是否开启拦截
+        triggerSource: params.triggerSource, // 触发来源
+        patientInfo: {
+            gender: params.patientInfo.gender, // 性别
+            birthDate: params.patientInfo.birthDate, // 出生日期
+            age: params.patientInfo.age, // 年龄
+            ageType: params.patientInfo.ageType, // 年龄单位
+            maritalStatus: params.patientInfo.maritalStatus, // 婚姻状况
+            pregnancyStatus: params.patientInfo.pregnancyStatus // 妊娠状态
+        },
+        progressNoteList: progressNoteList // 病历列表
+    };
+}
+
+function updateCenterBtnToggle() {
+    var $container = $('.center-btn-container');
+    var $wrapper = $container.closest('.center-btn-wrapper');
+    // 先重置
+    $container.removeClass('expanded');
+    // 判断是否超出2行
+    var container = $container[0];
+    var lineHeight = parseInt($container.css('line-height')) || 44;
+    var maxHeight = lineHeight * 2 + 8; // 2行+gap
+    if (container.scrollHeight > maxHeight + 2) {
+        $wrapper.addClass('show-toggle');
+        $container.removeClass('expanded');
+        $wrapper.find('i').removeClass('fa-caret-up').addClass('fa-caret-down');
+    } else {
+        $wrapper.removeClass('show-toggle');
+        $container.addClass('expanded');
+        $wrapper.find('i').removeClass('fa-caret-down').addClass('fa-caret-up');
+    }
+}
+
+function toggleLeftPanelIcon() {
+    // 可选：切换按钮图标方向
+    if ($('.left-panel').hasClass('collapsed')) {
+        $('.left-panel').find('.toggle-left-panel-btn i').removeClass('fa-toggle-left').addClass('fa-toggle-right');
+    } else {
+        $('.left-panel').find('.toggle-left-panel-btn i').removeClass('fa-toggle-right').addClass('fa-toggle-left');
+    }
+}
+
+function maysonAutoHeight(bean) {
+    if (window.mayson && window.mayson.currAction.state > 1) {
+        window.mayson.$maysonSize.middle.height = $("#assistantSmartPanel").height();
+        MaysonWindow = document.getElementById('hm-mayson-iframe-part').contentWindow
+        if (window.mayson.setAutoHeight2) {
+            window.mayson.setAutoHeight2()
+        } else {
+            try {
+                window.mayson.setAutoHeight2 = function () {
+                    var _tm = this;
+                    _tm.el = $(MaysonWindow.document).find("#hm_base_home");
+                    _tm.el.find('#hm_intell_popup_content').css({
+                        height: _tm.$maysonSize.middle.height
+                    });
+                    var headerHeight = _tm.el.find("#hm_intell_popup_header").height(),
+                        footerHeight = _tm.el.find("#hm_popup_footer").height();
+                    var conHeight = _tm.$maysonSize.middle.height - headerHeight - 2;
+                    _tm.rightCom.css({
+                        width: _tm.$maysonSize.middle.width - 5,
+                        height: conHeight
+                    });
+                    _tm.rightComScorllPanel.css({
+                        height: conHeight
+                    })
+                    _tm.el.find('#hm_intell_popup_body').css({
+                        height: conHeight
+                    });
+                    _tm.conHeight = conHeight - footerHeight
+                    _tm.el.find('#hm_popup_body').css({
+                        height: _tm.conHeight
+                    });
+                    _tm.el.find('#hm_popup_body_right').css({ // 设置内容区最小高度，使版本信息位置保持在最底部
+                        'min-height': conHeight - 36 + 'px',
+                        'height': 'auto'
+                    });
+                    window.mayson.MaysonQuality.calculationHomeHeight();
+                }
+                window.mayson.setAutoHeight2();
+            } catch (e) {}
+        }
+        $('#hm-mayson-iframe-part').height($("#assistantSmartPanel").height());
+    }
+}
+
+function maysonListenWindowSize() {
+    window.mayson.listenWindowSize = function (bean) {
+        if (bean.state > 1) {
+            $("#hm-mayson-iframe-part").css({
+                position: 'static',
+            })
+            $('.smart-remind-content').hide();
+            if (bean.state == 3) {
+                $('.left-panel').addClass('collapsed');
+            }
+            toggleLeftPanelIcon();
+            maysonAutoHeight();
+        } else {
+            $('.smart-remind-content').show();
+            $("#hm-mayson-iframe-part").css({
+                position: 'absolute',
+                right: '0',
+                bottom: '6px'
+            })
+        }
+        autoRightPanel(bean);
+    };
+    window.mayson.listenViewData = function (data) {
+        var temp = data[0] || {};
+
+        if (['11', '12', '18'].includes(temp.type)) {
+            window.open(temp.items[0].text);
+            return;
+        }
+        if (temp.type == '39') {
+            var ruleId = temp.items && temp.items[0] && temp.items[0].id;
+            if (!ruleId) return;
+
+            window.tabManager.getCurrentEditor().then(function (editor) {
+                var $span;
+                var $body = $(editor.editor.document.getBody().$);
+                $span = $body.find('span[rule-code="' + ruleId + '"]:not(.doc-warn-lack-ignore)');
+                if ($body.find('.doc-composer').length > 0) {
+                    return;
+                }
+                if ($span && $span.length > 0) {
+                    $span[0].scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                    setTimeout(function () {
+                        $span[0].click();
+                        // 质控AI推荐调用
+                        if ($span.hasClass('doc-warn-lack-title') || $span.hasClass('doc-warn-txt') && $body.find('.d-btt-ai').length > 0) {
+                            if ($span.hasClass('doc-warn-lack-title')) {
+                                $span.parent().addClass('doc-ai-correct-active');
+                            }
+                            if ($span.hasClass('doc-warn-txt')) {
+                                $span.addClass('doc-ai-correct-active');
+                            }
+                            editor.hmAi.composer.manageLableShow(1)
+                        }
+                    }, 300);
+                } else {
+                    console.warn('未找到对应的AI推荐规则span:', ruleId);
+                }
+            });
+        }
+    }
+}
+
+function autoRightPanel(bean) {
+    if (bean) {
+        // 直接生成时，默认打开右侧面板
+        $('.assistant-float-tab-btn[data-tab="smart"]').click();
+        $('.assistant-block').css({
+            'width': bean.width + 'px'
+        });
+    }
+}
 /**
  * 通用弹框：编辑器未打开时的友好提示
  * @param {string} btnName 触发按钮名称
@@ -1668,7 +2311,7 @@ function showEditorNotOpenDialog(btnName, onLoadDoc) {
       </div>
     </div>`;
     $(document.body).append(html);
-    $('#goLoadDocBtn').on('click', function() {
+    $('#goLoadDocBtn').on('click', function () {
         $('#editorNotOpenDialog').remove();
         if (typeof onLoadDoc === 'function') {
             onLoadDoc();
@@ -1678,7 +2321,7 @@ function showEditorNotOpenDialog(btnName, onLoadDoc) {
             if ($btn.length) $btn[0].click();
         }
     });
-    $('#cancelEditorNotOpenBtn').on('click', function() {
+    $('#cancelEditorNotOpenBtn').on('click', function () {
         $('#editorNotOpenDialog').remove();
     });
 }
@@ -1706,8 +2349,321 @@ function updateDestroyEditorBtnState() {
 function showAlertDialog(msg, onOk) {
     $('#customAlertMsg').text(msg);
     $('#customAlertDialog').css('display', 'flex');
-    $('#alertOkBtn').off('click').on('click', function() {
+    $('#alertOkBtn').off('click').on('click', function () {
         $('#customAlertDialog').hide();
         if (typeof onOk === 'function') onOk();
     });
+}
+
+// AI认证初始化方法
+async function initAiAuth(docCode) {
+    // 检查并等待AI令牌设置完成
+    console.log('准备调用waitForValidAiToken...');
+    await waitForValidAiToken();
+    console.log('waitForValidAiToken执行完成');
+    console.log('AI令牌验证完成，开始执行认证流程');
+    
+    const node = findNodeByDocCode(docCode, window.aiDocumentTreeData);
+    const serialNumber = node ? node.serialNumber : '';
+    const aiParam = window.aiParams[docCode];
+    const urlParams = new URLSearchParams(window.location.search);
+    const ai = urlParams.get('ai');
+    const params = {
+        "aiServer": window.aiServer,
+        "authToken": localStorage.getItem('HMAccessToken'),
+        "userGuid": aiParam['userGuid'],
+        "userName": '演示用户',
+        "doctorGuid": 'hmpm',
+        "serialNumber": serialNumber,
+        "department": "演示科室",
+        "doctorName": "pm",
+        "hospitalGuid": "1001",
+        "hospitalName": "惠每医生团队",
+        "customEnv": "1",
+        "flag": "m"
+    };
+    // 使用Promise处理认证初始化
+    const mayson = await HMEditorLoader.aiAuth(params, params.recordMap || recordMapData, ai);
+    window.mayson = mayson;
+    window.isInitHMAuth = true;
+    ai == 1 && maysonListenWindowSize(); // mayson 内嵌展示，先不发布
+    showQualityRemindSet(docCode, node);
+}
+
+// 等待AI令牌设置完成的函数
+function waitForValidAiToken() {
+    return new Promise((resolve) => {
+        console.log('开始等待AI令牌设置...');
+        
+        const checkToken = () => {
+            const token = localStorage.getItem('HMAccessToken');
+            console.log('检查AI令牌:', token ? '存在' : '不存在');
+            
+            let valid = true;
+            
+            if (!token) {
+                valid = false;
+                console.log('AI令牌不存在，设置为无效');
+            } else {
+                console.log('AI令牌存在，开始验证...');
+                // 验证AI令牌
+                valid = checkAiToken(token);
+                console.log('checkAiToken返回结果:', valid);
+            }
+            
+            console.log('AI令牌验证最终结果:', valid);
+            
+            if (!valid) {
+                console.log('AI令牌无效，显示设置对话框');
+                // 显示设置AI令牌的对话框
+                showAlertDialog('请先设置AI令牌', function () {
+                    console.log('用户点击确定，打开AI令牌设置对话框');
+                    // 点击确定后直接打开AI令牌设置对话框
+                    $('.aiTokenDialog').show();
+                    
+                    // 监听AI令牌设置完成事件
+                    const handleTokenSet = () => {
+                        console.log('检测到AI令牌设置完成事件');
+                        // 移除事件监听器
+                        $(document).off('aiTokenSet.tokenSet');
+                        $('#btnCloseAiToken').off('click.tokenSet');
+                        
+                        // 直接继续执行，因为设置按钮已经验证过令牌了
+                        console.log('AI令牌设置完成，直接继续执行');
+                        resolve(); // 令牌有效，继续执行
+                    };
+                    
+                    console.log('绑定aiTokenSet事件监听器');
+                    // 绑定设置完成事件
+                    $(document).on('aiTokenSet.tokenSet', handleTokenSet);
+                    $('#btnCloseAiToken').on('click.tokenSet', () => {
+                        console.log('用户取消AI令牌设置');
+                        // 用户取消设置，重新检查
+                        setTimeout(checkToken, 100);
+                    });
+                });
+            } else {
+                console.log('AI令牌有效，直接继续执行');
+                resolve(); // 令牌有效，继续执行
+            }
+        };
+        
+        checkToken();
+    });
+}
+
+function checkAiToken(token) {
+    console.log('开始验证AI令牌:', token ? token.substring(0, 10) + '...' : 'null');
+    
+    // 验证AI令牌
+    var valid = false;
+    $.ajax({
+        url: window.aiServer + "/aigc/recommend/cdss_stream_chat",
+        type: "POST",
+        headers: {
+            'Huimei_id': 'D7928B9182ABF6E0A6A6EBB71B353585',
+            "Authorization": "Bearer " + token
+        },
+        contentType: 'application/json; charset=utf-8',
+        data: JSON.stringify({}),
+        async: false, // 设置为同步请求
+        success: function (result) {
+            console.log('AI认证检查结果:', result);
+            if (result.code == 200) {
+                valid = true;
+                console.log('AI令牌验证成功');
+            } else {
+                valid = false;
+                console.log('AI令牌验证失败，code:', result.code);
+            }
+        },
+        error: function (error) {
+            console.error('AI令牌验证请求失败:', error);
+            valid = false;
+        }
+    });
+    
+    console.log('AI令牌验证最终结果:', valid);
+    return valid;
+}
+
+// 通过docCode查找node节点的辅助函数
+function findNodeByDocCode(docCode, treeData) {
+    function searchInTree(nodes) {
+        for (const node of nodes) {
+            if (node.docCode === docCode) {
+                return node;
+            }
+            if (node.children && node.children.length > 0) {
+                const result = searchInTree(node.children);
+                if (result !== undefined) {
+                    return result;
+                }
+            }
+        }
+        return undefined;
+    }
+
+    return searchInTree(treeData || []);
+}
+
+// 质控提醒设置
+async function showQualityRemindSet(docCode, node) {
+    const params = window.aiParams[docCode];
+    const editor = await window.tabManager.getCurrentEditor();
+    const recordType = node ? node.recordType : 1;
+
+    // 动态获取当前病历的文本内容
+    try {
+        const textContent = await editor.getDocText(docCode);
+
+        // 更新 progressNoteList 中的 progressMessage
+        if (params && params.progressNoteList && params.progressNoteList.length > 0) {
+            // 提取文本内容，如果返回的是对象数组，则获取第一个对象的text字段
+            let progressMessage = '';
+            if (Array.isArray(textContent) && textContent.length > 0) {
+                progressMessage = textContent[0].text || '';
+            } else if (typeof textContent === 'string') {
+                progressMessage = textContent;
+            } else if (textContent && textContent.text) {
+                progressMessage = textContent.text;
+            }
+
+            // 更新第一个病历记录的progressMessage
+            params.progressNoteList[0].progressMessage = progressMessage;
+            console.log('已动态获取病历文本内容，长度:', progressMessage.length);
+        }
+    } catch (error) {
+        console.error('动态获取病历文本失败:', error);
+        // 如果获取失败，继续使用原有的progressMessage
+    }
+
+    const params1 = {
+        recordType: recordType,
+        progressGuid: docCode
+    };
+    await editor.aiActive(params1);
+
+    // 调用hmAi.qc方法
+    await editor.qc(params);
+    const bean = formatQualityRemindParams(params);
+    const urlParams = new URLSearchParams(window.location.search);
+    const ai = urlParams.get('ai');
+    if (ai == 1) {
+        window.mayson && window.mayson.ai(bean);
+        // 默认打开智能提醒tab栏
+        $('.assistant-float-tab-btn[data-tab="smart"]').click();
+    }
+    // console.log(bean);
+    // mayson 内嵌展示，先不发布
+    // window.mayson && window.mayson.ai(bean);
+    // 默认打开智能提醒tab栏
+    // $('.assistant-float-tab-btn[data-tab="smart"]').click();
+}
+// 格式化质控提醒参数
+function formatQualityRemindParams(params) {
+    return {
+        userGuid: params.userGuid || '',
+        serialNumber: params.serialNumber || '',
+        caseNo: params.caseNo || '',
+        currentBedCode: params.currentBedCode || '',
+        patientName: params.patientName,
+        doctorGuid: params.doctorGuid || '',
+        doctorName: params.doctorName || '',
+        admissionTime: params.admissionTime || '',
+        inpatientDepartment: params.inpatientDepartment || '',
+        inpatientArea: params.inpatientArea || '',
+        inpatientDepartmentId: params.inpatientDepartmentId || '',
+        pageSource: params.pageSource || '',
+        openInterdict: params.openInterdict,
+        triggerSource: params.triggerSource,
+        patientInfo: {
+            gender: params.patientInfo.gender,
+            birthDate: params.patientInfo.birthDate,
+            age: params.patientInfo.age,
+            ageType: params.patientInfo.ageType,
+            maritalStatus: params.patientInfo.maritalStatus || 2,
+            pregnancyStatus: params.patientInfo.pregnancyStatus
+        },
+        progressNoteList: params.progressNoteList
+    };
+}
+
+// ==================== 工具栏快捷键控制脚本 ====================
+// 工具栏显示状态
+let btnPanelVisible = false;
+
+// 键盘事件监听器
+document.addEventListener('keydown', function (event) {
+    // Ctrl + Shift + -> 切换工具栏显示/隐藏
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'ArrowRight') {
+        event.preventDefault(); // 阻止默认行为
+        toggleBtnPanel();
+    }
+
+    // ESC 键隐藏工具栏
+    if (event.key === 'Escape' && btnPanelVisible) {
+        hideBtnPanel();
+    }
+});
+
+// 切换工具栏显示/隐藏
+function toggleBtnPanel() {
+    const btnPanel = document.getElementById('btnPanel');
+    if (btnPanelVisible) {
+        hideBtnPanel();
+    } else {
+        showBtnPanel();
+    }
+}
+
+// 显示工具栏
+function showBtnPanel() {
+    const btnPanel = document.getElementById('btnPanel');
+    btnPanel.style.display = 'flex'; // 使用flex而不是block，保持原有布局
+    btnPanelVisible = true;
+    console.log('工具栏已显示 - 快捷键: Ctrl+Shift+-> 切换, ESC 隐藏');
+}
+
+// 隐藏工具栏
+function hideBtnPanel() {
+    const btnPanel = document.getElementById('btnPanel');
+    btnPanel.style.display = 'none';
+    btnPanelVisible = false;
+    console.log('工具栏已隐藏 - 快捷键: Ctrl+Shift+-> 显示');
+}
+
+// 监听DOM变化，确保工具栏状态不被其他代码影响
+const observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (mutation) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+            const btnPanel = document.getElementById('btnPanel');
+            if (btnPanel && !btnPanelVisible && btnPanel.style.display !== 'none') {
+                // 如果工具栏应该是隐藏的，但被其他代码修改了样式，重新隐藏
+                setTimeout(() => {
+                    if (!btnPanelVisible) {
+                        btnPanel.style.display = 'none';
+                    }
+                }, 0);
+            }
+        }
+    });
+});
+
+// 初始化工具栏快捷键控制
+function initToolbarShortcuts() {
+    // 开始观察DOM变化
+    const btnPanel = document.getElementById('btnPanel');
+    if (btnPanel) {
+        observer.observe(btnPanel, {
+            attributes: true,
+            attributeFilter: ['style']
+        });
+    }
+
+    console.log('工具栏已隐藏 - 选中"常用病历模板"显示工具栏，或使用快捷键 Ctrl+Shift+-> 显示');
+    // 可选：显示一个临时的提示信息
+    setTimeout(function () {
+        console.log('💡 提示: 选中"常用病历模板"显示工具栏，或按 Ctrl+Shift+-> 可以显示/隐藏工具栏');
+    }, 1000);
 }

@@ -76,7 +76,7 @@ commonHM.component['documentModel'].fn({
                 body_h_px = body_w_px / body_w_mm * body_h_mm;
             }
             var watermark_rows = Math.floor(body_h_px / Number(settings.watermarkHeight || 50)); //水印行数
-            var watermark_cols = Number(settings.watermarkColumn) || 1; //水印列数
+            var watermark_cols = Number(settings.watermarkColumn) || (settings.watermarkType = 1 ?3:1); //水印列数
 
             //默认设置
             var defaultSettings = {

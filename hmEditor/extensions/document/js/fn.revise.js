@@ -14,6 +14,8 @@ commonHM.component['documentModel'].fn({
             _t.editor.commands["revise"].enable();
             _t.editor.execCommand('revise', {reviseState: '显示修订'});
         } else if (!reviseMode && _t.editor.reviseModelOpened) {
+            _t.editor.reviseModelOpened = reviseMode;
+
             // 创建确认对话框
             var $dialog = $('<div class="revise-confirm-dialog" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 1000; min-width: 400px;">' +
                 '<div style="position: relative;">' +

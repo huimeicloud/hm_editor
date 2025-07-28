@@ -1,7 +1,8 @@
 //# sourceURL=dynamicScript.js
 
 CKEDITOR.dialog.add( 'document', function( editor ) {
-
+	var sdkHost = editor.HMConfig.sdkHost||'';
+	
 	return {
 		title: '文档信息',
 		resizable:  CKEDITOR.DIALOG_RESIZE_BOTH,
@@ -16,7 +17,39 @@ CKEDITOR.dialog.add( 'document', function( editor ) {
 			elements: [
 				{
 					type: 'html',
-					html: '<iframe class="documentHtml" style="height:100%;width: 100%;" src="./plugins/document/dialogs/document.html"></iframe>',
+					html: '<iframe id="documentInfo" class="documentHtml" style="height:100%;width: 100%;"></iframe>',
+					setup: function () {
+						// 隐藏iframe直到内容加载完成
+						$('#documentInfo').hide();
+						
+						var init = function () {
+							$('#documentInfo').show();
+							// 初始化文档信息
+							window.initDocumentInfo && window.initDocumentInfo(editor.document.getBody(), '');
+						}
+						
+						var iframe = $('#documentInfo')[0];
+						// 使用getTplHtml加载模板内容
+						$.getTplHtml(sdkHost + '/plugins/document/dialogs/document.html', {
+							sdkHost: sdkHost
+						}, function(bodyHtml) {
+							var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+							iframeDoc.open();
+							iframeDoc.write(bodyHtml);
+							iframeDoc.close();
+							
+							// 设置onload事件
+							if (iframe.attachEvent) {
+								iframe.attachEvent("onload", function () {
+									init();
+								});
+							} else {
+								iframe.onload = function () {
+									init();
+								};
+							}
+						});
+					}
 				}
 			]
 		} ],
@@ -29,24 +62,7 @@ CKEDITOR.dialog.add( 'document', function( editor ) {
 			}
 		},
 		onShow:function(){
-			this.setupContent(  );
-			var _this = this;
-            var initDocumentInfoFun = function(){
-				window.initDocumentInfo && window.initDocumentInfo( editor.document.getBody(),'');
-
-            }
-            // 防止iframe未加载完成时window.initNodeStyle为undefined
-            var iframe = $('.documentHtml')[0];
-            if (iframe.attachEvent){
-                iframe.attachEvent("onload", function(){
-                    initDocumentInfoFun();
-                });
-            } else {
-                iframe.onload = function(){
-                    initDocumentInfoFun();
-                };
-            }
-            initDocumentInfoFun();
+			this.setupContent();
 		}
 	};
 } );

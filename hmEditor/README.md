@@ -223,7 +223,7 @@ HMEditorLoader.destroyEditor(editorId);
 ```javascript
 // 初始化认证信息并加载CDSS SDK
 var autherEntity = {
-    autherKey: 'your-auth-key',
+    authToken: 'your-auth-token',
     aiServer: 'https://ai-server.com',
     userGuid: 'patient-001',
     userName: '张三',
@@ -236,7 +236,7 @@ var autherEntity = {
     flag: 'm', // m:住院 c:门诊
     customEnv: 1
 };
-HMEditorLoader.initAutherEntity(autherEntity)
+HMEditorLoader.aiAuth(autherEntity)
 .then(function(mayson) {
     console.log('认证初始化成功，编辑器助手已加载');
     // mayson 是编辑器助手实例，可用于AI辅助功能
@@ -250,13 +250,13 @@ HMEditorLoader.initAutherEntity(autherEntity)
 
 | 方法 | 参数 | 返回值 | 描述 |
 | --- | --- | --- | --- |
-| initAutherEntity | autherEntity:Object | Promise | 初始化认证信息并加载CDSS SDK，返回编辑器助手实例 |
+| aiAuth | autherEntity:Object | Promise | 初始化认证信息并加载CDSS SDK，返回编辑器助手实例 |
 
 ### options参数说明
 
 | 参数名 | 类型 | 必填 | 描述 |
 | --- | --- | --- | --- |
-| autherKey | String | 是 | 认证密钥 |
+| authToken | String | 是 | AI令牌 |
 | aiServer | String | 是 | AI服务器地址 |
 | userGuid | String | 是 | 患者唯一标识ID |
 | userName | String | 是 | 患者姓名 |
@@ -274,7 +274,7 @@ HMEditorLoader.initAutherEntity(autherEntity)
 ### CDSS SDK加载失败
 
 1. 检查网络连接和aiServer地址配置
-2. 确保autherKey认证密钥有效
+2. 确保authToken认证密钥有效
 3. 使用浏览器开发者工具查看是否有脚本加载错误
 
 ### 认证超时
@@ -293,3 +293,195 @@ HMEditorLoader.initAutherEntity(autherEntity)
 3. 保存mayson实例以供后续AI功能使用
 4. 根据实际业务场景正确设置flag参数（住院/门诊）
 5. 在单页应用中避免重复初始化认证信息
+
+## 质控提醒功能
+### 基本用法
+```javascript
+// 调用质控提醒功能
+var qcParams = {
+    userGuid: 'patient-001',
+    serialNumber: 'HN20231201001',
+    caseNo: 'CASE20231201001',
+    currentBedCode: 'B001',
+    patientName: '张三',
+    doctorGuid: 'doctor-001',
+    doctorName: '李医生',
+    admissionTime: '2023-12-01 10:00:00',
+    inpatientDepartment: '内科',
+    inpatientArea: '内科病区',
+    inpatientDepartmentId: 'DEPT001',
+    divisionId: 'DIV001',
+    pageSource: 'emr',
+    openInterdict: 1,
+    triggerSource: 1,
+    patientInfo: {
+        gender: 0, // 0:男,1:女
+        birthDate: '1980-01-01',
+        age: '43',
+        ageType: '岁',
+        maritalStatus: 1,
+        pregnancyStatus: 0
+    },
+    progressNoteList: [
+        {
+            progressGuid: 'PROG001',
+            progressTypeName: '入院记录',
+            progressType: 1,
+            doctorGuid: 'doctor-001',
+            doctorName: '李医生',
+            progressMessage: '患者入院情况...',
+            msgType: 1
+        }
+    ]
+};
+
+// 获取编辑器实例后调用质控功能
+HMEditorLoader.getEditorInstanceAsync(editorId)
+    .then(function(editorInstance) {
+        editorInstance.qc(qcParams);
+    })
+    .catch(function(error) {
+        console.error("获取编辑器实例失败:", error);
+    });
+```
+
+### qc方法参数说明
+
+| 参数名 | 类型 | 必填 | 描述 |
+| --- | --- | --- | --- |
+| userGuid | String | 是 | 用户唯一标识 |
+| serialNumber | String | 是 | 序列号（住院号或门诊号） |
+| caseNo | String | 是 | 病历号 |
+| currentBedCode | String | 是 | 床位号 |
+| patientName | String | 是 | 患者姓名 |
+| doctorGuid | String | 是 | 医生唯一标识 |
+| doctorName | String | 是 | 医生姓名 |
+| admissionTime | String | 是 | 入院时间 |
+| inpatientDepartment | String | 是 | 住院科室 |
+| inpatientArea | String | 是 | 病区 |
+| inpatientDepartmentId | String | 是 | 科室ID |
+| divisionId | String | 是 | 病区ID |
+| pageSource | String | 是 | 页面来源 |
+| openInterdict | Number | 是 | 是否开启拦截（0:否,1:是） |
+| triggerSource | Number | 是 | 触发来源 |
+| patientInfo | Object | 是 | 患者信息对象 |
+| patientInfo.gender | Number | 是 | 性别（0:男,1:女） |
+| patientInfo.birthDate | String | 是 | 出生日期 |
+| patientInfo.age | String | 是 | 年龄 |
+| patientInfo.ageType | String | 是 | 年龄单位 |
+| patientInfo.maritalStatus | Number | 是 | 婚姻状况 |
+| patientInfo.pregnancyStatus | Number | 是 | 妊娠状态 |
+| progressNoteList | Array | 是 | 病历列表 |
+| progressNoteList[].progressGuid | String | 是 | 病历唯一标识 |
+| progressNoteList[].progressTypeName | String | 是 | 病历类型名称 |
+| progressNoteList[].progressType | Number | 是 | 病历类型 |
+| progressNoteList[].doctorGuid | String | 是 | 医生唯一标识 |
+| progressNoteList[].doctorName | String | 是 | 医生姓名 |
+| progressNoteList[].progressMessage | String | 是 | 病历内容 |
+| progressNoteList[].msgType | Number | 是 | 消息类型 |
+
+## 激活指尖大模型
+### 基本用法
+```javascript
+// 调用AI助手功能
+var aiParams = {
+    recordType: '入院记录', // 病历类型
+    progressGuid: 'PROG001' // 病历唯一编号
+};
+
+// 获取编辑器实例后调用AI助手功能
+HMEditorLoader.getEditorInstanceAsync(editorId)
+    .then(function(editorInstance) {
+        editorInstance.aiActive(aiParams);
+    })
+    .catch(function(error) {
+        console.error("获取编辑器实例失败:", error);
+    });
+```
+
+### ai方法参数说明
+
+| 参数名 | 类型 | 必填 | 描述 |
+| --- | --- | --- | --- |
+| recordType | String | 是 | 病历类型（如：入院记录、病程记录等） |
+| progressGuid | String | 是 | 病历唯一编号 |
+
+## 病历生成功能
+### 基本用法
+```javascript
+// 调用病历生成功能，获取当前widget中可AI生成的数据元节点并进行批量生成
+HMEditorLoader.getEditorInstanceAsync(editorId)
+    .then(function(editorInstance) {
+        editorInstance.generateDocument();
+    })
+    .catch(function(error) {
+        console.error("获取编辑器实例失败:", error);
+    });
+```
+
+### generateDocument方法说明
+
+| 方法名 | 参数 | 返回值 | 描述 |
+| --- | --- | --- | --- |
+| generateDocument | 无 | void | 获取当前widget中可AI生成的数据元节点并进行批量生成 |
+
+**功能说明：**
+- 此方法会自动扫描当前文档中所有可进行AI生成的数据元节点
+- 对扫描到的数据元节点进行批量AI生成处理
+- 无需传入参数，方法会自动处理当前文档内容
+- 适用于需要批量生成病历内容的场景
+
+## 病历段落生成功能
+### 基本用法
+```javascript
+// 调用病历段落生成功能，根据目标节点生成病历段落 
+HMEditorLoader.getEditorInstanceAsync(editorId)
+    .then(function(editorInstance) {
+        var selection = editorInstance.editor.getSelection().getRanges()[0]; // 获取鼠标焦点
+        var targetNode = selection.startContainer.$; // 目标节点
+        editorInstance.generateSection(targetNode);
+    })
+    .catch(function(error) {
+        console.error("获取编辑器实例失败:", error);
+    });
+```
+
+### generateSection方法说明
+
+| 方法名 | 参数 | 类型 | 必填 | 返回值 | 描述 |
+| --- | --- | --- | --- | --- | --- |
+| generateSection | targetNode | Object | 是 | void | 根据目标节点生成病历段落 |
+
+**功能说明：**
+- 此方法针对指定的目标节点进行AI段落生成
+- 支持对文档中的特定区域或节点进行精确的段落生成
+- 适用于需要针对特定内容区域进行AI生成的场景
+- 相比generateDocument的批量处理，此方法更加精确和针对性
+
+**参数说明：**
+- `targetNode`: 目标节点对象，指定需要进行AI段落生成的DOM节点
+
+## 常见问题
+
+### 质控提醒功能无法调用
+
+1. 确保已正确初始化认证信息（调用initAutherEntity）
+2. 检查质控参数是否完整，必填字段不能为空
+3. 确认编辑器实例已正确加载
+4. 检查网络连接和AI服务器状态
+
+### 激活指尖大模型功能无响应
+
+1. 确保已正确初始化认证信息
+2. 检查recordType和progressGuid参数是否正确
+3. 确认AI服务器地址配置正确
+4. 检查网络连接稳定性
+
+### 最佳实践
+
+1. 在调用qc和ai功能前，确保已完成认证初始化
+2. 总是处理异常情况，特别是在网络不稳定的环境
+3. 根据实际业务场景正确设置质控参数
+4. 在调用AI功能前，确保编辑器实例已准备就绪
+5. 合理设置质控提醒的触发时机，避免频繁调用
+

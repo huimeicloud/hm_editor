@@ -16,22 +16,33 @@ class ApiLogger {
      * 初始化日志记录器
      */
     init() {
-        // 创建样式
-        const style = document.createElement('style');
-        // document.head.appendChild(style);
-
-        // 获取日志元素和容器
+        // 获取日志容器元素
         this.logElement = document.getElementById('apiLog');
         this.logContainer = document.getElementById('logContent');
 
         if (!this.logElement || !this.logContainer) {
-            console.error('找不到日志元素或容器');
+            console.warn('API Logger: 未找到日志容器元素');
             return;
         }
 
-        // 绑定按钮事件
-        document.getElementById('btnToggleLog').addEventListener('click', this.toggleLogPanel.bind(this));
-        document.getElementById('btnClearLog').addEventListener('click', this.clearLog.bind(this));
+        // 绑定按钮事件 - 使用新的助手块按钮ID
+        var btnExpand = document.getElementById('btnExpand');
+        var btnClear = document.getElementById('btnClear');
+        var btnScroll = document.getElementById('btnScroll');
+
+        if (btnExpand) {
+            btnExpand.addEventListener('click', this.toggleLogPanel.bind(this));
+        }
+        if (btnClear) {
+            btnClear.addEventListener('click', this.clearLog.bind(this));
+        }
+        if (btnScroll) {
+            btnScroll.addEventListener('click', function() {
+                if (this.logContainer) {
+                    this.logContainer.scrollTop = this.logContainer.scrollHeight;
+                }
+            }.bind(this));
+        }
 
         // 添加日志指示器
         this.setupLogIndicator();
@@ -43,16 +54,10 @@ class ApiLogger {
         document.body.classList.add('log-collapsed');
 
         // 初始状态设置为折叠
-        const panel = document.querySelector('.log-panel');
+        var panel = document.querySelector('.assistant-panel');
+        if (panel) {
         panel.classList.add('collapsed');
-
-        // 初始添加垂直文本
-        const btnToggle = document.getElementById('btnToggleLog');
-        btnToggle.textContent = '';
-        const verticalText = document.createElement('div');
-        verticalText.className = 'vertical-text';
-        verticalText.textContent = 'API 调用日志';
-        btnToggle.appendChild(verticalText);
+        }
 
         // 设置MutationObserver监控日志内容变化，自动滚动
         this.setupScrollObserver();
@@ -72,14 +77,19 @@ class ApiLogger {
      * 设置滚动观察器，监控日志变化自动滚动
      */
     setupScrollObserver() {
-        if (!this.logElement || !this.logContainer) return;
+        if (!this.logElement || !this.logContainer) {
+            console.warn('API Logger: 未找到日志元素或容器');
+            return;
+        }
 
         // 创建MutationObserver监控日志元素变化
         const observer = new MutationObserver(() => {
             if (this.autoScroll) {
                 // 使用requestAnimationFrame确保在下一帧渲染前滚动
                 requestAnimationFrame(() => {
+                    if (this.logContainer) {
                     this.logContainer.scrollTop = this.logContainer.scrollHeight;
+                    }
                 });
             }
         });
@@ -101,17 +111,23 @@ class ApiLogger {
      * 设置日志指示器
      */
     setupLogIndicator() {
+        var panel = document.querySelector('.assistant-panel');
+        if (!panel) {
+            console.warn('API Logger: 未找到助手面板元素');
+            return;
+        }
+
         // 创建日志指示器元素
         const indicator = document.createElement('div');
         indicator.className = 'recent-log-indicator';
-        document.querySelector('.log-panel').appendChild(indicator);
+        panel.appendChild(indicator);
 
         // 创建提示文本元素
         const tooltip = document.createElement('div');
         tooltip.className = 'log-indicator-tooltip';
         tooltip.textContent = '有新日志';
         tooltip.style.display = 'none';
-        document.querySelector('.log-panel').appendChild(tooltip);
+        panel.appendChild(tooltip);
 
         // 鼠标悬停在指示器上显示提示
         indicator.addEventListener('mouseenter', () => {
@@ -125,7 +141,6 @@ class ApiLogger {
 
         // 点击指示器展开日志面板
         indicator.addEventListener('click', () => {
-            const panel = document.querySelector('.log-panel');
             if (panel.classList.contains('collapsed')) {
                 this.toggleLogPanel();
             }
@@ -140,24 +155,30 @@ class ApiLogger {
      * 设置自动滚动指示器
      */
     setupAutoScrollIndicator() {
+        var panel = document.querySelector('.assistant-panel');
+        if (!panel) {
+            console.warn('API Logger: 未找到助手面板元素');
+            return;
+        }
+
         // 创建自动滚动指示器
         const indicator = document.createElement('div');
         indicator.className = 'auto-scroll-indicator';
         indicator.textContent = '自动滚动已激活';
-        document.querySelector('.log-panel').appendChild(indicator);
+        panel.appendChild(indicator);
 
         // 保存引用
         this.autoScrollIndicator = indicator;
 
         // 添加自动滚动切换按钮
         const autoScrollBtn = document.createElement('button');
-        autoScrollBtn.className = 'log-button auto-scroll-btn';
+        autoScrollBtn.className = 'assistant-btn auto-scroll-btn';
         autoScrollBtn.title = '切换自动滚动功能';
-        autoScrollBtn.textContent = '滚动:开';
+        autoScrollBtn.innerHTML = '<i class="fa fa-arrow-down"></i>';
         autoScrollBtn.addEventListener('click', () => {
             // 切换自动滚动状态
             this.autoScroll = !this.autoScroll;
-            autoScrollBtn.textContent = `滚动:${this.autoScroll ? '开' : '关'}`;
+            autoScrollBtn.innerHTML = this.autoScroll ? '<i class="fa fa-arrow-down"></i>' : '<i class="fa fa-times"></i>';
 
             // 显示状态变更指示器
             indicator.textContent = this.autoScroll ? '自动滚动已激活' : '自动滚动已关闭';
@@ -175,9 +196,9 @@ class ApiLogger {
         });
 
         // 添加到头部按钮区域
-        const headerBtns = document.querySelector('.log-header-btns');
+        const headerBtns = document.querySelector('.assistant-buttons');
         if (headerBtns) {
-            headerBtns.insertBefore(autoScrollBtn, headerBtns.firstChild);
+            headerBtns.appendChild(autoScrollBtn);
         }
 
         // 保存引用
@@ -247,7 +268,7 @@ class ApiLogger {
 
         const logEntry = document.createElement('div');
         logEntry.className = `log-entry log-${type}`;
-        
+
         // 为info类型的日志添加特殊类名，用于取消悬停边框效果
         if (type === 'info') {
             logEntry.classList.add('log-info-entry');
@@ -335,7 +356,8 @@ class ApiLogger {
         this.logElement.appendChild(logEntry);
 
         // 如果日志面板折叠，激活日志指示器
-        if (document.querySelector('.log-panel').classList.contains('collapsed')) {
+        var panel = document.querySelector('.assistant-panel');
+        if (panel && panel.classList.contains('collapsed')) {
             this.activateLogIndicator();
         }
 
@@ -357,7 +379,9 @@ class ApiLogger {
         // 5秒后自动隐藏
         clearTimeout(this.indicatorTimeout);
         this.indicatorTimeout = setTimeout(() => {
+            if (this.logIndicator) {
             this.logIndicator.classList.remove('active');
+            }
         }, 5000);
     }
 
@@ -374,37 +398,35 @@ class ApiLogger {
      * 折叠/展开日志面板
      */
     toggleLogPanel() {
-        const panel = document.querySelector('.log-panel');
+        const panel = document.querySelector('.assistant-panel');
+        if (!panel) {
+            console.warn('API Logger: 未找到助手面板元素');
+            return;
+        }
+
         panel.classList.toggle('collapsed');
 
         // 同时切换 body 类，用于调整 tab-container 的外边距
         document.body.classList.toggle('log-collapsed', panel.classList.contains('collapsed'));
 
-        const btnToggle = document.getElementById('btnToggleLog');
-        btnToggle.textContent = panel.classList.contains('collapsed') ? '' : '折叠';
+        const btnExpand = document.getElementById('btnExpand');
+        if (btnExpand) {
+            var icon = btnExpand.querySelector('i');
+            // if (panel.classList.contains('collapsed')) {
+            //     if (icon) icon.className = 'fa fa-expand';
+            // } else {
+            //     if (icon) icon.className = 'fa fa-compress';
+            // }
+            // 只显示收起按钮
+            if (icon) icon.className = 'fa fa-angle-right';
+        }
 
-        // 如果是折叠状态，添加垂直文本
-        if (panel.classList.contains('collapsed')) {
-            if (!document.querySelector('.vertical-text')) {
-                const verticalText = document.createElement('div');
-                verticalText.className = 'vertical-text';
-                verticalText.textContent = 'API 调用日志';
-                btnToggle.appendChild(verticalText);
-            }
-        } else {
-            // 展开状态，移除垂直文本
-            const verticalText = btnToggle.querySelector('.vertical-text');
-            if (verticalText) {
-                verticalText.remove();
-            }
-
-            // 如果是展开状态且自动滚动开启，滚动到底部
-            if (this.autoScroll && this.logContainer) {
+        // 如果是展开状态且自动滚动开启，滚动到底部
+        if (!panel.classList.contains('collapsed') && this.autoScroll && this.logContainer) {
                 // 延迟执行，等待过渡动画完成
                 setTimeout(() => {
                     this.logContainer.scrollTop = this.logContainer.scrollHeight;
                 }, 300);
-            }
         }
 
         // 如果展开面板，隐藏指示器

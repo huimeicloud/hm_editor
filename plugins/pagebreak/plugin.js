@@ -1149,8 +1149,7 @@ var removeSplitterDebugger = false; // 调试保存使用, 去除所有分页符
             splittersRemoved.style.paddingLeft = paperMarginPx.left + 'px';
             splittersRemoved.style.paddingRight = paperMarginPx.right + 'px';
             splittersRemoved.style.paddingBottom = 0;
-            // 暂时取消宽度设置 by lixia at 2025-05-09
-            // splittersRemoved.style.width = CKEDITOR.plugins.paperCmd.logicPaperSize.width + 'px';
+            splittersRemoved.style.width = CKEDITOR.plugins.paperCmd.logicPaperSize.width + 'px';
 
             splittersRemoved.style.background = 'white';
             // splittersRemoved.style.cursor = 'text';

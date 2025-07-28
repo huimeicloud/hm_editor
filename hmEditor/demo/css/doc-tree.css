@@ -1,0 +1,384 @@
+
+/* 文档树结构 */
+.document-tree {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Tab页签头部样式 */
+.tree-tabs {
+    display: flex;
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 8px 8px 0 0;
+    overflow: hidden;
+}
+
+.tree-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    position: relative;
+    border-right: 1px solid rgba(226, 232, 240, 0.8);
+    background: rgba(248, 250, 252, 0.5);
+}
+
+.tree-tab:last-child {
+    border-right: none;
+}
+
+.tree-tab:hover {
+    background: rgba(59, 130, 246, 0.08);
+    transform: translateY(-1px);
+}
+
+.tree-tab.active {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 197, 253, 0.15) 100%);
+    border-bottom: 2px solid #007aff;
+    color: #007aff;
+}
+
+.tree-tab .tree-icon {
+    font-size: 16px;
+    color: #64748b;
+    transition: color 0.2s;
+}
+
+.tree-tab.active .tree-icon {
+    color: #007aff;
+}
+
+.tree-tab .tree-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #64748b;
+    transition: color 0.2s;
+}
+
+.tree-tab.active .tree-title {
+    color: #007aff;
+}
+
+/* Tab内容区域样式 */
+.tree-tab-content {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.tree-tab-content.active {
+    display: flex;
+}
+
+.tree-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 197, 253, 0.1) 100%);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    position: relative;
+}
+
+.tree-header:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 197, 253, 0.15) 100%);
+    border-color: rgba(59, 130, 246, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.tree-header::after {
+    content: "";
+    position: absolute;
+    right: 12px;
+    font-size: 11px;
+    color: rgba(59, 130, 246, 0.7);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.tree-header:hover::after {
+    opacity: 1;
+}
+
+.tree-header .tree-icon {
+    font-size: 16px;
+    color: #007aff;
+    transition: color 0.2s;
+}
+
+.tree-header.collapsed .tree-icon {
+    color: #64748b;
+}
+
+.tree-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #007aff;
+}
+
+.tree-container {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 8px;
+    padding: 12px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+/* 树节点样式 */
+.tree-node {
+    margin: 1px 0;
+}
+
+.tree-node-content {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 13px;
+    position: relative;
+    border: 1px solid transparent;
+    width: fit-content;
+    min-width: 100%;
+}
+
+.tree-node-content:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(147, 197, 253, 0.08) 100%);
+    border-color: rgba(59, 130, 246, 0.2);
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.tree-node-content.active {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 197, 253, 0.15) 100%);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    transform: translateX(4px);
+}
+
+/* 展开/折叠图标 */
+.expand-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 2px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.expand-icon:hover {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.expand-icon::before {
+    content: '';
+    width: 0;
+    height: 0;
+    border-left: 5px solid #64748b;
+    border-top: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.expand-icon.expanded::before {
+    transform: rotate(90deg);
+    border-left: 3px solid #64748b;
+    border-right: 3px solid transparent;
+    border-top: 5px solid #64748b;
+    border-bottom: 0;
+}
+
+.expand-icon.empty {
+    /* visibility: hidden; */
+    display: none;
+}
+
+/* 文档图标 */
+.doc-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    flex-shrink: 0;
+}
+
+/* 文件夹图标 */
+.doc-icon.folder {
+    color: #007aff;
+}
+
+.doc-icon.folder::before {
+    content: '';
+    width: 14px;
+    height: 11px;
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+    border-radius: 2px 2px 1px 1px;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.3);
+}
+
+.doc-icon.folder::after {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 5px;
+    height: 2px;
+    background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%);
+    border-radius: 1px 1px 0 0;
+}
+
+/* 普通文件图标 */
+.doc-icon.file {
+    color: #64748b;
+}
+
+.doc-icon.file::before {
+    content: '';
+    width: 10px;
+    height: 13px;
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    border-radius: 1px;
+    position: relative;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.doc-icon.file::after {
+    content: '';
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    width: 3px;
+    height: 3px;
+    background: #cbd5e1;
+    clip-path: polygon(0 0, 100% 100%, 0 100%);
+}
+
+/* 可编辑文件图标 - 浅蓝色简洁设计 */
+.doc-icon.file-edit {
+    color: #67c3f3;
+}
+
+.doc-icon.file-edit::before {
+    content: '';
+    width: 11px;
+    height: 13px;
+    background: linear-gradient(135deg, #e0f4ff 0%, #bae6fd 100%);
+    border: 1px solid #67c3f3;
+    border-radius: 2px;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(103, 195, 243, 0.2);
+}
+
+.doc-icon.file-edit::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 3px;
+    height: 3px;
+    background: #67c3f3;
+    border-radius: 50%;
+    box-shadow: 0 0 2px rgba(103, 195, 243, 0.5);
+}
+
+/* 文档名称 */
+.doc-name {
+    flex: 1;
+    color: #374151;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: unset;
+    min-width: 0;
+}
+
+.doc-name.folder {
+    color: #007aff;
+    font-weight: 600;
+}
+
+/* 子节点容器 */
+.tree-children {
+    margin-left: 14px;
+    border-left: 2px dotted rgba(59, 130, 246, 0.3);
+    padding-left: 6px;
+    display: none;
+    position: relative;
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.03) 0%, transparent 20%);
+}
+
+.tree-children.expanded {
+    display: block;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        max-height: 1000px;
+        transform: translateY(0);
+    }
+}
+
+/* 层级缩进 */
+.tree-level-0 { margin-left: 0; }
+.tree-level-1 { margin-left: 0px; }
+.tree-level-2 { margin-left: 8px; }
+.tree-level-3 { margin-left: 16px; }
+
+/* 滚动条样式 */
+.tree-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.tree-container::-webkit-scrollbar-track {
+    background: rgba(241, 245, 249, 0.5);
+    border-radius: 2px;
+}
+
+.tree-container::-webkit-scrollbar-thumb {
+    background: rgba(203, 213, 225, 0.8);
+    border-radius: 2px;
+}
+
+.tree-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.8);
+}
+
+

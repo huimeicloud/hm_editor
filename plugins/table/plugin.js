@@ -148,8 +148,7 @@ CKEDITOR.plugins.add( 'table', {
 		editor.on('contentDom', function () {
 			var editable = editor.editable();
 			editable.attachListener(editable, 'mouseenter', function () {
-				var designMode = editor.HMConfig.designMode;
-				if (designMode != 'true') {
+				if (!editor.HMConfig.designMode) {
 					var elements = editor.document.find("[_emrstyle*='_if(disable)']");
 					for (var i = 0; i < elements.count(); i++) {
 						elements.getItem(i).setAttribute("contenteditable", false);

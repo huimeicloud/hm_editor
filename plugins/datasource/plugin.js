@@ -2343,7 +2343,7 @@
                     return true;
                     break;
                 case 'rowdelete':
-                    if (designMode == 'true') {
+                    if (designMode) {
                         return true;
                     }
                     // var selection = editor.getSelection();
@@ -2365,7 +2365,7 @@
                     return true;
                     break;
                 case 'columndelete':
-                    if (designMode == 'true') {
+                    if (designMode) {
                         return true;
                     }
                     // var selection = editor.getSelection();
@@ -2387,7 +2387,7 @@
                     return true;
                     break;
                 case 'tabledelete':
-                    if (designMode == 'true') {
+                    if (designMode) {
                         return true;
                     }
                     // var selection = editor.getSelection();
@@ -2773,7 +2773,7 @@
                 var range0 = ranges[0];
                 if (!range0) return;
                 var designMode = editor.HMConfig.designMode;
-                if (designMode != 'true' && (editor.readOnly || range0.checkReadOnly())) { // 不可编辑区域不支持剪贴
+                if (!designMode && (editor.readOnly || range0.checkReadOnly())) { // 不可编辑区域不支持剪贴
                     editor.showNotification('当前内容不可编辑，不支持剪贴', 'warn');
                     evt.stop();
                     evt.data.preventDefault();
@@ -3084,7 +3084,7 @@
                     selection.selectRanges([range]);
                 }
                 // 如果非编辑模式点击位置在右括号的右边且右括号右边无内容, 则选进去
-                else if (editor.HMConfig.designMode !== 'true' && range.collapsed && range.startContainer.type === CKEDITOR.NODE_TEXT) {
+                else if (!editor.HMConfig.designMode && range.collapsed && range.startContainer.type === CKEDITOR.NODE_TEXT) {
                     var bracket = range.startContainer.getPrevious();
                     var afterBracket = range.startContainer;
                     var strings = '';
@@ -3324,7 +3324,7 @@
                             addPlaceHolderFlag = true;
                         }
                     }
-                    if (addPlaceHolderFlag && !composing) {
+                    if (addPlaceHolderFlag && !composing) { 
                         $newtextboxs.each(function () {
                             var $newtextbox = $(this);
                             placeholder = $newtextbox.attr('_placeholder');
@@ -3339,8 +3339,10 @@
                                             // $(newTextBox).removeClass('has-br');
                                             return;
                                         }
-                                        if($(newTextBox).attr('generate')==1 && window.WinDocModelObj && window.WinDocModelObj.generator){
-                                            window.WinDocModelObj.generator.generateRemark($(newTextBox));
+                                        // if($(newTextBox).attr('generate')==1 && window.WinDocModelObj && window.WinDocModelObj.generator){
+                                        if($(newTextBox).attr('generate')==1&&window.hmEditor&&window.hmEditor.hmAi&&window.hmEditor.hmAi.generator){
+                                            // window.WinDocModelObj.generator.generateRemark($(newTextBox));
+                                            window.hmEditor.hmAi.generator.generateRemark($(newTextBox));
                                         }else{
                                             placeholder = placeholder || '';
                                             $(newTextBox).text("\u200B" + placeholder);
@@ -3975,6 +3977,109 @@ function doTimeFormat(type, data) {
     }
 
     return data;
+}
+function formatStringDate(date, _timeoption) {
+    if(!date){
+        return date;
+    }
+    if(typeof(date) == 'string' && date.indexOf('年') > -1){
+        date = date.replace('年', '-').replace('月', '-').replace('日', ' ').replace('时', ':').replace('分', '');
+    }
+
+    if (!date || !checkDate(date)) {
+        return date;
+    }
+    var d = new Date(date),
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = '' + d.getFullYear(),
+        hour = '' + d.getHours(),
+        minute = '' + d.getMinutes(),
+        second = '' + d.getSeconds();
+    var resultDate = "";
+    switch (_timeoption) {
+        case 'datetime':
+            var timeleft = spliceTime([year, month, day], "-");
+            var timeRight = spliceTime([hour, minute], ":");
+            resultDate = timeleft + " " + timeRight;
+            break;
+        case 'time':
+            resultDate = spliceTime([hour, minute], ":");
+            break;
+        case 'month_day':
+            resultDate = spliceTime([month, day], "-");
+            break;
+        case 'date':
+            resultDate = spliceTime([year, month, day], '-');
+            break;
+        case 'date_han':
+            if (month.length < 2) {
+                month = '0' + month;
+            }
+            if (day.length < 2) {
+                day = '0' + day;
+            }
+            resultDate = year + '年' + month + '月' + day + '日';
+            break;
+        case 'datetime_han':
+            if (month.length < 2) {
+                month = '0' + month;
+            }
+            if (day.length < 2) {
+                day = '0' + day;
+            }
+            if (hour.length < 2) {
+                hour = '0' + hour;
+            }
+            if (minute.length < 2) {
+                minute = '0' + minute;
+            }
+            resultDate = year + '年' + month + '月' + day + '日' + hour + '时' + minute + '分';
+            break;
+        case 'fullDateTime':
+            if (month.length < 2) {
+                month = '0' + month;
+            }
+            if (day.length < 2) {
+                day = '0' + day;
+            }
+            if (hour.length < 2) {
+                hour = '0' + hour;
+            }
+            if (minute.length < 2) {
+                minute = '0' + minute;
+            }
+            if (second.length < 2) {
+                second = '0' + second;
+            }
+            resultDate = year + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second;
+            break;
+        case 'fullTime':
+            if (hour.length < 2) {
+                hour = '0' + hour;
+            }
+            if (minute.length < 2) {
+                minute = '0' + minute;
+            }
+            if (second.length < 2) {
+                second = '0' + second;
+            }
+            resultDate = hour + ':' + minute + ':' + second;
+            break;
+        case 'year_month':
+            resultDate = spliceTime([year, month], "-");
+            break;
+    }
+    return resultDate ? resultDate : "";
+}
+function checkDate(dateStr) {
+    var date = new Date(dateStr);
+
+    if (!date || 'Invalid Date' == date || 'undefined' == date || 'null' == date) {
+        return false;
+    } else {
+        return true;
+    }
 }
 // 点击input
 function inputClick(type) {

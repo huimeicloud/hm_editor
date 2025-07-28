@@ -426,12 +426,10 @@ function doPrintChrome(editor, syncType, timeout,download, callback) {
     dealPrintGroupTable($(body.$));
     $(body.$).find('span[diag]').css('display','none');
     $(body.$).find('span[operation]').css('display','none');
+    removeDocReminder(body);
     // 如果不保存 pdf 的话可以直接在用户电脑上打印
     // 分页模式打印是否生成pdf
-    if (!printConfig.pageBreakPrintPdf && !download) { 
-        if($(body.$).find('.doc-reminder').length > 0){
-            $(body.$).find('.doc-reminder').remove();
-        }
+    if (!printConfig.pageBreakPrintPdf && !download) {
         document.getElementById('cke_1_contents').getElementsByTagName('iframe')[0].contentWindow.print();
         callback && callback();
         return;
@@ -774,6 +772,8 @@ function doPrint(editor, syncType, timeout, download,callback) {
     }
     $(body.$).find('span[diag]').css('display','none');
     $(body.$).find('span[operation]').css('display','none');
+    // 移除质控提醒 及  ai 提醒
+    removeDocReminder(body);
     var headHtml = head.getOuterHtml();
     timeout = isNaN(timeout) ? 100 : timeout;
     // var _simPageList = $(body.$).find('div[_simPage]');
@@ -786,7 +786,25 @@ function doPrint(editor, syncType, timeout, download,callback) {
         clearTimeout(timeIndex);
     }, timeout);
 }
-
+// 移除质控提醒 及  ai 提醒
+function removeDocReminder(body){
+    // 移除doc-reminder元素
+    if($(body.$).find('.doc-reminder').length > 0){
+        $(body.$).find('.doc-reminder').remove();
+    }
+    // 移除doc-warn-level 类
+    $(body.$).find('.doc-warn-txt').removeClass('doc-warn-txt');
+    $(body.$).find('.doc-warn-level-1').removeClass('doc-warn-level-1');
+    $(body.$).find('.doc-warn-level-2').removeClass('doc-warn-level-2');
+    $(body.$).find('.doc-warn-level-3').removeClass('doc-warn-level-3');
+    // 移除doc-warn-p 元素
+    if($(body.$).find('.doc-warn-p').length > 0){
+        $(body.$).find('.doc-warn-p').remove();
+    }
+    $(body.$).find('.r-model-gen-remark').remove();
+    $(body.$).find('.sk-popup').remove();
+    $(body.$).find('.r-model-gen-text').remove(); // ai 生成，但未保留
+}
 function dealPrintGroupTable($body){
 
     $body.find('.group-table-btn').css('display','none');
@@ -904,6 +922,11 @@ function checkDaiwenFont(body, papareHeaderStr, papareFooterStr) {
 
             editor.on('beforeCommandExec', function 打印前保存(evt) {
                 if ('print' === evt.data.command.name) {
+                    // 打印前把AI弹窗移除 不移除 恢复快照后，按钮点击事件会失效
+                    // var $body = $(editor.document.getBody().$);
+                    // $body.find('.doc-composer').parents('.sk-popup').remove();
+                    window.hmEditor.hmAi.generator.closePopup();
+                    window.hmEditor.hmAi.composer.removePopup();
                     // 滚动高度
                     var documentElement = editor.document.$.documentElement;
                     if (documentElement) {
@@ -993,7 +1016,7 @@ function checkDaiwenFont(body, papareHeaderStr, papareFooterStr) {
                         var editable = editor.editable();
                         editable.fire('togglePlaceHolder', {'showAllPlaceholder': true});
                         // 打印后聚合病历切换时不能定位左侧定标----影响打印/续打后左侧列表定位及展示
-                        //initDocumentFireEvt(editorIns, $(editor.document.getBody().$));
+                        // initDocumentFireEvt(editorIns, $(editor.document.getBody().$));
                     }
                 }
             }, null, null, 100);

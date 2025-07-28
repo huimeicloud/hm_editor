@@ -123,7 +123,7 @@
             display: inline-block;
             width: 24px;
             height: 24px;
-            background-image: url(../img/icons/AI.png);
+            background: url(../img/icons/AI.png);
             background-size: 100% 100%;
             vertical-align: middle;
         }
@@ -211,6 +211,13 @@
                 background-color: #f7dddb;
             }
         }
+    }
+    .doc-composer-footer{
+        font-size: 12px;
+        color: #999;
+        text-align: center;
+        margin-top: 5px;
+        border-top: 1px solid #ddd;
     }
     .doc-composer-qc{
         position: relative;
@@ -476,7 +483,7 @@
                 }
                 .doc-reminder-icon{
                     width: 20px;
-                    height: 20px;
+                    height: 20px; 
                     background-size: 100% 100%;
                     display: inline-block;
                     vertical-align: middle;
@@ -499,12 +506,24 @@
                 .doc-reminder-icon{
                     background-image: url(./img/icons/close.png);
                 }
-            }
+            } 
         }
     }
     .doc-reminder-list{
         padding: 10px;
         overflow-y: auto;
+        .doc-reminder-level-3{
+            .doc-reminder-item-header .doc-reminder-item-icon{
+                background-image: url(./img/icons/level3.png);
+            }
+        }
+        .doc-reminder-level-2{
+            background-color: #FFFBF0;
+            border: 1px solid #CCA583;
+            .doc-reminder-item-header .doc-reminder-item-icon{
+                background-image: url(./img/icons/level2.png);
+            }
+        }
     }
    
 }
@@ -593,6 +612,11 @@
     .doc-reminder-item-header .doc-reminder-item-icon{
         background-image: url(../img/icons/level2.png);
     }
+}
+
+.doc-ai-correct-active{ 
+    // background: linear-gradient(135deg, #FFD7D1 0%, #FFF0EF 100%);
+    background: #FFF5D6;
 }
 
 

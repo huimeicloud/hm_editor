@@ -49,11 +49,9 @@ $(function () {
             var searchParams = new URLSearchParams(location.search);
             _this.editorMode = searchParams.get("editorMode");
             _this.consoleCanEdit = searchParams.get("consoleCanEdit");
-            _this.designMode = searchParams.get("designMode");
             _this.templateTrueName = decodeURIComponent(searchParams.get("templateTrueName"));
 
             // 只打印调试信息，不改变全局变量
-            console.log('初始化数据元对话框，当前global_ds_list状态:', window.global_ds_list ? '已存在' : '不存在');
             if (window.global_ds_list) {
                 console.log('当前global_ds_list数据元数量:', window.global_ds_list.length);
             }

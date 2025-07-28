@@ -446,7 +446,7 @@
 
 		init: function( editor ) {
 			// 不处理的目录 (模板制作除外)
-			if (editor.HMConfig.designMode !== 'true') {
+			if (!editor.HMConfig.designMode) {
 				return;
 			}
 			editor.on( 'contentDom', function() {

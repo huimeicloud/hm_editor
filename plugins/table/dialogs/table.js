@@ -714,6 +714,26 @@
 								}
 							}
                         ]
+					},{
+                        type: 'hbox',
+                        children: [
+							{
+								id: 'is_nursing_form',
+								type: 'checkbox',
+								requiredContent: 'table[right]',
+								label: '是否为护理表单',
+								setup: function( selectedTable ) {
+									this.setValue( selectedTable.getAttribute('is_nursing_form'));
+								},
+								commit: function( data, selectedTable ) {
+									if(this.getValue()){
+										selectedTable.setAttribute('is_nursing_form', this.getValue());
+									}else {
+										selectedTable.removeAttribute('is_nursing_form');
+									}
+								}
+							}
+                        ]
 					}
 				]
 			} ]

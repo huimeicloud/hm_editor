@@ -126,8 +126,9 @@ commonHM.component['hmAi'].fnSub("utils", {
     request: function (opts) {
         var _t = this;
         var headers = {
-            Huimei_id: 'D7928B9182ABF6E0A6A6EBB71B353585'
-        };
+            'Huimei_id': 'D7928B9182ABF6E0A6A6EBB71B353585',
+            "Authorization" : "Bearer " + localStorage.getItem('HMAccessToken')
+        },
         headers = Object.assign(headers, opts.heders || {});
         $.ajax({
             type: opts.type || "POST",
@@ -172,11 +173,11 @@ commonHM.component['hmAi'].fnSub("utils", {
             var data = JSON.parse(JSON.stringify(opts.data || {}));
             data.index = index++;
             console.log('beginRequest:' + data.index);
+            var _pWindow = parent.window;
+            var aiServer = _pWindow.HMEditorLoader && _pWindow.HMEditorLoader.autherEntity && _pWindow.HMEditorLoader.autherEntity.aiServer;
+
             _t.request({
-                url: 'http://172.16.3.51/hmgpt/cdss_stream_chat',
-                heders: {
-                    Huimei_id: 'D7928B9182ABF6E0A6A6EBB71B353585'
-                },
+                url: aiServer + '/aigc/recommend/cdss_stream_chat',
                 data: data,
                 success: function (result) {
                     console.log('idx:' + data.index);

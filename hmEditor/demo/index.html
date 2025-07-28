@@ -3,6 +3,7 @@
 
     <head>
         <meta charset="utf-8">
+        <meta http-equiv="Permissions-Policy" content="unload=*, beforeunload=*">
         <title>HM Editor 标签页 Demo</title>
         <!-- 引入 jQuery -->
         <script src="../vendor/jquery.min.js"></script>
@@ -12,9 +13,14 @@
         <link rel="stylesheet" href="../vendor/font-awesome.min.css">
         <!-- 引入自定义 CSS 和 JS -->
         <link rel="stylesheet" href="./css/tab-demo.css">
+        <link rel="stylesheet" href="./css/doc-tree.css">
+        <link rel="stylesheet" href="./css/api-logger.css">
+        <link rel="stylesheet" href="./css/ai-chat.css">
         <script src="./js/tree-data.js"></script>
+        <script src="./js/record-map.js"></script>
         <script src="./js/tab-demo.js"></script>
         <script src="./js/api-logger.js"></script>
+        <script src="./js/ai-chat.js"></script>
     </head>
 
     <body>
@@ -22,73 +28,139 @@
             <div class="left-panel">
                 <div class="panel-header">
                     <div class="toolbar-title">
-                        <!-- <span class="title-icon">
-                            <img src="../img/demo-logo.png" alt="editor">
-                        </span> -->
                         <span class="title-text">编辑器 SDK 演示</span>
                     </div>
-                    <!-- <div class="panel-subtitle">惠每开源电子病历编辑器</div> -->
+                    <button id="toggleLeftPanel" class="toggle-left-panel-btn" title="收缩/展开侧边栏">
+                        <i class="fa fa-toggle-left"></i>
+                    </button>
                 </div>
                 <div class="panel-content">
                     <div class="document-tree">
-                        <div class="tree-header">
-                            <span class="tree-icon"><i class="fa fa-folder-open"></i></span>
-                            <span class="tree-title">演示病历文档列表</span>
+                        <!-- Tab 页签头部 -->
+                        <div class="tree-tabs">
+                            <div class="tree-tab" data-tab="normal">
+                                <!-- <span class="tree-icon"></span> -->
+                                <span class="tree-title">常用病历模板</span>
+                            </div>
+                            <div class="tree-tab active" data-tab="ai">
+                                <!-- <span class="tree-icon"></span> -->
+                                <span class="tree-title">AI病历演示</span>
+                            </div>
                         </div>
-                        <div class="tree-container" id="documentTree">
-                            <!-- 树结构将在这里动态生成 -->
+
+                        <!-- Tab 内容区域 -->
+                        <div class="tree-tab-content" id="normalDocumentTree">
+                            <div class="tree-container" id="documentTree">
+                                <!-- 普通病历文档树结构将在这里动态生成 -->
+                            </div>
+                        </div>
+
+                        <div class="tree-tab-content active" id="aiDocumentTree">
+                            <div class="tree-container" id="aiDocumentTree">
+                                <!-- AI病历文档树结构将在这里动态生成 -->
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
             <!-- 主内容区域 -->
             <div class="main-content">
-                <!-- 顶部工具栏 -->
-                <div class="btn-panel">
-                    <div class="left-btn-container">
-                        <button id="btnAddTab" class="btn-primary" style="height:80px">加载文档</button>
+                <div class="main-page">
+                    <!-- 顶部工具栏 -->
+                    <div class="btn-panel" id="btnPanel" style="display: none;">
+                        <div class="left-btn-container">
+                            <button id="btnAddTab" class="btn-primary" style="height:80px">加载文档</button>
+                        </div>
+                        <div class="center-btn-wrapper">
+                            <div class="center-btn-container">
+                                <button id="btnInsertDoc">插入文档</button>
+                                <button id="btnSetData">设置数据</button>
+                                <button id="btnInsertDataAtCursor">光标插入内容</button>
+                                <button id="btnInsertImageAtCursor">光标插入图片</button>
+                                <button id="btnMenu">自定义菜单</button>
+                                <button id="btnReadOnly">只读模式</button>
+                                <button id="btnRevise">修订模式</button>
+                                <button id="btnWatermark">设置水印</button>
+                                <button id="btnGetHtml">获取HTML</button>
+                                <button id="btnGetText">获取TEXT</button>
+                                <button id="btnGetMetaData">获取数据元</button>
+                                <button id="btnExportPdf">下载PDF</button>
+                                <button id="btnHmAiToken" disabled class="next-feature-btn">AI令牌</button>
+                                <button id="btnHmAiAuth" disabled class="next-feature-btn">AI认证</button>
+                                <button id="btnHmAiGen" disabled class="next-feature-btn">指尖AI</button>
+                                <button id="btnNodeGen" disabled class="next-feature-btn">段落生成</button>
+                                <button id="btnDocGen" disabled class="next-feature-btn">病历生成</button>
+                                <button id="btnHmAiQc" disabled class="next-feature-btn">质控提醒</button>
+                            </div>
+                            <div class="center-btn-toggle">
+                                 <i class="fa fa-caret-down"></i>
+                            </div>
+                        </div>
+                        <div class="right-btn-container">
+                            <button id="btnCreateTemplate" class="btn-success">制作模板</button>
+                            <button id="btnCloseTab" class="btn-danger">销毁编辑器</button>
+                        </div>
                     </div>
-                    <div class="center-btn-container">
-                        <button id="btnInsertDoc">插入文档</button>
-                        <button id="btnSetData">设置数据</button>
-                        <button id="btnInsertDataAtCursor">光标插入内容</button>
-                        <button id="btnInsertImageAtCursor">光标插入图片</button>
-                        <button id="btnMenu">自定义菜单</button>
-                        <button id="btnReadOnly">只读模式</button>
-                        <button id="btnRevise">修订模式</button>
-                        <button id="btnWatermark">设置水印</button>
-                        <button id="btnGetHtml">获取HTML</button>
-                        <button id="btnGetText">获取TEXT</button>
-                        <button id="btnGetMetaData">获取数据元</button>
-                        <button id="btnExportPdf">下载PDF</button> 
-                        <button id="btnHmAiQc" disabled class="next-feature-btn">质控提醒</button>
-                        <button id="btnNodeGen" disabled class="next-feature-btn">节点生成</button>
-                        <button id="btnDocGen" disabled class="next-feature-btn">病历生成</button>
-                        <button id="btnDocContinue" disabled class="next-feature-btn">病历续写</button>
-                        <button id="btnAgent" disabled class="next-feature-btn">常用Agent</button>
-                        
-                    </div>
-                    <div class="right-btn-container">
-                        <button id="btnCreateTemplate" class="btn-success">制作模板</button>
-                        <button id="btnCloseTab" class="btn-danger">销毁编辑器</button>
-                    </div>
+                    <!-- 标签页容器 -->
+                    <div id="tabContainer" class="tab-container"></div>
                 </div>
-
-                <!-- 标签页容器 -->
-                <div id="tabContainer" class="tab-container"></div>
             </div>
 
-            <!-- 右侧日志窗口 -->
-            <div class="log-panel">
-                <div class="log-header">
-                    <div class="log-title">API 调用日志</div>
-                    <div class="log-header-btns">
-                        <button id="btnClearLog" class="log-button" title="清空日志">清空</button>
-                        <button id="btnToggleLog" class="log-button" title="折叠/展开日志">折叠</button>
+            <!-- 右侧多功能面板 -->
+            <div class="side-panel" id="sidePanel">
+                <!-- 竖直悬浮tab，两按钮（只显示icon） -->
+                <div class="assistant-float-tab-col" id="assistantFloatTabCol">
+                    <div class="assistant-float-tab-btn active" data-tab="log">
+                        <span>API 日志</span>
+                    </div>
+                    <div class="assistant-float-tab-btn" data-tab="ai" style="display:none;">
+                        <span>AI 对话</span>
+                    </div>
+                    <!--// mayson 内嵌展示，先不发布-->
+                    <div class="assistant-float-tab-btn" data-tab="smart" style="display:none;">
+                        <span>智能提醒</span>
                     </div>
                 </div>
-                <div class="log-content" id="logContent">
-                    <div id="apiLog" class="api-log"></div>
+                <!-- 助手块 -->
+                <div class="assistant-block" style="display:none;">
+                    <div class="assistant-content">
+                        <!-- 顶部标题栏 -->
+                        <div class="assistant-header">
+                            <div class="assistant-title" id="assistantTitle">API日志</div>
+                            <div class="assistant-buttons">
+                                <button id="btnClear" class="assistant-btn" title="清空">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                                <button id="btnExpand" class="assistant-btn" title="收起">
+                                    <i class="fa fa-angle-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- API日志面板 -->
+                        <div class="assistant-panel" id="assistantLogPanel">
+                            <div class="log-content" id="logContent">
+                                <div id="apiLog" class="api-log"></div>
+                            </div>
+                        </div>
+                        <!-- AI对话面板 -->
+                        <div class="assistant-panel" id="assistantAiPanel" style="display:none;">
+                            <div class="chat-messages" id="chatMessages"></div>
+                            <div class="chat-input-area">
+                                <textarea id="chatInput" placeholder="请输入问题..." rows="1"></textarea>
+                                <div class="chat-buttons">
+                                    <button id="sendChatBtn" class="chat-btn send-btn" title="发送">
+                                        <i class="fa fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 智能提醒面板 -->
+                        <div class="assistant-panel" id="assistantSmartPanel" style="display:none;">
+                            <div class="smart-remind-content"
+                                style="padding: 24px; text-align: center; color: #888; font-size: 16px;">这里是智能提醒内容区
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -100,7 +172,8 @@
                         <input type="checkbox" id="openInNewTab"> 在新标签中打开
                     </label>
                 </div>
-                <textarea placeholder="请输入JSON格式的文档内容" style="height:220px;min-height:120px;resize:vertical;white-space:pre;overflow:auto;"></textarea>
+                <textarea placeholder="请输入JSON格式的文档内容"
+                    style="height:220px;min-height:120px;resize:vertical;white-space:pre;overflow:auto;"></textarea>
                 <div class="quick-links">
                     快速载入:
                     <a href="javascript:void(0);" class="quick-link quick-link-loadDoc"
@@ -307,14 +380,14 @@
                 </div> -->
                 <div style="margin: 25px 0;">
                     <label class="switch-label">
-                         <label>只读模式：</label>
+                        <label>只读模式：</label>
                         <div class="switch">
                             <input type="checkbox" id="readOnlyFlag" class="switch-flag">
                             <span class="slider">
                                 <span class="slider-circle"></span>
                             </span>
                         </div>
-                        <span class="switch-label-text">取消</span>
+                        <span class="switch-label-text">关闭</span>
                     </label>
                 </div>
                 <div>
@@ -341,12 +414,12 @@
             </div>
 
             <!-- 修订模式弹框 -->
-             <!-- 只读模式设置对话框 -->
+            <!-- 只读模式设置对话框 -->
             <div class="dialogBox reviseDialog">
                 <h3>演示用 - 修订模式设置</h3>
                 <div style="margin: 25px 0;">
                     <label class="switch-label">
-                         <label>修订模式：</label>
+                        <label>修订模式：</label>
                         <div class="switch">
                             <input type="checkbox" id="reviseFlag" class="switch-flag">
                             <span class="slider">
@@ -365,21 +438,83 @@
             <!-- 自定义菜单参数弹框 -->
             <div class="customMenuDialog dialogBox" style="display:none;">
                 <h3>演示用-自定义右键菜单参数</h3>
-                <textarea id="customMenuJson" style="width:100%;height:240px;white-space:pre;overflow:auto;resize:vertical;font-family:monospace;font-size:14px;"></textarea>
+                <textarea id="customMenuJson"
+                    style="width:100%;height:240px;white-space:pre;overflow:auto;resize:vertical;font-family:monospace;font-size:14px;"></textarea>
                 <div style="margin-top:18px;text-align:right;">
-                  <button id="customMenuOkBtn" class="dialog-btn btn-primary">确定</button>
-                  <button id="customMenuCancelBtn" class="dialog-btn">取消</button>
+                    <button id="customMenuOkBtn" class="dialog-btn btn-primary">确定</button>
+                    <button id="customMenuCancelBtn" class="dialog-btn">取消</button>
                 </div>
             </div>
 
             <!-- 通用alert弹框 -->
-            <div id="customAlertDialog" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.15);align-items:center;justify-content:center;">
-              <div style="background:#fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.13);padding:20px 28px;min-width:220px;max-width:400px;">
-                <div id="customAlertMsg" style="font-size:15px;color:#333;margin-bottom:18px;word-break:break-all;"></div>
-                <div style="text-align:right;">
-                  <button id="alertOkBtn" style="background:#1976d2;color:#fff;border:none;border-radius:4px;padding:5px 16px;font-size:14px;cursor:pointer;">确定</button>
+            <div id="customAlertDialog"
+                style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.15);align-items:center;justify-content:center;">
+                <div
+                    style="background:#fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.13);padding:20px 28px;min-width:220px;max-width:400px;">
+                    <div id="customAlertMsg" style="font-size:15px;color:#333;margin-bottom:18px;word-break:break-all;">
+                    </div>
+                    <div style="text-align:right;">
+                        <button id="alertOkBtn"
+                            style="background:#1976d2;color:#fff;border:none;border-radius:4px;padding:5px 16px;font-size:14px;cursor:pointer;">确定</button>
+                    </div>
                 </div>
-              </div>
+            </div>
+
+            <!-- AI认证对话框 -->
+            <div class="dialogBox hmAiAuthDialog">
+                <h3>演示用 - AI认证参数</h3>
+                <textarea placeholder="请输入JSON格式的AI认证参数"></textarea>
+                <div class="quick-links">
+                    快速载入:
+                    <a href="javascript:void(0);" class="quick-link quick-link-hmAiAuth">AI认证参数示例</a>
+                </div>
+                <div>
+                    <button id="btnConfirmHmAiAuth" class="dialog-btn btn-primary">确定</button>
+                    <button id="btnCancelHmAiAuth" class="dialog-btn">取消</button>
+                    <div class="help-text">输入参数进行AI认证</div>
+                </div>
+            </div>
+
+            <!-- 唤醒AI对话框 -->
+            <div class="dialogBox hmAiGenDialog">
+                <h3>演示用 - 唤醒AI参数</h3>
+                <textarea placeholder="请输入JSON格式的AI参数"></textarea>
+                <div class="quick-links">
+                    快速载入:
+                    <a href="javascript:void(0);" class="quick-link quick-link-hmAiGen">AI参数示例</a>
+                </div>
+                <div>
+                    <button id="btnConfirmHmAiGen" class="dialog-btn btn-primary">确定</button>
+                    <button id="btnCancelHmAiGen" class="dialog-btn">取消</button>
+                    <div class="help-text">输入参数进行AI唤醒</div>
+                </div>
+            </div>
+
+            <!-- AI对话设置弹窗 -->
+            <div id="chatSettingsModal"
+                style="position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.18);display:flex;align-items:center;justify-content:center;">
+                <div
+                    style="background:#fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.13);padding:24px 32px;min-width:340px;max-width:520px;position:relative;">
+                    <div style="font-size:17px;font-weight:bold;margin-bottom:12px;">设置AI对话参数</div>
+                    <textarea id="chatSettingsJsonInput"
+                        style="width:100%;height:220px;resize:vertical;font-family:monospace;font-size:14px;white-space:pre;overflow:auto;border:1px solid #ccc;border-radius:6px;padding:8px;"></textarea>
+                    <div style="margin-top:18px;text-align:right;">
+                        <button id="chatSettingsOkBtn" class="dialog-btn btn-primary">确定</button>
+                        <button id="closeAiSettingsBtn" class="dialog-btn">取消</button>
+                    </div>
+                    <div style="color:#888;font-size:13px;margin-top:8px;">请填写MCP/LLM完整配置，支持多服务和大模型参数，uuid自动生成。</div>
+                </div>
+            </div>
+
+            <!-- AI令牌弹窗 -->
+            <div class="dialogBox aiTokenDialog" style="display:none;">
+                <h3>演示用 - AI令牌</h3>
+                <textarea id="aiTokenTextarea" placeholder="请输入AI令牌"></textarea>
+                <div>
+                    <button id="btnSetAiToken" class="dialog-btn btn-primary">确定</button>
+                    <button id="btnCloseAiToken" class="dialog-btn">取消</button>
+                     <div class="help-text">如果您还没有AI令牌，请在钉钉群联系惠每工作人员获取。</div>
+                </div>
             </div>
         </div>
     </body>

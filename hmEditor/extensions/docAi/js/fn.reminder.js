@@ -103,17 +103,20 @@ commonHM.component['hmAi'].fn({
     bindReminderEvents: function() {
         var _t = this;
         // 绑定忽略全部按钮事件
-        _t.$reminderPanel.on('click', '.btt-ignore-all', function() {
+        _t.$body.on('click', '.btt-ignore-all', function() {
+            _t.$reminderPanel = _t.$body.find('.doc-reminder');
             _t.handleIgnoreAll();
         });
 
         // 绑定查看全部按钮事件
-        _t.$reminderPanel.on('click', '.btt-view-all', function() {
+        _t.$body.on('click', '.btt-view-all', function() {
+            _t.$reminderPanel = _t.$body.find('.doc-reminder');
             _t.handleViewAll();
         });
 
         // 绑定单个忽略按钮事件
-        _t.$reminderPanel.on('click', '.btt-ignore', function() {
+        _t.$body.on('click', '.btt-ignore', function() {
+            _t.$reminderPanel = _t.$body.find('.doc-reminder');
             var uucode = $(this).attr('uucode');
             var item = _t.cachWarn[uucode];
             if (item) {
@@ -122,7 +125,8 @@ commonHM.component['hmAi'].fn({
         });
 
         // 绑定评估按钮事件
-        _t.$reminderPanel.on('click', '.btt-evalute', function() {
+        _t.$body.on('click', '.btt-evalute', function() {
+            _t.$reminderPanel = _t.$body.find('.doc-reminder');
             var uucode = $(this).attr('uucode');
             _t.handleEvaluateClick(uucode);
         });
@@ -208,13 +212,13 @@ commonHM.component['hmAi'].fn({
     handleViewAll: function() {
         var _t = this;
         var tpl = $.getTpl($docAi_tpl['docAi/tpl/reminderFrame'],{count:_t.reminderCount});
-      
+        var list = _t.reminderList.slice(0,10); // 只显示10条
         _t.$reminderAllPanel = $(tpl);
           // 将模板添加到编辑器
           $('body').append(_t.$reminderAllPanel);
         _t.$reminderAllPanel.find('.doc-reminder-list').css({
             'height': 'calc(100% - 30px)'
-        }).append($.getTpl($docAi_tpl['docAi/tpl/reminder'],{list:_t.reminderList || []}));
+        }).append($.getTpl($docAi_tpl['docAi/tpl/reminder'],{list:list || []}));
         
        _t.bindReminderAllEvents();
 

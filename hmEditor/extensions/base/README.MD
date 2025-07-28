@@ -137,7 +137,8 @@ HMEditor.insertDocContent(1, [
     data: [  // 必传
       {
         keyCode: '数据元编码',  // 必传
-        keyValue: '数据元内容或数据元内容数组'   // 必传，可以是字符串或字符串数组
+        keyName: '数据元名称',  // 可选
+        keyValue: '数据元内容或数据元内容数组'  // 必传，可以是字符串或字符串数组
       }
     ]
   }
@@ -152,11 +153,13 @@ HMEditor.setDocData({
   data: [
     {
       keyCode: 'PATIENT_NAME',
-      keyValue: '张三'  // 单值数据元
+      keyValue: '张三',  // 单值数据元
+      keyName: '患者姓名'  // 数据元名称
     },
     {
       keyCode: 'DIAGNOSIS',
-      keyValue: keyValue: ['选项1', '选项2']  // 多值数据元使用字符串数组
+      keyValue: ['选项1', '选项2'],  // 多值数据元使用字符串数组
+      keyName: '诊断结果'  // 数据元名称
     }
   ]
 });
@@ -168,11 +171,13 @@ HMEditor.setDocData([
     data: [
       {
         keyCode: 'PATIENT_NAME',
-        keyValue: '张三'
+        keyValue: '张三',
+        keyName: '患者姓名'
       },
       {
         keyCode: 'DIAGNOSIS',
-        keyValue: ['选项1', '选项2']
+        keyValue: ['选项1', '选项2'],
+        keyName: '诊断结果'
       }
     ]
   }

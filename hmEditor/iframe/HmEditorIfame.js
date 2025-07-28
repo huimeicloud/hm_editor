@@ -3,6 +3,92 @@
  * 封装基于CKEditor 4.0的编辑器，提供统一的API接口
  */
 (function (window) {
+    // 自动注入 HmEditorMcpBridge.js 脚本，确保 MCPHandler 可用
+    (function () {
+        if (!window.MCPHandler) {
+            var script = document.createElement('script');
+
+            // 动态计算 HmEditorMcpBridge.js 的路径
+            var currentScript = null;
+            var scripts = document.getElementsByTagName('script');
+            for (var i = 0; i < scripts.length; i++) {
+                if (scripts[i].src && scripts[i].src.includes('HmEditorIfame.js')) {
+                    currentScript = scripts[i];
+                    break;
+                }
+            }
+
+            if (currentScript) {
+                // 基于当前脚本的路径计算 HmEditorMcpBridge.js 的路径
+                var scriptUrl = new URL(currentScript.src);
+                var scriptPath = scriptUrl.pathname;
+                var bridgePath = scriptPath.replace('HmEditorIfame.js', 'HmEditorMcpBridge.js');
+                script.src = scriptUrl.origin + bridgePath;
+
+            } else {
+                // 如果无法检测到当前脚本，使用默认路径：protocol+host+hmEditor/iframe+HmEditorMcpBridge.js
+                var currentLocation = window.location;
+                script.src = currentLocation.protocol + '//' + currentLocation.host + '/hmEditor/iframe/HmEditorMcpBridge.js';
+                console.log('⚠️ [路径调试] 无法检测到当前脚本，使用默认路径:', script.src);
+            }
+
+            script.onload = function () {
+                console.log('✅ MCPHandler 脚本加载完成');
+                // 延迟初始化 HMEditorLoader，确保 MCPHandler 可用
+                setTimeout(function () {
+                    if (window.HMEditorLoader && typeof window.HMEditorLoader.autoInitMCP === 'function') {
+                        console.log('🔄 重新初始化 MCP');
+                        window.HMEditorLoader.autoInitMCP();
+                    }
+                }, 100);
+            };
+            script.onerror = function () {
+                console.error('❌ 加载 MCPHandler 脚本失败');
+                console.error('尝试加载的路径:', script.src);
+            };
+            document.head.appendChild(script);
+        }
+    })();
+
+    function autoDetectHostConfig() {
+        const scripts = document.getElementsByTagName('script');
+        let sdkUrl = null;
+
+        for (let script of scripts) {
+            if (script.src && script.src.includes('HmEditorIfame.js')) {
+                sdkUrl = script.src;
+                if (sdkUrl) {
+                    sdkUrl = sdkUrl.replace(/\/iframe\/HmEditorIfame\.js$/, '');
+                } else {
+                    sdkUrl = '';
+                }
+                break;
+            }
+        }
+
+        if (!sdkUrl) {
+            console.warn('无法检测到 HmEditor SDK URL');
+            return null;
+        }
+
+        const url = new URL(sdkUrl);
+        const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+        const mcpPath = '/mcp-server/ws';
+        let mcpWsHost = ''
+        if (url.host == '127.0.0.1:3071') {
+            mcpWsHost = `${protocol}//${url.host}${mcpPath}`;
+        } else {
+            mcpWsHost = `${protocol}//${url.host}${url.pathname}${mcpPath}`;
+        }
+
+        return {
+            mcpWsHost: mcpWsHost,
+            sdkHost: `${url.href}`,
+            autoConnect: true,
+            reconnectInterval: 5000
+        };
+    }
+
     var LoaderClass = function (propty) {
         var func = function () {
             this.init.apply(this, arguments);
@@ -10,11 +96,49 @@
         func.prototype = propty;
         return func;
     }
+
     var editorLoader = LoaderClass({
         init: function () {
             this.loaders = {}; // 存储编辑器实例
+            this.hostConfig = autoDetectHostConfig(); // 自动检测host配置
+            this.mcpHandler = null; // MCP 处理器
+            this.mcpConfig = null; // MCP 配置
+            // 只有在 MCPHandler 可用时才自动初始化 MCP
+            if (window.MCPHandler) {
+                this.autoInitMCP();
+            } else {
+                console.log('⚠️ MCPHandler 未加载，跳过自动初始化 MCP');
+            }
         },
+        autoInitMCP: function () {
+            if (!window.MCPHandler) {
+                console.warn('⚠️ MCPHandler 不可用，无法初始化 MCP');
+                return;
+            }
+            if (this.hostConfig && this.hostConfig.autoConnect) {
+                this.initMCP({
+                    wsUrl: this.hostConfig.mcpWsHost
+                });
+            }
+        },
+        initMCP: function (config) {
+            if (!window.MCPHandler) {
+                console.error('❌ MCPHandler 不可用，无法初始化 MCP');
+                return;
+            }
+            if (this.mcpHandler) {
+                console.warn('⚠️ MCP 处理器已经初始化');
+                return;
+            }
+            this.mcpConfig = config;
+            this.mcpHandler = new window.MCPHandler();
+            this.mcpHandler.init(config.wsUrl, this);
 
+            console.log('✅ MCP 处理器初始化完成');
+        },
+        getMCPHandler: function () {
+            return this.mcpHandler;
+        },
         /**
          * 创建编辑器iframe
          * @param {Object} options 配置项
@@ -27,7 +151,7 @@
          * @param {String} options.sdkHost 加载sdk地址
          * @param {Object} options.editorConfig 编辑器配置
          * @param {Object} options.customParams 自定义参数 动态数据源接口入参 例：{departmentCode:'0001',doctorCode:'0001'}
-         * @param {Array} options.customToolbar 自定义工具栏 例：[{name:'customButton',label:'自定义按钮',icon:'/path/to/icon.png',toolbarGroup:'insert',onExec:function(editor){},onRefresh:function(editor,path){}}
+         * @param {Array} options.customToolbar 自定义工具栏 例：[{name:'customButton',label:'自定义按钮',icon:'/path/to/icon.png',toolbarGroup:'insert',onExec:function(editor){},onRefresh:function(editor,path){}}]
          * @param {Object} options.printConfig 打印配置
          * @param {Boolean} options.printConfig.pageBreakPrintPdf 分页模式打印是否生成pdf
          * @param {Array} options.printConfig.pageAnotherTpls 另页打印模板名称
@@ -35,6 +159,10 @@
          * @param {Function} options.callback 加载完成回调
          */
         createEditor: function (options) {
+            // 如果未指定 sdkHost，使用自动检测的配置
+            if (!options.sdkHost && this.hostConfig) {
+                options.sdkHost = this.hostConfig.sdkHost;
+            }
             var _this = this;
 
             if (!options || !options.container) {
@@ -87,6 +215,7 @@
                 var iframeWin = iframe.contentWindow;
                 var hmEditor = iframeWin.hmEditor = new iframeWin.HMEditor(options, function (hmEditor) {
                     if (_this.loaders[id]) {
+                        hmEditor.sessionId = _this.mcpHandler.sessionId;
                         _this.loaders[id].hmEditor = hmEditor;
                         options.onReady && options.onReady(hmEditor);
                     }
@@ -94,6 +223,8 @@
                 hmEditor.frameId = id;
             });
 
+            // 返回编辑器ID
+            return id;
         },
 
         /**
@@ -108,7 +239,7 @@
          * @param {Boolean} options.readOnly 只读模式开关，true开启只读模式，默认false
          * @param {Object} options.customParams 自定义参数 动态数据源接口入参 例：{departmentCode:'0001',doctorCode:'0001'}
          * @param {Array} options.sdkHost 加载sdk地址
-         * @param {Array} options.customToolbar 自定义工具栏 例：[{name:'customButton',label:'自定义按钮',icon:'/path/to/icon.png',toolbarGroup:'insert',onExec:function(editor){},onRefresh:function(editor,path){}}
+         * @param {Array} options.customToolbar 自定义工具栏 例：[{name:'customButton',label:'自定义按钮',icon:'/path/to/icon.png',toolbarGroup:'insert',onExec:function(editor){},onRefresh:function(editor,path){}}]
          * @param {Object} options.printConfig 打印配置
          * @param {Boolean} options.printConfig.pageBreakPrintPdf 分页模式打印是否生成pdf
          * @param {Array} options.printConfig.pageAnotherTpls 另页打印模板名称
@@ -116,6 +247,10 @@
          * @returns {Promise} 返回Promise对象，resolve时返回编辑器ID和实例
          */
         createEditorAsync: function (options) {
+            // 如果未指定 sdkHost，使用自动检测的配置
+            if (!options.sdkHost && this.hostConfig) {
+                options.sdkHost = this.hostConfig.sdkHost;
+            }
             var _this = this;
 
             return new Promise(function (resolve, reject) {
@@ -170,8 +305,8 @@
                     var iframeWin = iframe.contentWindow;
                     var hmEditor = iframeWin.hmEditor = new iframeWin.HMEditor(options, function (hmEditor) {
                         if (_this.loaders[id]) {
+                            hmEditor.sessionId = _this.mcpHandler.sessionId;
                             _this.loaders[id].hmEditor = hmEditor;
-
                             // 使用Promise解析编辑器对象
                             resolve(hmEditor);
 
@@ -406,7 +541,7 @@
         /**
          * 初始化认证信息，并加载jssdk，返回Promise对象
          * @param {*} autherEntity 认证信息
-         * @param {*} autherEntity.autherKey 认证key
+         * @param {*} autherEntity.authToken 认证key
          * @param {*} autherEntity.userGuid 患者ID
          * @param {*} autherEntity.userName 患者姓名
          * @param {*} autherEntity.doctorGuid 医生ID
@@ -415,26 +550,61 @@
          * @param {*} autherEntity.doctorName 医生姓名
          * @param {*} autherEntity.hospitalGuid 医院ID 非必要字段
          * @param {*} autherEntity.hospitalName 医院名称 非必要字段
-         * @param {*} autherEntity.customEnv  
+         * @param {*} autherEntity.customEnv
          * @param {*} autherEntity.flag m 住院 c 门诊
-         * @returns 
+         * @returns
          */
-        initAutherEntity: function (autherEntity) {
+        aiAuth: function (autherEntity, recordMap, isAi) {
             var _t = this;
-            _t.autherEntity = autherEntity; 
+            _t.setAiToken(autherEntity.authToken);
+            _t.autherEntity = autherEntity;
+            _t.recordMap = recordMap; // 病历文书映射表
             return new Promise(function (resolve, reject) {
-                _t.loadJs(autherEntity.aiServer + '/cdss/jssdk?v=4.0&ak='+ _t.autherEntity.autherKey, function (err) {
-                    if (err) {
-                        console.error('加载CDSS SDK失败:', err);
-                        reject(err);
-                        return;
-                    }
+                console.log('资源加载的地址', autherEntity.aiServer + '/hm_static/jssdk/jssdk_cdss_4.0.js');
+                if (!window.HM) {
+                    _t.loadJs(autherEntity.aiServer + '/hm_static/jssdk/jssdk_cdss_4.0.js', function (err) {
+                        if (err) {
+                            console.error('加载CDSS SDK失败:', err);
+                            reject(err);
+                            return;
+                        }
+                        _t.loadMayson(resolve,reject,autherEntity, isAi);
+
+                    });
+                } else {
+                    _t.loadMayson(resolve,reject,autherEntity, isAi);
+                }
+            });
+        },
+        loadMayson: function (resolve,reject,autherEntity, isAi) {
+            if (window.HM) {
+                if (isAi == 1) {
+                    window.HM.config.isembed = 1;
+                    window.HM.config.formsSizeType = 2;
+                    window.HM.config.accessType = 3;
                     HM.maysonLoader(autherEntity, function (mayson) {
-                        //加载编辑器助手 
+                        //加载编辑器助手
+                        mayson.setDrMaysonConfig('m', 3);
+                        resolve(mayson);
+                        // mayson 内嵌展示，先不发布
+                    }, 'assistantSmartPanel');
+                } else {
+                    // mayson 内嵌展示，先不发布
+                    // window.HM.config.isembed = 1;
+                    // window.HM.config.formsSizeType = 2;
+                    // window.HM.config.accessType = 3;
+                    HM.maysonLoader(autherEntity, function (mayson) {
+                        //加载编辑器助手
+                        // mayson.setDrMaysonConfig('m', 3); // mayson 内嵌展示，先不发布
                         resolve(mayson);
                     });
-                });
-            });
+                    // mayson 内嵌展示，先不发布
+                    // }, 'assistantSmartPanel');
+                }
+            } else {
+                console.error('加载CDSS SDK失败,请检查AI认证信息是否正确！');
+                reject(new Error('加载CDSS SDK失败,请检查认证参数是否正确！'));
+            }
         },
         loadJs: function (src, cbk) {
             var script = document.createElement('script')
@@ -471,7 +641,17 @@
             };
             var head = document.getElementsByTagName("head")[0];
             head.appendChild(script);
-        }
+        },
+        /**
+         * 设置AI令牌
+         * @param {String} token AI令牌字符串
+         */
+        setAiToken: function (token) {
+            if (!token) {
+                throw new Error('AI令牌不能为空');
+            }
+            localStorage.setItem('HMAccessToken', token);
+        },
     });
 
     // 导出HMEditor对象

@@ -1,0 +1,587 @@
+/* API日志面板 */
+.log-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+}
+.api-log {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #495057;
+}
+.api-log:empty::before {
+  content: "🔍 暂无API调用日志\A等待API调用中...";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  white-space: pre-line;
+  line-height: 1.6;
+  opacity: 0.8;
+}
+
+/* 日志面板 */
+.log-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+  backdrop-filter: blur(12px);
+  border-left: 1px solid rgba(59, 130, 246, 0.3);
+  z-index: 1000;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.12);
+}
+
+.log-panel.collapsed {
+  width: 30px;
+  background-color: transparent;
+  border-left: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+}
+
+.log-panel.collapsed .log-header {
+  height: 100%;
+  padding: 0;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 197, 253, 0.1) 100%);
+  backdrop-filter: blur(8px);
+  border-bottom: none;
+  border-radius: 8px 0 0 8px;
+  flex-direction: column;
+  width: 30px;
+  box-shadow: inset 2px 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.log-panel.collapsed .log-content {
+  display: none;
+}
+
+.log-panel.collapsed .log-header-btns button:not(#btnToggleLog) {
+  display: none;
+}
+
+.log-panel.collapsed #btnToggleLog {
+  width: 30px;
+  height: 120px;
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  position: relative;
+}
+
+.log-panel.collapsed #btnToggleLog::after {
+  content: "«";
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #555;
+}
+
+.log-panel.collapsed .vertical-text {
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  white-space: nowrap;
+  font-size: 12px;
+  color: #333;
+  font-weight: bold;
+  pointer-events: none;
+  width: 200px;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+/* 显示日志提示 */
+.log-panel.collapsed .recent-log-indicator {
+  position: absolute;
+  bottom: 20px;
+  left: 10px;
+  width: 10px;
+  height: 10px;
+  background-color: #d9534f;
+  box-shadow: 0 0 5px rgba(213, 83, 79, 0.5);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.log-panel.collapsed .recent-log-indicator:hover {
+  transform: scale(1.2);
+}
+
+.log-panel.collapsed .log-title {
+  display: none;
+}
+
+.log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(147, 197, 253, 0.08) 100%);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+  min-height: 56px;
+  box-sizing: border-box;
+  user-select: none;
+  position: relative;
+}
+
+.log-title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 15px;
+  color: #1e40af;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: 0.5px;
+  position: relative;
+}
+
+.log-title::before {
+  content: "";
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%);
+  border-radius: 8px;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+  flex-shrink: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: logIconPulse 3s ease-in-out infinite;
+}
+
+@keyframes logIconPulse {
+  0%, 100% {
+      box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+      transform: scale(1);
+  }
+  50% {
+      box-shadow: 0 3px 12px rgba(59, 130, 246, 0.4);
+      transform: scale(1.05);
+  }
+}
+
+@keyframes logDataFlow {
+  0%, 100% {
+      opacity: 0.95;
+  }
+  25% {
+      opacity: 0.7;
+  }
+  50% {
+      opacity: 1;
+  }
+  75% {
+      opacity: 0.8;
+  }
+}
+
+.log-title:hover::before {
+  transform: scale(1.1);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.5);
+  animation-play-state: paused;
+}
+
+.log-title:hover::after {
+  animation-duration: 0.8s;
+  opacity: 1;
+}
+
+.log-title::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  background:
+      /* 第一个柱子 - 高 */
+      linear-gradient(to bottom, transparent 0%, transparent 20%, rgba(255, 255, 255, 0.95) 20%, rgba(255, 255, 255, 0.95) 85%, transparent 85%),
+      /* 第二个柱子 - 中 */
+      linear-gradient(to bottom, transparent 0%, transparent 40%, rgba(255, 255, 255, 0.8) 40%, rgba(255, 255, 255, 0.8) 85%, transparent 85%),
+      /* 第三个柱子 - 低 */
+      linear-gradient(to bottom, transparent 0%, transparent 60%, rgba(255, 255, 255, 0.9) 60%, rgba(255, 255, 255, 0.9) 85%, transparent 85%),
+      /* 底部基线 */
+      linear-gradient(to right, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.7) 100%);
+  background-size: 3px 14px, 3px 14px, 3px 14px, 14px 1px;
+  background-position: 1px 0, 5px 0, 9px 0, 0 12px;
+  background-repeat: no-repeat;
+  border-radius: 1px;
+  opacity: 0.95;
+  animation: logDataFlow 2s ease-in-out infinite;
+}
+
+.log-header-btns {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.log-content {
+  overflow-y: auto;
+  padding: 16px 10px;
+  flex-grow: 1;
+  font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(248, 250, 252, 0.6) 100%);
+  border-radius: 0 0 0 8px;
+  position: relative;
+}
+
+.log-button {
+  padding: 6px;
+  cursor: pointer;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(4px);
+}
+
+.log-button:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(147, 197, 253, 0.08) 100%);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #1e40af;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
+}
+
+.log-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+
+/* 日志指示器 */
+.recent-log-indicator {
+  position: absolute;
+  top: 5px;
+  right: 40px;
+  width: 10px;
+  height: 10px;
+  background-color: #d9534f;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.recent-log-indicator.active {
+  opacity: 1;
+  animation: pulse 1.5s infinite;
+}
+
+/* 自动滚动指示器 */
+.auto-scroll-indicator {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background-color: rgba(0,0,0,0.5);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.auto-scroll-indicator.show {
+  opacity: 1;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 日志条目样式 */
+.log-entry {
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+  padding: 10px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.log-entry pre {
+  margin: 8px 0;
+  margin-left: 8px;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.8) 100%);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 8px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  width: calc(100% - 32px);
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  position: relative;
+}
+
+.log-entry pre::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+
+  border-radius: 8px 0 0 8px;
+}
+
+.log-time {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(100, 116, 139, 0.1);
+  padding: 2px 6px;
+  border-radius: 8px;
+  margin-right: 8px;
+  display: inline-block;
+  letter-spacing: 0.5px;
+}
+
+.log-info {
+  color: #334155;
+  font-weight: 500;
+  position: relative;
+}
+
+.log-info::before {
+  content: "ℹ️";
+  margin-right: 6px;
+  font-size: 12px;
+}
+
+.log-error {
+  color: #dc2626;
+  font-weight: 600;
+  position: relative;
+}
+
+.log-error::before {
+  content: "❌";
+  margin-right: 6px;
+  font-size: 12px;
+}
+
+.toggle-json-btn {
+  margin-left: 16px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 197, 253, 0.1) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  color: #1e40af;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.toggle-json-btn:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 197, 253, 0.15) 100%);
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.1);
+}
+
+.omitted-lines {
+  margin-left: 16px;
+  color: #64748b;
+  font-style: italic;
+  font-size: 11px;
+  background: rgba(100, 116, 139, 0.08);
+  padding: 4px 8px;
+  border-radius: 8px;
+  border-left: 2px solid rgba(100, 116, 139, 0.2);
+  display: inline-block;
+}
+
+/* 日志面板滚动条美化 */
+.log-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.log-content::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.5);
+  border-radius: 3px;
+}
+
+.log-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(147, 197, 253, 0.3) 100%);
+  border-radius: 3px;
+  transition: all 0.2s ease;
+}
+
+.log-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.5) 0%, rgba(147, 197, 253, 0.5) 100%);
+}
+
+/* 日志面板美化增强 */
+.log-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -1px;
+  width: 2px;
+  height: 100%;
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%);
+  opacity: 0.6;
+  z-index: 1;
+}
+
+.log-header::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(59, 130, 246, 0.3) 50%, transparent 100%);
+}
+
+/* 新日志活动指示器 */
+.log-header.has-new-logs {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(147, 197, 253, 0.12) 100%);
+  animation: logHeaderGlow 2s ease-in-out infinite;
+}
+
+@keyframes logHeaderGlow {
+  0%, 100% {
+      box-shadow: inset 0 0 0 rgba(59, 130, 246, 0.2);
+  }
+  50% {
+      box-shadow: inset 0 0 8px rgba(59, 130, 246, 0.3);
+  }
+}
+
+/* 日志条目最后一个不显示底边框 */
+.log-entry:last-child {
+  border-bottom: none;
+  margin-bottom: 16px;
+}
+
+.log-entry pre.limited {
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+/* 日志通知样式 */
+.log-notification {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 8px 15px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  border-radius: 8px;
+  font-size: 12px;
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(20px);
+  z-index: 1000;
+}
+
+.log-notification.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.auto-scroll-btn {
+  background-color: #f0f8ff;
+  border-color: #add8e6;
+  color: #4682b4;
+}
+
+.auto-scroll-btn:hover {
+  background-color: #e6f2ff;
+}
+
+.log-indicator-tooltip {
+  position: absolute;
+  bottom: 20px;
+  left: 32px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1001;
+  pointer-events: none;
+}
+
+.log-indicator-tooltip::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -5px;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-right: 5px solid rgba(0, 0, 0, 0.7);
+}
+
+.api-log {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  width: 100%;
+  min-height: 100px;
+  position: relative;
+}
+
+.api-log:empty::before {
+  content: "🔍 暂无API调用日志\A等待API调用中...";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  white-space: pre-line;
+  line-height: 1.6;
+  opacity: 0.8;
+}
+
+/* 隐藏元素 */
+.hidden {
+  display: none;
+}
+
+
+
+/* 日志条目样式 */

@@ -16,9 +16,9 @@ commonHM.component['documentModel'].fn({
         }
         if (widgetList.length) {
             for (var i = 0; i < widgetList.length; i++) {
-                var $widgetNodes = $(widgetList[i]);
+                var $widgetNodes = $(widgetList[i]); 
                 // 设置是否可编辑
-                $widgetNodes.prop("contenteditable", flag);
+                $widgetNodes.prop("contenteditable", !flag);
                 // 设置背景颜色
                 _t.setReadOnlyBgColor($widgetNodes, flag);
                 // 设置简洁模式
@@ -63,17 +63,16 @@ commonHM.component['documentModel'].fn({
     // 设置编辑状态
     setEmrDocumentEditState: function ($widgetNodes, flag) {
         var evtState = flag ? 'none' : 'auto';
-        $widgetNodes.find('span[data-kyee-node="timebox"]:not([_isdisabled="true"])').css('pointer-events', evtState);
-        $widgetNodes.find('span[data-kyee-node="dropbox"]:not([_isdisabled="true"])').css('pointer-events', evtState);
-        $widgetNodes.find('span[data-kyee-node="checkbox"]:not([_isdisabled="true"])').css('pointer-events', evtState);
-        $widgetNodes.find('span[data-kyee-node="radiobox"]:not([_isdisabled="true"])').css('pointer-events', evtState);
-        $widgetNodes.find('span[data-kyee-node="searchbox"]:not([_isdisabled="true"])').css('pointer-events', evtState);
-        $widgetNodes.find('span[data-kyee-node="newtextbox"]:not([_isdisabled="true"])').css('pointer-events', evtState);
-        $widgetNodes.find('button[data-kyee-id]').css('pointer-events', evtState);
+        $widgetNodes.find('span[data-hm-node="timebox"]:not([_isdisabled="true"])').css('pointer-events', evtState);
+        $widgetNodes.find('span[data-hm-node="dropbox"]:not([_isdisabled="true"])').css('pointer-events', evtState);
+        $widgetNodes.find('span[data-hm-node="checkbox"]:not([_isdisabled="true"])').css('pointer-events', evtState);
+        $widgetNodes.find('span[data-hm-node="radiobox"]:not([_isdisabled="true"])').css('pointer-events', evtState);
+        $widgetNodes.find('span[data-hm-node="searchbox"]:not([_isdisabled="true"])').css('pointer-events', evtState);
+        $widgetNodes.find('span[data-hm-node="newtextbox"]:not([_isdisabled="true"])').css('pointer-events', evtState);
+        $widgetNodes.find('button[data-hm-id]').css('pointer-events', evtState);
     },
     // 设置新文本框可编辑
     setEmrNewTextBoxEditable: function ($widgetNodes, flag) {
-        var _t = this;
         var editStr = flag ? 'false' : 'true';
         var _newTextBox = $widgetNodes.find('span[data-hm-node="newtextbox"]:not([_isdisabled="true"]):not([notallowwrite="true"])');
         var _textboxwidget = $widgetNodes.find('span[data-hm-node="textboxwidget"]');

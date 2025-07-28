@@ -78,7 +78,6 @@ commonHM.component['documentModel'].fn({
                         scriptFlag = true;
                     }
                 }
-
             } catch (error) {
                 _t.editor.showNotification('js脚本语法有误，请修改', 'error');
             }
@@ -89,6 +88,65 @@ commonHM.component['documentModel'].fn({
             _t.editor.execCommand('paperSize', paperSize);
         }
         _t.initDocumentFireEvt($body);
+
+        // 添加表格行操作图标的CSS样式
+        if (!$('head').find('#table-row-actions-style').length) {
+            $('head').append(`
+                <style id="table-row-actions-style">
+                    .table-row-actions {
+                        position: absolute !important;
+                        left: -60px !important;
+                        top: 0 !important;
+                        z-index: 1000 !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                        gap: 2px !important;
+                        background: rgba(255, 255, 255, 0.9) !important;
+                        padding: 2px !important;
+                        border-radius: 4px !important;
+                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+                    }
+                    .add-row-icon, .delete-row-icon {
+                        cursor: pointer !important;
+                        padding: 2px !important;
+                        border-radius: 3px !important;
+                        font-size: 12px !important;
+                        text-align: center !important;
+                        width: 20px !important;
+                        height: 20px !important;
+                        line-height: 16px !important;
+                        font-weight: bold !important;
+                        transition: all 0.2s ease !important;
+                    }
+                    .add-row-icon {
+                        background: #4CAF50 !important;
+                        color: white !important;
+                    }
+                    .add-row-icon:hover {
+                        background: #45a049 !important;
+                        transform: scale(1.1) !important;
+                    }
+                    .delete-row-icon {
+                        background: #f44336 !important;
+                        color: white !important;
+                    }
+                    .delete-row-icon:hover {
+                        background: #da190b !important;
+                        transform: scale(1.1) !important;
+                    }
+                    .delete-row-icon.disabled {
+                        opacity: 0.5 !important;
+                        cursor: not-allowed !important;
+                    }
+                    .delete-row-icon.disabled:hover {
+                        background: #f44336 !important;
+                        transform: none !important;
+                    }
+                </style>
+            `);
+        }
+
+        $body.find('.emrWidget-content[_contenteditable="false"]').attr('contenteditable', 'false');
 
         _t.updateEditSpaceContainerStyle();
 
@@ -109,30 +167,31 @@ commonHM.component['documentModel'].fn({
      */
     renderData: function (data) {
         var _t = this;
-        var $body = $(_t.editor.document.getBody().$);
-        var syncType = '全量同步';
         // 遍历数据数组
         data.forEach(function (item) {
             if (item.code && item.data) {
                 // 查找具有相同 doc_code 属性的节点
                 var $nodes = $(_t.editor.document.$).find('[doc_code="' + item.code + '"]');
-
                 // 如果找到节点，更新其内容
                 if ($nodes.length > 0) {
                     $nodes.each(function () {
                         var $node = $(this);
-
                         // 遍历 data 数组，查找匹配的节点
                         item.data.forEach(function (dataItem) {
-                            if (dataItem.keyCode) {
-                                // 在当前节点内查找具有对应 data-hm-code 的元素
-                                var datasourceNode = $node.find('[data-hm-code="' + dataItem.keyCode + '"]:not([data-hm-node="labelbox"])');
+                            if (dataItem.keyCode || dataItem.keyName) {
+                                var datasourceNode;
+                                // 优先通过 keyCode 查找 data-hm-code 属性
+                                datasourceNode = $node.find('[data-hm-code="' + dataItem.keyCode + '"]:not([data-hm-node="labelbox"])');
+                                // 如果通过 keyCode 没找到，则通过 keyName 查找 data-hm-name 属性
+                                if ((!datasourceNode || datasourceNode.length === 0) && dataItem.keyName) {
+                                    datasourceNode = $node.find('[data-hm-name="' + dataItem.keyName + '"]:not([data-hm-node="labelbox"])');
+                                }
                                 // 获取节点类型
                                 var nodeType = datasourceNode.attr('data-hm-node');
                                 var bindVal = dataItem.keyValue;
                                 var imgFlag = false;
                                 if (Array.isArray(bindVal)) {
-                                    bindVal = bindVal.map(function(item) {
+                                    bindVal = bindVal.map(function (item) {
                                         if (typeof item === 'string' && item.indexOf('data:image/png;base64,') === 0) {
                                             imgFlag = true;
                                             return '<img src="' + item + '" style="width: 50px; height: 25px; vertical-align: middle" uname="" />';
@@ -144,167 +203,13 @@ commonHM.component['documentModel'].fn({
                                     });
                                 } else if (typeof (bindVal) == 'string') {
                                     bindVal = bindVal.replace(/↵/g, '<br/>');
-                                    if(bindVal && bindVal.indexOf('data:image/png;base64,') == 0){
-                                        bindVal = '<img  src='+bindVal+' style="width: 50px; height: 25px; vertical-align: middle" uname="" />';
+                                    if (bindVal && bindVal.indexOf('data:image/png;base64,') == 0) {
+                                        bindVal = '<img  src=' + bindVal + ' style="width: 50px; height: 25px; vertical-align: middle" uname="" />';
                                         imgFlag = true;
                                     }
                                 }
                                 if (datasourceNode.length > 0) {
-                                    switch (nodeType) {
-                                        case 'newtextbox':
-                                            var _placeholder = datasourceNode.attr('_placeholder') || '';
-                                            var newtextboxcontent = datasourceNode.find("span.new-textbox-content");
-                                            if (newtextboxcontent.length > 0) {
-                                                if (!imgFlag) {
-                                                    bindVal = wrapperUtils.formatTimeTextVal(bindVal, newtextboxcontent.attr('_timetype'));
-                                                }
-                                                if (bindVal) {
-                                                    newtextboxcontent.removeAttr('_placeholdertext');
-                                                } else {
-                                                    newtextboxcontent.attr('_placeholdertext', 'true');
-                                                }
-                                                var _texttype = newtextboxcontent.attr('_texttype');
-
-                                                if (_texttype == '下拉' && bindVal) {
-                                                    var selectType = newtextboxcontent.attr('_selectType');
-                                                    var jointsymbol = newtextboxcontent.attr('_jointSymbol') || ',';
-                                                    var items = newtextboxcontent.attr('data-hm-items').split('#');
-                                                    var nodeText = bindVal.split(jointsymbol || ',');
-                                                    // 判断是否是带编码选项
-                                                    var items0 = items[0].match(/(.+)\((.*?)\)\s*$/);
-                                                    var codeArr = [];
-                                                    if (items0 && items0.length == 3) {
-                                                        for (var x = 0; x < items.length; x++) {
-                                                            var itemsArr = items[x].match(/(.+)\((.*?)\)\s*$/);
-
-                                                            if (selectType == '单选') {
-                                                                if (bindVal == itemsArr[1]) {
-                                                                    codeArr.push(itemsArr[2]);
-                                                                    break;
-                                                                }
-                                                            } else {
-                                                                if (nodeText.includes(itemsArr[1])) {
-                                                                    codeArr.push(itemsArr[2]);
-                                                                }
-                                                            }
-
-                                                        }
-                                                        if (codeArr.length > 0) {
-                                                            newtextboxcontent.attr('code', codeArr.join(jointsymbol));
-                                                        }
-                                                    }
-                                                }
-                                                switch (syncType) {
-                                                    case '全量同步':
-                                                        newtextboxcontent.html(bindVal || _placeholder);
-                                                        _handleRelevance(datasourceNode);
-                                                        break;
-                                                    default:
-                                                        if (newtextboxcontent.text().replace(/\u200B/g, '').replace(_placeholder, '').replace(/\s+/, '') == '') {
-                                                            newtextboxcontent.html(bindVal);
-                                                            _handleRelevance(datasourceNode);
-                                                        }
-                                                        break;
-                                                }
-                                            }
-                                            break;
-                                        case 'dropbox':
-                                            switch (syncType) {
-                                                case '全量同步':
-                                                    datasourceNode.text(bindVal);
-                                                    break;
-                                                default:
-                                                    if (datasourceNode.text().replace(/\u200B/g, '') == '') {
-                                                        datasourceNode.text(bindVal);
-                                                    }
-                                                    break;
-                                            }
-                                            break;
-                                        case 'timebox':
-
-                                            try {
-                                                var _timeoption = datasourceNode.attr('_timeoption');
-                                                bindVal = _t.formatStringDate(bindVal, _timeoption);
-                                            } catch (e) {
-                                                console.log(bindVal);
-                                                console.log(e);
-                                            }
-
-                                            switch (syncType) {
-                                                case '全量同步':
-                                                    datasourceNode.text(bindVal);
-                                                    break;
-                                                default:
-                                                    if (datasourceNode.text().replace(/\u200B/g, '') == '') {
-                                                        datasourceNode.text(bindVal);
-                                                    }
-                                                    break;
-                                            }
-
-                                            break;
-                                        case 'searchbox':
-                                            var searchOption = datasourceNode.attr('_searchoption') || '';
-                                            var searchpair = (datasourceNode.attr('_searchpair') || '').replace(/\u200B/g, '');
-                                            var searchpairVal = _t.genericDataConvert(data, searchpair);
-                                            function setupSearchbox() {
-                                                datasourceNode.text(bindVal);
-                                                var searchPairIsCode = true;
-                                                if (searchOption.indexOf('码') > 0) {
-                                                    // 当前搜索数据元为编码类数据元
-                                                    searchPairIsCode = false;
-                                                }
-                                                if (searchPairIsCode) {
-                                                    datasourceNode.attr('_code', searchpairVal);
-                                                    datasourceNode.attr('_name', bindVal);
-                                                } else {
-                                                    datasourceNode.attr('_code', bindVal);
-                                                    datasourceNode.attr('_name', searchpairVal);
-                                                }
-                                            }
-                                            switch (syncType) {
-                                                case '全量同步':
-                                                    setupSearchbox();
-                                                    break;
-                                                default:
-                                                    if (datasourceNode.text().replace(/\u200B/g, '') == '') {
-                                                        setupSearchbox();
-                                                    }
-                                                    break;
-                                            }
-                                            break;
-                                        case 'labelbox':
-                                            var bindable = datasourceNode.attr('_bindable');
-                                            if (bindable) {
-                                                datasourceNode.text(bindVal);
-                                            }
-                                            break;
-                                        case 'cellbox':
-                                            datasourceNode.text(bindVal);
-                                            break;
-                                        case 'checkbox':
-                                            // 多选 bindVal 是数组
-                                            // var connector = '´';
-                                            // var valArr = bindVal.split(connector);
-                                            var valArr = bindVal;
-                                            var $ds = datasourceNode;
-                                            $ds.find('span[data-hm-node="checkbox"]:not([data-hm-node="labelbox"])').removeClass('fa-check-square-o').addClass('fa-square-o').attr('_selected', 'false');
-                                            for (var j = 0; j < valArr.length; j++) {
-                                                // 对值进行转义处理
-                                                var escapedVal = valArr[j].replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, "\\$&");
-                                                $ds.find('[data-hm-itemname="' + escapedVal + '"]:not([data-hm-node="labelbox"])').removeClass('fa-square-o').addClass('fa-check-square-o').attr('_selected', 'true');
-                                            }
-                                            break;
-                                        case 'radiobox':
-                                            var $ds = datasourceNode;
-                                            $ds.find('span[data-hm-node="radiobox"]:not([data-hm-node="labelbox"])').removeClass('fa-dot-circle-o').addClass('fa-circle-o');
-                                            $ds.find('span[data-hm-node="radiobox"][data-hm-itemname="' + bindVal + '"]:not([data-hm-node="labelbox"])').addClass('fa-dot-circle-o');
-
-                                            break;
-                                        case 'textboxwidget': 
-                                            var $ds = datasourceNode;
-                                            $ds.text(bindVal);
-                                            break;
-                                    }
+                                    _t.bindDatasource(datasourceNode, nodeType, bindVal, imgFlag);
                                 }
                             }
                         });
@@ -312,7 +217,121 @@ commonHM.component['documentModel'].fn({
                 }
             }
         });
+    },
+    // 设置数据元的值
+    bindDatasource: function (datasourceNode, nodeType, bindVal, imgFlag) {
+        var _t = this;
+        switch (nodeType) {
+            case 'newtextbox':
+                var _placeholder = datasourceNode.attr('_placeholder') || '';
+                var newtextboxcontent = datasourceNode.find("span.new-textbox-content");
+                if (newtextboxcontent.length > 0) {
+                    if (!imgFlag) {
+                        bindVal = wrapperUtils.formatTimeTextVal(bindVal, newtextboxcontent.attr('_timetype'));
+                    }
+                    if (bindVal) {
+                        newtextboxcontent.removeAttr('_placeholdertext');
+                    } else {
+                        newtextboxcontent.attr('_placeholdertext', 'true');
+                    }
+                    var _texttype = newtextboxcontent.attr('_texttype');
 
+                    if (_texttype == '下拉' && bindVal) {
+                        var selectType = newtextboxcontent.attr('_selectType');
+                        var jointsymbol = newtextboxcontent.attr('_jointSymbol') || ',';
+                        var items = newtextboxcontent.attr('data-hm-items').split('#');
+                        var nodeText = bindVal.split(jointsymbol || ',');
+                        // 判断是否是带编码选项
+                        var items0 = items[0].match(/(.+)\((.*?)\)\s*$/);
+                        var codeArr = [];
+                        if (items0 && items0.length == 3) {
+                            for (var x = 0; x < items.length; x++) {
+                                var itemsArr = items[x].match(/(.+)\((.*?)\)\s*$/);
+                                if (selectType == '单选') {
+                                    if (bindVal == itemsArr[1]) {
+                                        codeArr.push(itemsArr[2]);
+                                        break;
+                                    }
+                                } else {
+                                    if (nodeText.includes(itemsArr[1])) {
+                                        codeArr.push(itemsArr[2]);
+                                    }
+                                }
+                            }
+                            if (codeArr.length > 0) {
+                                newtextboxcontent.attr('code', codeArr.join(jointsymbol));
+                            }
+                        }
+                    }
+                    newtextboxcontent.html(bindVal || _placeholder);
+                    _handleRelevance(datasourceNode);
+                }
+                break;
+            case 'dropbox':
+                datasourceNode.text(bindVal);
+                break;
+            case 'timebox':
+                try {
+                    var _timeoption = datasourceNode.attr('_timeoption');
+                    bindVal = _t.formatStringDate(bindVal, _timeoption);
+                } catch (e) {
+                    console.log(bindVal);
+                    console.log(e);
+                }
+                datasourceNode.text(bindVal);
+                break;
+            case 'searchbox':
+                var searchOption = datasourceNode.attr('_searchoption') || '';
+                var searchpair = (datasourceNode.attr('_searchpair') || '').replace(/\u200B/g, '');
+                var searchpairVal = _t.genericDataConvert(data, searchpair);
+
+                function setupSearchbox() {
+                    datasourceNode.text(bindVal);
+                    var searchPairIsCode = true;
+                    if (searchOption.indexOf('码') > 0) {
+                        // 当前搜索数据元为编码类数据元
+                        searchPairIsCode = false;
+                    }
+                    if (searchPairIsCode) {
+                        datasourceNode.attr('_code', searchpairVal);
+                        datasourceNode.attr('_name', bindVal);
+                    } else {
+                        datasourceNode.attr('_code', bindVal);
+                        datasourceNode.attr('_name', searchpairVal);
+                    }
+                }
+                setupSearchbox();
+                break;
+            case 'labelbox':
+                var bindable = datasourceNode.attr('_bindable');
+                if (bindable) {
+                    datasourceNode.text(bindVal);
+                }
+                break;
+            case 'cellbox':
+                datasourceNode.text(bindVal);
+                break;
+            case 'checkbox':
+                // 多选 bindVal 是数组
+                var valArr = bindVal;
+                var $ds = datasourceNode;
+                $ds.find('span[data-hm-node="checkbox"]:not([data-hm-node="labelbox"])').removeClass('fa-check-square-o').addClass('fa-square-o').attr('_selected', 'false');
+                for (var j = 0; j < valArr.length; j++) {
+                    // 对值进行转义处理
+                    var escapedVal = valArr[j].replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, "\\$&");
+                    $ds.find('[data-hm-itemname="' + escapedVal + '"]:not([data-hm-node="labelbox"])').removeClass('fa-square-o').addClass('fa-check-square-o').attr('_selected', 'true');
+                }
+                break;
+            case 'radiobox':
+                var $ds = datasourceNode;
+                $ds.find('span[data-hm-node="radiobox"]:not([data-hm-node="labelbox"])').removeClass('fa-dot-circle-o').addClass('fa-circle-o');
+                $ds.find('span[data-hm-node="radiobox"][data-hm-itemname="' + bindVal + '"]:not([data-hm-node="labelbox"])').addClass('fa-dot-circle-o');
+                break;
+            case 'textboxwidget':
+                var $ds = datasourceNode;
+                $ds.text(bindVal);
+                break;
+        }
     },
 
     genericDataConvert: function (data, name) {
@@ -510,10 +529,13 @@ commonHM.component['documentModel'].fn({
      * @param {jQuery} $body 编辑器body元素
      */
     initDocumentFireEvt: function ($body) {
-        var _t = this;
+        var _t = this; 
+        
         //显示所有的placehlder
         var editable = _t.editor.editable();
-        editable.fire('togglePlaceHolder', { 'showAllPlaceholder': true });
+        editable.fire('togglePlaceHolder', {
+            'showAllPlaceholder': true
+        });
 
         //初始化所有textbox-widget
         $body.find('.textboxWidget').each(function () {
@@ -534,6 +556,114 @@ commonHM.component['documentModel'].fn({
                 _handleCascade(this);
             });
         });
+        $body.find("div[data-hm-widgetid]").each(function () {
+            $(this).on('click', function () {
+                if ($(this).attr('contenteditable') == 'false') {
+                    return;
+                }
+                if (!window.hmEditor.hmAi.awekenAiWidget[$(this).attr('data-hm-widgetid')]) {
+                    console.log('点击了widget');
+                    _t._handleEditorTool(this);
+                }
+            });
+        });
+        $body.find('table[data-hm-datatable][is_nursing_form="true"]').on('mouseleave','tbody tr',function(){
+            $body.find('.table-row-actions').remove();
+        }).on('mouseenter.tableActions', 'tbody tr', function (event) {
+            // 使用 event.target 来获取实际触发的元素
+            var $tr = $(event.target).closest('tr');
+            _t._handleTrMouseEnter($tr[0], $tr.index());
+        }).on('click.tableActions', '.add-row-icon', function (e) {
+            e.stopPropagation();
+            console.log('=====增加行=====');
+            _t._addTableRow($(this).closest('tr'));
+        }).on('click.tableActions', '.delete-row-icon', function (e) {
+            e.stopPropagation();
+            console.log('=====删除行=====');
+            _t._deleteTableRow($(this).closest('tr'));
+        });
+    },
+  
+    _handleTrMouseEnter: function (tr, index) {
+        var _t = this;
+        try {
+            var $tr = $(tr);
+            if (!$tr.length) {
+                return;
+            }
+            
+            var $tbody = $tr.closest('tbody');
+            if (!$tbody.length) {
+                return;
+            }
+
+            // 移除其他行的操作图标
+            $tbody.find('.table-row-actions').remove();
+
+            // 创建操作图标容器
+            var $actionsContainerAdd = $('<div class="table-row-actions table-row-actions-add"></div>');
+            var $actionsContainerDel = $('<div class="table-row-actions table-row-actions-del"></div>');
+
+            // 获取当前行的总行数
+            var totalRows = $tbody.find('tr').length;
+
+            // 添加增加行图标
+            var $addIcon = $('<span class="add-row-icon" title="增加行"><i class="fa fa-plus-square"></i></span>');
+
+            // 添加删除行图标（只有当行数大于1时才显示）
+            var $deleteIcon = $('<span class="delete-row-icon" title="删除行"><i class="fa fa-minus-square"></i></span>');
+            if (totalRows == 1) {
+                $deleteIcon.addClass('disabled').attr('title', '至少保留一行');
+            }
+
+            $actionsContainerAdd.append($addIcon);
+            $actionsContainerDel.append($deleteIcon);
+            
+            // 将操作图标添加到当前行
+            var $firstTd = $tr.find('td').first();
+            var $lastTd = $tr.find('td').last();
+            
+            if ($firstTd.length) {
+                $firstTd.css('position', 'relative').prepend($actionsContainerAdd);
+            }
+            if ($lastTd.length) {
+                $lastTd.css('position', 'relative').append($actionsContainerDel);
+            }
+        } catch (error) {
+            console.warn('处理表格行鼠标进入事件时发生错误:', error);
+        }
+    },
+    _handleEditorTool: function (widget) {
+        var _t = this;
+        var widgetId = $(widget).attr('data-hm-widgetid').trim();
+        var widgetName = $(widget).attr('data-hm-widgetname').trim();
+        var recordType = _t.getRecordType(widgetName);
+        const params = {
+            recordType: recordType,
+            progressGuid: widgetId
+        };
+        window.hmEditor.hmAi.setContainer(params);
+    },
+    /**
+     * 根据病历文书名称，获取文书类型
+     * @param {*} widgetName 文书名称
+     * @returns 文书类型
+     */
+    getRecordType: function (widgetName) {
+        var _t = this;
+        var _pWindow = parent.window;;
+        var recordMap = _pWindow.HMEditorLoader && _pWindow.HMEditorLoader.recordMap;
+        if (!recordMap) {
+            console.warn('recordMap is not available on HMEditorLoader.');
+            return null;
+        }
+        var recordInfo = recordMap.find(item => {
+            if (Array.isArray(item.recordName)) {
+                return item.recordName.includes(widgetName);
+            }
+            return item.recordName === widgetName;
+        });
+        return recordInfo ? recordInfo.recordType : null;
     },
     /**
      * 更新编辑器的高度
@@ -547,7 +677,10 @@ commonHM.component['documentModel'].fn({
             // 只读病历分页
             if (CKEDITOR.plugins.pagebreakCmd) {
                 CKEDITOR.plugins.pagebreakCmd.currentOperations.setContent = false;
-                CKEDITOR.plugins.pagebreakCmd.performAutoPaging(_t.editor, { name: '只读病历分页', data: evtTrace });
+                CKEDITOR.plugins.pagebreakCmd.performAutoPaging(_t.editor, {
+                    name: '只读病历分页',
+                    data: evtTrace
+                });
             }
         } else {
             $(".cke_editor_editorSpace").addClass("emr-reset-height");
@@ -583,11 +716,8 @@ commonHM.component['documentModel'].fn({
      */
     aggregateRecord: function (recordFileList) {
         var _t = this;
-
         var htmlFileList = recordFileList;
-
         var oldBody = _t.editor.document.getBody();
-
         //获取首个文档的信息
         var papersize = _t.getAttributeFromBodyStr(htmlFileList[0]["docContent"], 'data-hm-papersize') || '';
         var meta_json = _t.getAttributeFromBodyStr(htmlFileList[0]["docContent"], 'meta_json') || '';
@@ -597,20 +727,9 @@ commonHM.component['documentModel'].fn({
             var 病历ID = htmlFileList[i]["code"] || "";
             var 病历名称 = htmlFileList[i]["docTplName"] || "";
             var 病历文档 = htmlFileList[i]["docContent"] || "";
-
             var contentClass = 'emrWidget-content';
-
-            // // 成组病历打印时页码问题（现场模板页脚数据元导致）
-            // if (continuousGroupRecord) {
-            //     var _$section = $('<section></section)');
-            //     _$section.append(病历文档);
-            //     _$section.find("table[_paperfooter]").remove();
-            //     _$section.find("span[data-hm-name='页数']").closest("table").remove();
-            //     病历文档 = _$section.html() + '<table class="solid-border" style="width: 100%;" data-hm-table="true" _paperfooter="true"><tbody><tr><td style="text-align: center; border-width: 1px; border-style: none;">第<span contenteditable="false" class="page"> </span>页</td></tr></tbody></table>';
-            // }
             var body = '<body></body>';
             var oldWidget = oldBody.find('[data-hm-widgetid="' + 病历ID + '"]');
-
             // 是否在此病历后分页: 因为这个值是附加在 widget 上的, 故需要从书写中的病历上提出来
             var splitAfterDocStr;
             var splitAfterDocClass = CKEDITOR.plugins.pagebreakCmd.SPLIT_AFTER_DOC;
@@ -619,61 +738,50 @@ commonHM.component['documentModel'].fn({
                 _t.getAttributeFromBodyStr(病历文档, splitAfterDocClass);
             splitAfterDocStr = splitAfterDocStr ? (splitAfterDocClass + '="true" ') : '';
 
-
-
             // 是否更新病历页码
             var changePageNumberOfDocClass = CKEDITOR.plugins.pagebreakCmd.CHANGE_PAGE_NUMBER_OF_DOC;
             var pageNumOfThisDoc = _t.getAttributeFromBodyStr(病历文档, changePageNumberOfDocClass);
             var changePageNumberOfDocStr = pageNumOfThisDoc ? (changePageNumberOfDocClass + '=' + Number(pageNumOfThisDoc) + ' ') : '';
 
+            var contenteditable = '';
+            var _class = _t.getAttributeFromBodyStr(病历文档, 'class') || '';
+            if (_class.includes('switchModel')) {
+                contenteditable = 'false';
+            }
             var record_widget = '<div class="emrWidget">' +
                 '<div class="' + contentClass + '" ' +
                 'data-hm-widgetid="' + 病历ID + '" ' +
-                'data-hm-widgetname="' + 病历名称 + '" ' +
+                'data-hm-widgetname="' + 病历名称.trim() + '" ' +
                 'doc_code="' + 病历ID + '" ' +
+                '_contenteditable="' + contenteditable + '" ' +
                 splitAfterDocStr +
                 changePageNumberOfDocStr +
                 '>' + 病历文档 + '</div>' +
                 '</div>';
-
             var $body = $(body).append(record_widget);
-
-
             var lastIndex = htmlFileList.length - 1;
-
             //只有一个病程时，页眉页脚全部保留
             if (htmlFileList.length == 1) {
-
                 contents = contents + record_widget;
-
             } else {
                 //第一个病程保留页眉,最后一个病程保留页脚
                 if (i === 0) {
                     var tempFile = _t.removeFooter($body); //第一个去除页脚
                     contents = contents + tempFile[0].innerHTML;
                 }
-
                 if (i === lastIndex) {
                     var tempFile = _t.removeHeader($body); //最后一个去除页眉
                     contents = contents + tempFile[0].innerHTML;
                 }
-
-
                 //非第一个和最后一个，去除页眉页脚
                 if (0 < i && i < lastIndex) {
                     var tempFile_removeHeader = _t.removeHeader($body); //去除页眉信息
                     var tempFile_removeFooter = _t.removeFooter(tempFile_removeHeader);
                     contents = contents + tempFile_removeFooter[0].innerHTML;
-
                 }
-
             }
-
-
         }
-
-        contents = contents.replace(/<body.*?>/g, '').replace(/<\/body>/g, '');//去除所有body标签
-
+        contents = contents.replace(/<body.*?>/g, '').replace(/<\/body>/g, ''); //去除所有body标签
         var editorContent = '<body data-hm-papersize="' + papersize + '" meta_json ="' + meta_json + '" style ="' + style + '" >' + contents + '</body>';
         //病程是否使用新样式
         var newstyle = _t.getAttributeFromBodyStr(htmlFileList[0]["docContent"], 'newstyle');
@@ -724,14 +832,13 @@ commonHM.component['documentModel'].fn({
      * @param {String} docs[].code 要插入的文档的唯一编号
      * @param {String} docs[].docContent 要插入的文档内容
      */
-    insertContent: function(insertPosition, docs) {
+    insertContent: function (insertPosition, docs) {
         var _t = this;
         if (!Array.isArray(docs) || docs.length === 0) {
             console.error('要插入的文档必须是数组类型且不能为空');
             return;
         }
-        var recordWidgetList = _t.getRecordWidgetList();//拿到各个widget里面的内容
-
+        var recordWidgetList = _t.getRecordWidgetList(); //拿到各个widget里面的内容
         // 创建新数组，将docs插入到指定位置
         var newRecordWidgetList = [];
         for (var i = 0; i < recordWidgetList.length; i++) {
@@ -747,7 +854,6 @@ commonHM.component['documentModel'].fn({
             newRecordWidgetList = newRecordWidgetList.concat(docs);
         }
         _t.setContent(newRecordWidgetList);
-        // return newRecordWidgetList;
     },
     getRecordWidgetList: function (anotherDom) {
         var _t = this;
@@ -756,12 +862,10 @@ commonHM.component['documentModel'].fn({
         var recordList = [];
         var paperSize = $body.getAttribute('data-hm-papersize');
         for (var i = 0; i < recordWidgets.count(); i++) {
-
             var $node = recordWidgets.getItem(i);
-
             //提取widget 中的文档属性
             var papersize = paperSize || $node.getAttribute('data-hm-subpapersize');
-            var meta_json = $node.getAttribute('data-hm-submeta_json');
+            var meta_json = $node.getAttribute('meta_json');
             var style = $node.getAttribute('data-hm-substyle');
             var $recordContent = $('<body></body>').append($node.getHtml());
 
@@ -781,33 +885,113 @@ commonHM.component['documentModel'].fn({
             //病程是否使用新样式
             var newstyle = $node.getAttribute('data-hm-subnewstyle');
             if (newstyle) {
-                widgetContent = '<body data-hm-papersize="' + papersize + '" meta_json="' + meta_json + '" style="' + style + '" newstyle="' +newstyle+ '" >' + $recordContent[0].innerHTML + '</body>';
+                widgetContent = '<body data-hm-papersize="' + papersize + '" meta_json="' + meta_json + '" style="' + style + '" newstyle="' + newstyle + '" >' + $recordContent[0].innerHTML + '</body>';
             }
             var doc_code = $node.getAttribute('data-hm-widgetid');
-
-
             var recordFile = {
                 "code": doc_code,
-                "docContent":widgetContent
+                "docContent": widgetContent
             };
             recordList.push(recordFile);
         }
-
         return recordList;
     },
     /**
      * 在光标处插入内容
      * @param {String} content 要插入的内容
      */
-    insertContentAtCursor: function(content) {
+    insertContentAtCursor: function (content) {
         var _t = this;
         var selection = _t.editor.getSelection().getRanges()[0];
         if (!selection) {
             console.error('未找到光标位置');
             return;
         }
-
         _t.editor.insertHtml(content);
         _t.editor.editable().fire('togglePlaceHolder', {});
-    }
+    },
+
+    /**
+     * 增加表格行
+     * @param {jQuery} $currentRow 当前行元素
+     */
+    _addTableRow: function ($currentRow) {
+        var _t = this;
+        try {
+            if (!$currentRow || !$currentRow.length) {
+                console.warn('无效的表格行元素');
+                return;
+            }
+            
+            var $newRow = $currentRow.clone();
+            $newRow.find('.table-row-actions').remove();
+            
+            // 清空新行中的内容
+            $newRow.find('td').each(function() {
+                var $td = $(this);
+                
+                // 清空文本框内容
+                var $textbox = $td.find('.new-textbox-content');
+                if ($textbox.attr('_placeholder') && $textbox.attr('_placeholder') != '') {
+                    $textbox.text($textbox.attr('_placeholder'));
+                    $textbox.attr('_placeholdertext', 'true');
+                }
+                
+                // 清空单选框选中状态
+                $td.find('[data-hm-node=radiobox]').prop('checked', false);
+                
+                // 清空复选框选中状态  
+                $td.find('[data-hm-node=checkbox]').prop('checked', false);
+
+                // 清空时间选中状态
+                $td.find('[data-hm-node=timebox]').html('&nbsp;');
+                
+                // 清空下拉框选中值
+                $td.find('select').prop('selectedIndex', 0);
+                
+                // 清空普通文本内容
+                if(!$td.find('[data-hm-node]').length) {
+                    $td.text('');
+                }
+            });
+            
+            // 将新行插入到当前行后面
+            $currentRow.after($newRow);
+        } catch (error) {
+            console.warn('增加表格行时发生错误:', error);
+        }
+    },
+
+    /**
+     * 删除表格行
+     * @param {jQuery} $currentRow 当前行元素
+     */
+    _deleteTableRow: function ($currentRow) {
+        var _t = this;
+        try {
+            if (!$currentRow || !$currentRow.length) {
+                console.warn('无效的表格行元素');
+                return;
+            }
+            
+            var $tbody = $currentRow.closest('tbody');
+            if (!$tbody.length) {
+                console.warn('无法找到表格体元素');
+                return;
+            }
+            
+            var totalRows = $tbody.find('tr').length;
+
+            // 确保至少保留一行
+            if (totalRows <= 1) {
+                console.warn('表格至少需要保留一行');
+                return;
+            }
+
+            // 删除当前行
+            $currentRow.remove(); 
+        } catch (error) {
+            console.warn('删除表格行时发生错误:', error);
+        }
+    },
 });

@@ -72,7 +72,7 @@ CKEDITOR.editorConfig = function( config ) {
 
 
 	// config.contentsCss = ['vendor/font-awesome.min.css','http://172.16.3.51:3052/hmsdk/hm-sdk.min.css','contents.css'];
-    config.contentsCss = ['vendor/font-awesome.min.css','vendor/hm-sdk.min.css','css/docAi.min.css','contents.css'];
+    config.contentsCss = ['vendor/font-awesome.min.css','vendor/hm-sdk.min.css','css/docAi.min.css','css/document.min.css','contents.css'];
 
 	config.keystrokes = [
 		[CKEDITOR.CTRL + 83, 'save'],

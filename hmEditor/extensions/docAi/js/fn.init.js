@@ -9,17 +9,20 @@ commonHM.component['hmAi'].fn({
         _t.hasTask = false; //是否存在任务 
 
         _t.patientRecord = {};
-        _t.bindWarnAcion(); 
+        _t.awekenAiWidget={}; // 唤醒AI的widget
+        _t.bindWarnAcion();
     },
     initWarnInfo: function (data) {
         var _t = this;
         _t.cleanMark();
         var maysonBean = data; //_t.getQcData(_t.config.patientData.progressGuid);
+        var _pWindow = parent.window;
+        var aiServer = _pWindow.HMEditorLoader && _pWindow.HMEditorLoader.autherEntity && _pWindow.HMEditorLoader.autherEntity.aiServer;
         //获取警告信息
         _t.utils.request({
-            url: _t.Url.qcResult,
+            url: aiServer+'/cdss/api/outer/wagon/emr/problems',
             data: maysonBean,
-            success: function (result) { 
+            success: function (result) {
                 //缓存警告信息
                 _t.cacheWarnInfo(result);
                 _t.intWarnPanel(result);
@@ -27,21 +30,28 @@ commonHM.component['hmAi'].fn({
                 _t.initReminder(result.messageList || []);
             }
         });
-        _t.checkDataSource();
     },
     /**
      * 检查数据是否可生成
      */
     checkDataSource: function () {
         var _t = this;
+        _t.$widget = _t.$body.find('div[data-hm-widgetid="' + _t.emrId + '"]');
+        if (!_t.editorTool) {
+            console.warn('editorTool is not available');
+            return;
+        }
         _t.editorTool.callCommand('checkDataSource', function (list) {
+            console.log('ai返回的测试助手参数', list);
             list.forEach(function (item) {
-                var el = _t.$body.find('span[data-hm-code="' + item.nodeCode + '"]').children('.new-textbox-content').attr('generate', 1);
+                var el = _t.$widget.find('span[data-hm-code="' + item.nodeCode + '"]').children('.new-textbox-content').attr('generate', 1);
                 if (el.attr('_placeholdertext')) {
+                    var el = _t.$widget.find('span[data-hm-code="' + item.nodeCode + '"]').children('.new-textbox-content').attr('_placeholder', 'ctrl+/ 唤醒AI');
                     el.removeAttr('_placeholdertext').html('<span class="r-model-gen-remark">ctrl+/ 唤醒AI</span>');
                 }
-            })
-
+            });
+            _t.awekenAiWidget[_t.emrId] = true;
+            console.log('awekenAiWidget已唤醒的widget', _t.awekenAiWidget);
         })
     },
     /**
@@ -62,17 +72,15 @@ commonHM.component['hmAi'].fn({
             }
             (progress.problemList || []).forEach(function (problem) {
                 problem.sources.forEach(function (item) {
-
                     if (problem.type == 1) { //错误
                         _t.utils.findAndStyle($progreeContent, item.emrAttributeCode, item.surroundingText, {
                             'class': 'doc-warn-txt doc-warn-level-' + (problem.severityLevel || 1),
                             'uucode': item.uucode,
-                            'rule-code': problem.ruleCode,
+                            'rule-code': problem.ruleInfo && (problem.ruleInfo.code || ''),
                             'progress-guid': progressGuid,
                             'attr-code': item.emrAttributeCode
                         });
                     } else if (problem.type == 2) { //缺失
-                         debugger;
                         var el = $progreeContent.find('span[data-hm-code="' + item.emrAttributeCode + '"]').closest('p');
                         var ruleContent = $progreeContent.find('p[attr-code="' + item.emrAttributeCode + '"]');
                         // var currSource = '<span class="doc-warn-lack"><span class="doc-warn-title">'+problem.detailsInfo+'</span></span>';
@@ -127,8 +135,12 @@ commonHM.component['hmAi'].fn({
             if ((e.ctrlKey || e.metaKey) && e.key === '/') { //ctrl + /
                 _t.generator.generateMessage(this, 1);
             }
-            if ((e.ctrlKey || e.metaKey) && e.key === '1') { //ctrl + /
-                _t.generator.generateMessage(this, 2);
+            if (e.key === 'Control' && e.timeStamp - _t.lastCtrlPress < 500) { //双击ctrl
+                _t.lastCtrlPress = 0;
+                 _t.generator.generateMessage(this, 2);
+            } else if (e.key === 'Control') {
+                _t.lastCtrlPress = e.timeStamp;
+                return; 
             }
         }).on('click', '.doc-warn-txt', function (event) {
             var ele = $(this);
@@ -376,6 +388,24 @@ commonHM.component['hmAi'].fn({
             });
         });
         return progress;
+    },
+    /**
+     * 清除AI生成标记，恢复默认提示
+     */
+    clearGenerateRemark: function () {
+        var _t = this;
+        var $body = $(_t.editor.document.getBody().$);
+        _t.awekenAiWidget = {}; // 清空唤醒AI的widget
+        $body.find('.new-textbox-content').each(function (i,ele) {
+            if ($(ele).attr('generate') == '1' && $(ele).find('.r-model-gen-remark').length > 0) {
+                $(ele).find('.r-model-gen-remark').remove();
+                var _placeholder = $(ele).parent().attr('_placeholder');
+                $(ele).attr('_placeholder', _placeholder);
+                $(ele).attr('_placeholdertext', true);
+                if (_placeholder) {
+                    $(ele).html(_placeholder);
+                }
+            }
+        });
     }
-
 })

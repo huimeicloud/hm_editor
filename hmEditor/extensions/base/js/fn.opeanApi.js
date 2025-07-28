@@ -12,9 +12,9 @@ HMEditor.fn({
      * @param {String} contentlist[].data[].keyCode 数据元编码
      * @param {String|String[]} contentlist[].data[].keyValue 数据元内容，可以是字符串或字符串数组
      */
-    setDocContent:function(contentlist){
+    setDocContent: function (contentlist) {
         // 如果传入的是对象，则包装成数组
-        if(contentlist && typeof contentlist === 'object' && !Array.isArray(contentlist)){
+        if (contentlist && typeof contentlist === 'object' && !Array.isArray(contentlist)) {
             contentlist = [contentlist];
         }
         this.documentModel.setContent(contentlist);
@@ -28,7 +28,7 @@ HMEditor.fn({
      * @param {String} docs[].docTplName 文档模板名称
      * @param {String} docs[].docContent 要插入的文档内容
      */
-    insertDocContent: function(insertPosition, docs) {
+    insertDocContent: function (insertPosition, docs) {
         // 直接调用documentModel的insertDoc方法
         this.documentModel.insertDocContent(insertPosition, docs);
     },
@@ -39,11 +39,12 @@ HMEditor.fn({
      * @param {String} dataList[].code 文档唯一编号(必传)
      * @param {Array} dataList[].data 初始化数据(必传)
      * @param {String} dataList[].data[].keyCode 数据元编码(必传)
+     * @param {String} dataList[].data[].keyName 数据元名称
      * @param {String|String[]} dataList[].data[].keyValue 数据元内容，可以是字符串或字符串数组(必传)
      */
-    setDocData:function(dataList){
+    setDocData: function (dataList) {
         // 如果传入的是对象，则包装成数组
-        if(dataList && typeof dataList === 'object' && !Array.isArray(dataList)){
+        if (dataList && typeof dataList === 'object' && !Array.isArray(dataList)) {
             dataList = [dataList];
         }
         this.documentModel.setDocData(dataList);
@@ -60,9 +61,11 @@ HMEditor.fn({
      *   text: '文档text纯文本'
      * }]
      */
-    getDocContent:function(code){
+    getDocContent: function (code) {
         //code 编号
-        return this.documentModel.getData({code:code});
+        return this.documentModel.getData({
+            code: code
+        });
     },
     /**
      * 获取文档html文本
@@ -73,9 +76,12 @@ HMEditor.fn({
      *   html: '文档html文本'
      * }]
      */
-    getDocHtml:function(code){
+    getDocHtml: function (code) {
         //flag 1:获取html文本 2:获取text文本,3:获取数据元Data
-        return this.documentModel.getData({code:code,flag:1});
+        return this.documentModel.getData({
+            code: code,
+            flag: 1
+        });
     },
     /**
      * 获取文档text文本
@@ -86,9 +92,12 @@ HMEditor.fn({
      *   text: '文档text纯文本'
      * }]
      */
-    getDocText:function(code){
+    getDocText: function (code) {
         //flag 1:获取html文本 2:获取text文本 3:获取数据元Data
-        return this.documentModel.getData({code:code,flag:2});
+        return this.documentModel.getData({
+            code: code,
+            flag: 2
+        });
     },
     /**
      * 获取文档数据元数据
@@ -100,25 +109,67 @@ HMEditor.fn({
      *   data: [{keyCode: '数据元编码', keyValue: '数据元内容或数据元内容数组',keyId: '数据元id',keyName: '数据元名称'}], // 数据元数据
      * }]
      */
-    getDocData:function(code,keyList){
+    getDocData: function (code, keyList) {
         //flag 1:获取html文本 2:获取text文本 3:获取数据元Data
-        return this.documentModel.getData({code:code,flag:3,keyList:keyList});
+        return this.documentModel.getData({
+            code: code,
+            flag: 3,
+            keyList: keyList
+        });
     },
 
     /**
-     * 显示质控警告信息
+     * 质控提醒参数示例
+     * @param {Object} params 质控提醒参数
+     * @param {String} params.userGuid 用户唯一标识
+     * @param {String} params.serialNumber 序列号
+     * @param {String} params.caseNo 病历号
+     * @param {String} params.currentBedCode 床位号
+     * @param {String} params.patientName 患者姓名
+     * @param {String} params.doctorGuid 医生唯一标识
+     * @param {String} params.doctorName 医生姓名
+     * @param {String} params.admissionTime 入院时间
+     * @param {String} params.inpatientDepartment 住院科室
+     * @param {String} params.inpatientArea 病区
+     * @param {String} params.inpatientDepartmentId 科室ID
+     * @param {String} params.divisionId 病区ID
+     * @param {String} params.pageSource 页面来源
+     * @param {Number} params.openInterdict 是否开启拦截
+     * @param {Number} params.triggerSource 触发来源
+     * @param {Object} params.patientInfo 患者信息
+     * @param {Number} params.patientInfo.gender 性别(0:男,1:女)
+     * @param {String} params.patientInfo.birthDate 出生日期
+     * @param {String} params.patientInfo.age 年龄
+     * @param {String} params.patientInfo.ageType 年龄单位
+     * @param {Number} params.patientInfo.maritalStatus 婚姻状况
+     * @param {Number} params.patientInfo.pregnancyStatus 妊娠状态
+     * @param {Array} params.progressNoteList 病历列表
+     * @param {String} params.progressNoteList[].progressGuid 病历唯一标识
+     * @param {String} params.progressNoteList[].progressTypeName 病历类型名称
+     * @param {Number} params.progressNoteList[].progressType 病历类型
+     * @param {String} params.progressNoteList[].doctorGuid 医生唯一标识
+     * @param {String} params.progressNoteList[].doctorName 医生姓名
+     * @param {String} params.progressNoteList[].progressMessage 病历内容
+     * @param {Number} params.progressNoteList[].msgType 消息类型
      */
-    qc:function(data){
+    qc: function (data) {
         this.hmAi.qc(data);
     },
-
+    /**
+     * 调用ai助手
+     * @param {String} recordType 病历类型
+     * @param {String} progressGuid 病历唯一编号
+     */
+    aiActive: function (data) {
+        this.hmAi.ai(data);
+    },
     /**
      * 原生editor通用方法，用于调用 CKEditor 实例对象的方法
      * @param {String} methodName 方法名称
      * @param {Array} args 方法参数数组（可选）
      * @returns {*} 方法调用的返回值
      */
-    execEditorMethod: function(methodName, args) {
+    execEditorMethod: function (methodName, args) {
         if (!this.editor) {
             console.error('Editor 实例未初始化');
             return null;
@@ -152,7 +203,7 @@ HMEditor.fn({
      * @param {*} data 命令参数（可选）
      * @returns {Boolean} 命令执行状态
      */
-    execCommand: function(commandName, data) {
+    execCommand: function (commandName, data) {
         if (!this.editor) {
             console.error('Editor 实例未初始化');
             return false;
@@ -179,22 +230,22 @@ HMEditor.fn({
      * @param {Function} menuList[].show 菜单显示逻辑 返回true显示，返回false不显示
      * @param {Function} menuList[].onExec 菜单执行逻辑
      */
-    addCustomMenu:function(menuList){
+    addCustomMenu: function (menuList) {
         this.registerCustomMenu(menuList);
     },
     /**
      * 设置文档只读
      * @param {Boolean} readOnly 是否只读
      */
-    setDocReadOnly:function(code,flag){
-        var flag = (flag === true || flag === false) ? flag: this.editor.HMConfig.readOnly ;
-        this.documentModel.setDocReadOnly(code,flag);
+    setDocReadOnly: function (code, flag) {
+        var flag = (flag === true || flag === false) ? flag : this.editor.HMConfig.readOnly;
+        this.documentModel.setDocReadOnly(code, flag);
     },
     /**
      * 设置文档修订模式
      * @param {Boolean} reviseMode 是否修订模式
      */
-    setDocReviseMode:function(reviseMode){
+    setDocReviseMode: function (reviseMode) {
         this.documentModel.setDocReviseMode(reviseMode);
     },
     /**
@@ -226,7 +277,7 @@ HMEditor.fn({
      *   }
      *   ] // 指定动态值域，用于搜索类下拉框
      * }
-    */
+     */
     setTemplateDatasource: function (params) {
         var _t = this;
         _t.documentModel.setTemplateDatasource(params);
@@ -242,24 +293,25 @@ HMEditor.fn({
      * @param {String} settings.watermarkAlpha 水印透明度 默认0.5
      * @param {String} settings.watermarkAngle 水印倾斜度数 默认15度
      * @param {String} settings.watermarkHeight 水印高度 默认50px
+     * @param {String} settings.watermarkColumn 水印列数 默认3
      */
-    setDocWatermark:function(settings){
+    setDocWatermark: function (settings) {
         var _t = this;
-        this.editor.HMConfig.watermark = settings||{};
+        this.editor.HMConfig.watermark = settings || {};
         _t.documentModel.setDocWatermark();
     },
     /**
      * 下载pdf
      *
      */
-    downloadPdf:function(){
+    downloadPdf: function () {
         this.editor.execCommand('print', '下载');
     },
     /**
      * 在光标处插入内容
      * @param {String} 内容，可以是字符串或带标签的字符串
      */
-    insertDataAtCursor: function(content) {
+    insertDataAtCursor: function (content) {
         var _t = this;
         _t.documentModel.insertDataAtCursor(content);
     },
@@ -270,8 +322,21 @@ HMEditor.fn({
      * @param {Number} imageData.width 图片宽度
      * @param {Number} imageData.height 图片高度
      */
-    insertImageAtCursor: function(imageData) {
+    insertImageAtCursor: function (imageData) {
         var _t = this;
         _t.documentModel.insertImageAtCursor(imageData);
+    },
+    /**
+     * 病历生成 - 获取当前widget中可AI生成的数据元节点并进行批量生成
+     */
+    generateDocument: function () {
+        this.hmAi.generator.generateDocument();
+    },
+    /**
+     * 病历段落生成 - 根据目标节点生成病历段落
+     * @param {*} targetNode 目标节点
+     */
+    generateSection: function (targetNode) {
+        this.hmAi.generator.generateMessage(targetNode,2);
     }
 });

@@ -1,0 +1,124 @@
+const recordMapData = [{
+    "recordName": "出院记录",
+    "recordType": 10,
+}, {
+    "recordName": "出院记录通用",
+    "recordType": 10,
+}, {
+    "recordName": "死亡记录",
+    "recordType": 29,
+}, {
+    "recordName": "入院记录",
+    "recordType": 1,
+}, {
+    "recordName": ["24小时入出院记录","24小时内入出院记录"],
+    "recordType": 23,
+}, {
+    "recordType": 2,
+    "recordName": "首次病程记录"
+}, {
+    "recordType": 3,
+    "recordName": "日常病程"
+}, {
+    "recordType": 4,
+    "recordName": "查房记录"
+}, {
+    "recordType": 6,
+    "recordName": "术后首次病程"
+}, {
+    "recordType": 8,
+    "recordName": "阶段小结"
+}, {
+    "recordType": 12,
+    "recordName": "首次查房记录"
+}, {
+    "recordType": 24,
+    "recordName": ["上级医师查房记录","主治医生查房记录","主治医生首次查房记录"]
+}, {
+    "recordType": 25,
+    "recordName": "转入记录"
+}, {
+    "recordType": 26,
+    "recordName": "转出记录"
+}, {
+    "recordType": 28,
+    "recordName": "抢救记录"
+}, {
+    "recordType": 31,
+    "recordName": "疑难病例讨论记录"
+}, {
+    "recordType": 32,
+    "recordName": "交班记录"
+}, {
+    "recordType": 33,
+    "recordName": "接班记录"
+}, {
+    "recordType": 35,
+    "recordName": ["死亡讨论记录","死亡病例讨论记录",]
+}, {
+    "recordType": 43,
+    "recordName": "输血记录"
+}, {
+    "recordType": 5,
+    "recordName": "术前小结"
+}, {
+    "recordType": 13,
+    "recordName": "手术记录"
+}, {
+    "recordType": 21,
+    "recordName": "术前讨论"
+}, {
+    "recordType": 27,
+    "recordName": "术前访视记录"
+}, {
+    "recordType": 34,
+    "recordName": "有创操作记录"
+}, {
+    "recordType": 36,
+    "recordName": "麻醉记录"
+}, {
+    "recordType": 9,
+    "recordName": "会诊记录"
+}, {
+    "recordType": 37,
+    "recordName": "谈话记录"
+}, {
+    "recordType": 38,
+    "recordName": "自动出院告知书"
+}, {
+    "recordType": 39,
+    "recordName": "转院告知书"
+}, {
+    "recordType": 40,
+    "recordName": "病危(重)告知书"
+}, {
+    "recordType": 41,
+    "recordName": "知情同意书"
+}, {
+    "recordType": 42,
+    "recordName": "输血治疗知情同意书"
+}, {
+    "recordType": 46,
+    "recordName": "分娩记录"
+}, {
+    "recordType": 2001,
+    "recordName": "入院护理记录"
+}, {
+    "recordType": 2002,
+    "recordName": "日常护理记录"
+}, {
+    "recordType": 2003,
+    "recordName": "出院护理记录"
+}, {
+    "recordType": 2005,
+    "recordName": "护理评估记录"
+}, {
+    "recordType": 10011,
+    "recordName": "CT 检查报告"
+}, {
+    "recordType": 24001,
+    "recordName": "病理报告"
+}, {
+    "recordType": 83,
+    "recordName": "血液透析"
+}];

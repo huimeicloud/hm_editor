@@ -41,7 +41,7 @@ tr {
     page-break-after: auto
 }
 
-table[data-kyee-datatable] tr{
+table[data-hm-datatable] tr{
     page-break-inside: avoid;
 }
 
@@ -79,75 +79,75 @@ table.solid-border td, table.solid-border th {
 }
 
 /*体温单 start*/
-table[data-kyee-table=temperature] {
+table[data-hm-table=temperature] {
     width: 98%;
     white-space: nowrap;
 }
 
-table[data-kyee-table=temperature] td, table[data-kyee-table=temperature] th {
+table[data-hm-table=temperature] td, table[data-hm-table=temperature] th {
     text-align: center;
     font-size: 8px;
     border: 1px solid black;
 }
 
-table[data-kyee-table=temperature] tr[data-kyee-tr=date] td {
+table[data-hm-table=temperature] tr[data-hm-tr=date] td {
     width: 11.5%;
 }
 
-span[data-kyee-span=left] {
+span[data-hm-span=left] {
     display: block;
     height: 75px;
     position: relative;
     font-size: 12px;
 }
 
-table[data-kyee-datatable] td{
+table[data-hm-datatable] td{
     /*position: relative; //造成单元格边框消失? */ 
 }
 
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=header] tr:nth-child(1) > *,
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=header] tr:nth-child(2) > *,
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=header] tr:nth-child(3) > *,
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=header] tr:nth-child(4) > th:nth-child(1),
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=footer] tr > th {
+table[data-hm-table=temperature] tbody[data-hm-tbody=header] tr:nth-child(1) > *,
+table[data-hm-table=temperature] tbody[data-hm-tbody=header] tr:nth-child(2) > *,
+table[data-hm-table=temperature] tbody[data-hm-tbody=header] tr:nth-child(3) > *,
+table[data-hm-table=temperature] tbody[data-hm-tbody=header] tr:nth-child(4) > th:nth-child(1),
+table[data-hm-table=temperature] tbody[data-hm-tbody=footer] tr > th {
     font-size: 12px;
     height: 24px;
 }
 
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=footer] tr[data-kyee-tr=skinTest] > td {
+table[data-hm-table=temperature] tbody[data-hm-tbody=footer] tr[data-hm-tr=skinTest] > td {
     height: 24px;
 }
 
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=footer] tr[data-kyee-tr=breath] > td {
+table[data-hm-table=temperature] tbody[data-hm-tbody=footer] tr[data-hm-tr=breath] > td {
     font-size: 8pt;
 }
 
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=footer] tr[data-kyee-tr=bloodPressure] > td {
+table[data-hm-table=temperature] tbody[data-hm-tbody=footer] tr[data-hm-tr=bloodPressure] > td {
     font-size: 8pt;
 }
 
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=footer] td {
+table[data-hm-table=temperature] tbody[data-hm-tbody=footer] td {
     font-size: 10pt;
 }
 
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] tr > td:nth-child(1),
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] tr > td:nth-child(2) {
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] tr > td:nth-child(1),
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] tr > td:nth-child(2) {
     border-top: none;
     border-bottom: none;
 }
 
-span[data-kyee-span=left] > span {
+span[data-hm-span=left] > span {
     position: absolute;
     right: 2px;
     top: -10px;
     font-size: 14px;
 }
 
-table[data-kyee-table] td._diagonal{
+table[data-hm-table] td._diagonal{
     /*position: relative;*/
 }
 
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon {
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] .icon {
     display: block;
     position: relative;
     margin-bottom: 5px;
@@ -157,7 +157,7 @@ table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon {
     margin-left: 5px;
 }
 
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon:after {
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] .icon:after {
     display: block;
     position: absolute;
     left: 35px;
@@ -165,21 +165,21 @@ table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon:after {
     height: 10px;
 }
 
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon--oralThermometer::after {
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] .icon--oralThermometer::after {
     width: 10px;
     background-color: blue;
     border-radius: 50%;
     content: '';
 }
 
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon--armpitThermometer::after {
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] .icon--armpitThermometer::after {
     height: 10px;
     color: blue;
     content: '×';
     font-weight: bold;
 }
 
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon--rectalThermometer::after {
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] .icon--rectalThermometer::after {
     width: 6px;
     height: 6px;
     border: 2px solid blue;
@@ -187,7 +187,7 @@ table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon--rectalThe
     content: '';
 }
 
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon--earThermometer::after {
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] .icon--earThermometer::after {
     width: 0;
     height: 0;
     border-left: 4px solid transparent;
@@ -196,14 +196,14 @@ table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon--earThermo
     content: '';
 }
 
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon--pulse::after {
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] .icon--pulse::after {
     width: 10px;
     background-color: red;
     border-radius: 50%;
     content: '';
 }
 
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon--heartRate::after {
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] .icon--heartRate::after {
     width: 6px;
     height: 6px;
     border: 2px solid red;
@@ -211,12 +211,12 @@ table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] .icon--heartRate
     content: '';
 }
 
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] td {
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] td {
     vertical-align: top;
     text-align: right;
 }
 
-table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] tr:first-child td:last-child {
+table[data-hm-table=temperature] tbody[data-hm-tbody=chart] tr:first-child td:last-child {
     text-align: left;
 }
 
@@ -243,16 +243,16 @@ table[data-kyee-table=temperature] tbody[data-kyee-tbody=chart] tr:first-child t
 
 /*体温单 end*/
 
-span[data-kyee-node=labelbox] {
+span[data-hm-node=labelbox] {
     background-color: #F0F0F0;
     color:black;
 }
 
-span[data-kyee-node=textbox] {
+span[data-hm-node=textbox] {
     color: #fd8709;
 }
 
-span[data-kyee-node=dropbox] {
+span[data-hm-node=dropbox] {
     background-color: #fed3a5;
     position: relative;
     display: inline-block;
@@ -262,14 +262,14 @@ span[data-kyee-node=dropbox] {
     vertical-align: bottom;
 }
 
-span[data-kyee-node=dropbox] {
+span[data-hm-node=dropbox] {
     background-image: url(img/drop-down.png);
     background-position: right;
     background-size: contain;
     background-repeat: no-repeat;
 }
 
-span[data-kyee-node=timebox] {
+span[data-hm-node=timebox] {
     background-color: #fed3a5;
     position: relative;
     display: inline-block;
@@ -280,14 +280,14 @@ span[data-kyee-node=timebox] {
 
 }
 
-span[data-kyee-node=timebox] {
+span[data-hm-node=timebox] {
     background-image: url('img/calendar.png');
     background-position: right;
     background-size: contain;
     background-repeat: no-repeat;
 }
 
-span[data-kyee-node=searchbox] {
+span[data-hm-node=searchbox] {
     background-color: #fed3a5;
     position: relative;
     display: inline-block;
@@ -297,7 +297,7 @@ span[data-kyee-node=searchbox] {
     vertical-align: bottom;
 }
 
-span[data-kyee-node=expressionbox] {
+span[data-hm-node=expressionbox] {
     background-color: #fed3a5;
     position: relative;
     display: inline-block;
@@ -308,7 +308,7 @@ span[data-kyee-node=expressionbox] {
 
 }
 
-span[data-kyee-node=searchbox] {
+span[data-hm-node=searchbox] {
     background-image: url('img/search.png');
     background-position: right;
     background-size: contain;
@@ -316,7 +316,7 @@ span[data-kyee-node=searchbox] {
 }
 
 
-span[data-kyee-node=textboxwidget]{
+span[data-hm-node=textboxwidget]{
     position: relative;
     display: inline-block;
     min-width: 20px;
@@ -325,34 +325,34 @@ span[data-kyee-node=textboxwidget]{
     background-color: #fed3a5;
 }
 
-span.fa-dot-circle-o[data-kyee-node=radiobox][_color=red]{
+span.fa-dot-circle-o[data-hm-node=radiobox][_color=red]{
     color: red;
 }
 
-span[data-kyee-node=radiobox] {
+span[data-hm-node=radiobox] {
     cursor: pointer;
     color: black;
 }
 
-span.fa-check-square-o[data-kyee-node=checkbox][_color=red]{
+span.fa-check-square-o[data-hm-node=checkbox][_color=red]{
     color: red;
 }
 
-span[data-kyee-node=checkbox] {
+span[data-hm-node=checkbox] {
     cursor: pointer;
     color: black;
 }
 
-td[data-kyee-node=cellbox] {
+td[data-hm-node=cellbox] {
     background-color: #F5F5DC;
 }
 
-span[data-kyee-node=icd9-name],
-span[data-kyee-node=icd9-code],
-span[data-kyee-node=icd10Chi-name],
-span[data-kyee-node=icd10Chi-code],
-span[data-kyee-node=icd10-name],
-span[data-kyee-node=icd10-code] {
+span[data-hm-node=icd9-name],
+span[data-hm-node=icd9-code],
+span[data-hm-node=icd10Chi-name],
+span[data-hm-node=icd10Chi-code],
+span[data-hm-node=icd10-name],
+span[data-hm-node=icd10-code] {
     cursor: pointer;
     background-color: #ddd;
 }
@@ -417,7 +417,7 @@ a {
 
 ol, ul, dl {
     /* IE7: reset rtl list margin. (#7334) */
-    *margin-right: 0px;
+    margin-right: 0px;
     /* preserved spaces for list items with text direction other than the list. (#6249,#8049)*/
     padding: 0 40px;
 }
@@ -558,11 +558,11 @@ ins, del {
     text-decoration: none !important;
 }
 
-del.kyee-del {
+del.hm-del {
     display: none;
 }
 
-ins.kyee-ins, ins.kyee-del {
+ins.hm-ins, ins.hm-del {
     white-space: pre-wrap;
     text-decoration: none !important;
 }
@@ -571,60 +571,60 @@ ins.ice-no-decoration, del.ice-no-decoration {
     text-decoration: none !important;
 }
 
-.KYEE-Trace span.kyee-ins, .KYEE-Trace ins.kyee-ins,
-.KYEE-Trace span.kyee-del, .KYEE-Trace del.kyee-del {
+.HM-Trace span.hm-ins, .HM-Trace ins.hm-ins,
+.HM-Trace span.hm-del, .HM-Trace del.hm-del {
     color: #000;
     /*	padding: 1px 0 2px; */
 }
 
-.KYEE-Trace span.kyee-del, .KYEE-Trace del.kyee-del {
+.HM-Trace span.hm-del, .HM-Trace del.hm-del {
     display: inline;
     text-decoration: line-through !important;
     color: #555;
     /*background-color: #e5ffcd !important;*/
 }
 
-.KYEE-Trace .kyee-ins, .KYEE-Trace .kyee-ins > * {
+.HM-Trace .hm-ins, .HM-Trace .hm-ins > * {
     /*background-color: #e5ffcd !important;*/
 }
 
-.KYEE-Trace .kyee-ins.kyee-trace-1, .KYEE-Trace .kyee-ins.kyee-trace-1 > * {
+.HM-Trace .hm-ins.hm-trace-1, .HM-Trace .hm-ins.hm-trace-1 > * {
     /*background-color: #e5ffcd !important;*/
     text-decoration: underline !important;
     text-decoration-color: red !important;
 }
 
-.KYEE-Trace .kyee-del.kyee-trace-1 {
+.HM-Trace .hm-del.hm-trace-1 {
     /*background-color: #e5ffcd !important;*/
     text-decoration: line-through !important;
     text-decoration-color: red !important;
 }
 
-.KYEE-Trace .kyee-ins.kyee-trace-2, .KYEE-Trace .kyee-ins.kyee-trace-2 > * {
+.HM-Trace .hm-ins.hm-trace-2, .HM-Trace .hm-ins.hm-trace-2 > * {
     /*background-color: #e3ffff !important;*/
     text-decoration: underline double !important;
     text-decoration-color: blue !important;
 }
 
-.KYEE-Trace .kyee-del.kyee-trace-2 {
+.HM-Trace .hm-del.hm-trace-2 {
     /*background-color: #e3ffff !important;*/
     text-decoration: line-through double !important;
     text-decoration-color: blue !important;
 }
-p[data-kyee-node^='continuation-identifier'] {
+p[data-hm-node^='continuation-identifier'] {
     margin: 0;
     padding: 0;
     font-size: 12px;
     text-align: center;
 }
 
-p[data-kyee-node^='continuation-identifier'] >input {
+p[data-hm-node^='continuation-identifier'] >input {
     width: 100%;
     outline: 0;
     border: 0;
     text-align: center;
 }
-p[data-kyee-node^='continuation-identifier'] >input::placeholder {
+p[data-hm-node^='continuation-identifier'] >input::placeholder {
     color: #0000ff;
     font-size: 12px;
 }

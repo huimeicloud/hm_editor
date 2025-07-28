@@ -1,4 +1,3 @@
-window.CdssHost=window.location.protocol+'//172.16.3.51/cdss/';
 commonHM.component['hmAi'].fn({
     RecordType:{
         "67be8d7acf7eab1611ef9783":{name:'24小时内入出院记录',cdssRecordType:23},
@@ -17,7 +16,7 @@ commonHM.component['hmAi'].fn({
 
     Url:{
         // qcResult:CdssHost+'api/cdss/qcResult',//质控结果   
-        qcResult:CdssHost+'api/outer/wagon/emr/problems',//质控结果   
-        ignoreWarn:CdssHost+'api/outer/mc/reminder/completed'//忽略警告
+        // qcResult:window.aiServer+'/cdss/api/outer/wagon/emr/problems',//质控结果   
+        // ignoreWarn:window.aiServer+'/cdss/api/outer/mc/reminder/completed'//忽略警告
     }
 })

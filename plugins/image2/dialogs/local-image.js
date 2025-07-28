@@ -38,7 +38,7 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
 				alert('请先选择上传图片');
 				return;
 			}
-			if(isLimit && designMode=="true"){
+			if(isLimit && designMode){
 				isLimit=false;
 				//初始化
 				$('#image')[0].src = '';
@@ -79,7 +79,7 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
 				var maxSize = 51200; //限制最大图片为50kb
 				reader.onload = function(evt){
 					$('#image')[0].src = evt.target.result;
-					if(evt.total && evt.total > maxSize && designMode=="true"){
+					if(evt.total && evt.total > maxSize && designMode){
 						isLimit=true;
 					}
 					$('#fileinput')[0].style.marginTop='10px';

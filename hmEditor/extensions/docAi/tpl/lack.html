@@ -1,6 +1,6 @@
 <span class="doc-warn-lack doc-lack-level-<%=problem.severityLevel||1%>">
     <em><%=index%></em>
-    <span class="doc-warn-lack-title" rule-code="<%=problem.ruleCode%>" uucode="<%=item.uucode%>" key-code="<%=item.emrAttributeCode%>"  progress-guid="<%=item.emrProgressNumber%>">
+    <span class="doc-warn-lack-title" rule-code="<%=problem.ruleInfo && (problem.ruleInfo.code || '')%>" uucode="<%=item.uucode%>" key-code="<%=item.emrAttributeCode%>"  progress-guid="<%=item.emrProgressNumber%>">
         <%=problem.detailsInfo%></span>
-    <span class="doc-warn-lack-ignore" rule-code="<%=problem.ruleCode%>" uucode="<%=item.uucode%>">忽略</span>
+    <span class="doc-warn-lack-ignore" rule-code="<%=problem.ruleInfo && (problem.ruleInfo.code || '')%>" uucode="<%=item.uucode%>">忽略</span>
 </span>

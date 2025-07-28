@@ -4,6 +4,9 @@ commonHM.component['documentModel'].fn({
         copyWidget.find('[_placeholdertext="true"]').each(function () {
             $(this).text('');
         });
+        copyWidget.find('.r-model-gen-remark').each(function () {
+            $(this).remove();
+        });
         return copyWidget.text();
     },
     /**
@@ -13,9 +16,10 @@ commonHM.component['documentModel'].fn({
         var _t = this;
         var $body = _t.editor.document.getBody();
         var paperSize = $body.getAttribute('data-hm-papersize');
+        var meta_json = $body.getAttribute('meta_json');
         //提取widget中的文档属性
         var papersize = paperSize || $(widget).attr('data-hm-subpapersize');
-        var meta_json = $(widget).attr('data-hm-submeta_json');
+        var meta_json = meta_json || $(widget).attr('meta_json');
         var style = $(widget).attr('data-hm-substyle');
         var $recordContent = $('<body></body>').append($(widget).html());
         //将隐藏的页眉、页脚恢复
@@ -25,7 +29,11 @@ commonHM.component['documentModel'].fn({
         $recordContent.find("table[_paperfooter]").each(function () {
             $(this).css("display", "");
         });
-        var widgetContent = '<body data-hm-papersize="' + (papersize || "") + '" meta_json="' + (meta_json || "") + '" style="' + (style || "") + '">' + $recordContent[0].innerHTML + '</body>';
+        var _class = '';
+        if ($($body.$).find('.switchModel').length > 0) {
+            _class = 'switchModel';
+        }
+        var widgetContent = '<body data-hm-papersize="' + (papersize || "") + '" meta_json="' + (meta_json || "") + '" style="' + (style || "") + '" class="' + (_class || "") + '">' + $recordContent[0].innerHTML + '</body>';
         //病程是否使用新样式
         var newstyle = $(widget).attr('data-hm-subnewstyle');
         if (newstyle) {

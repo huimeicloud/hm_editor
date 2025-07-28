@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "hm-editor": {
+      "url": "http://127.0.0.1:7070/hmEditor/mcp-server/mcp-http",
+      "capabilities": ["editor", "patient", "document"],
+      "priority": 1
+    },
+    "hm-image-mock": {
+      "url": "http://127.0.0.1:7070/hmEditor/emr-editor/mock/mcp-http",
+      "capabilities": ["chart", "image", "testchart"],
+      "priority": 2
+    }
+  },
+  "defaultServer": "hm-editor",
+  "system": "你是一个AI助手，请根据用户的问题给出回答。",
+  "routing": {
+    "autoRoute": true,
+    "fallbackServer": "hm-editor",
+    "keywords": {
+      "chart": ["图表", "chart", "测试图表", "生成测试图表"],
+      "image": ["图片", "image"],
+      "testchart": ["生成测试图表"]
+    }
+  }
+}

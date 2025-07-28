@@ -7,12 +7,12 @@ table.dashed-border td,table.dashed-border th{
     border: 0px;
 }
 
-span[data-kyee-node]{
+span[data-hm-node]{
 	color:black !important;
 	background-image:none !important;
 }
 
-span[data-kyee-node=textbox]{
+span[data-hm-node=textbox]{
 	display: none !important;
 }
 [_print_underline]{
@@ -27,10 +27,10 @@ span[data-kyee-node=textbox]{
 [_print_color=red]{
 	color: red !important;
 }
-span.fa-check-square-o[data-kyee-node=checkbox][_color=red]{
+span.fa-check-square-o[data-hm-node=checkbox][_color=red]{
     color: red !important;
 }
-span.fa-dot-circle-o[data-kyee-node=radiobox][_color=red]{
+span.fa-dot-circle-o[data-hm-node=radiobox][_color=red]{
     color: red !important;
 }
 [_print_datasource=none]{
@@ -44,7 +44,7 @@ span.fa-dot-circle-o[data-kyee-node=radiobox][_color=red]{
 [_paperfooter]{
 	background-color: white !important;
 }
-[data-kyee-node] {
+[data-hm-node] {
 	background-color: white !important;
 }
 div.emrWidget{

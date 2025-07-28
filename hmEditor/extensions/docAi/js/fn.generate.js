@@ -17,11 +17,17 @@ commonHM.component['hmAi'].fnSub("generator", {
             emoji: true
           });
         _t.winHeight = $('body').height();
+        
+        // 初始化批量处理相关属性
+        _t.batchQueue = [];
+        _t.batchProcessedCount = 0;
+        _t.batchTotalCount = 0;
+        _t.batchProcessing = false;
     },
     /**
      * 调用提醒端api 生成内容
      */
-    generateMessage: function (traget,type) {
+    generateMessage: function (traget,type,from) {
         var _t = this;
         var JTar = $(traget);
         var editorTool = _t.parent.editorTool,
@@ -33,9 +39,12 @@ commonHM.component['hmAi'].fnSub("generator", {
         if(JTar.find('.r-model-gen-text').length){
             return;
         }
-        if(_t.progressFlag==1 || _t.parent.hasTask){//有进行中的任务
+        
+        // 批量处理模式下，不检查全局任务状态
+        if(from != 'generateDocument' && (_t.progressFlag==1 || _t.parent.hasTask)){//有进行中的任务
             return;
         }
+        
         _t.target = traget;
         _t.fillIndex=0;//回填索引
         var content = utils.getContent(JTar);
@@ -56,13 +65,35 @@ commonHM.component['hmAi'].fnSub("generator", {
             }
             if(flag!=5){//flag 1:进行中，2:成功，3：失败,4:中断, 5该结点不支持
                 // if(type==1){
+                // if(from!='generateDocument'){
                     _t.popupProgress(JTar);
+                // }
                 // }
                 _t.fillText(message,JTar,uuId,function(){
                     if(flag!=1){
                         _t.manageProgress(2);
+                        if(from=='generateDocument'){
+                            // 批量处理模式下，重置处理状态以便继续处理下一个节点
+                            _t.batchProcessing = false;
+                            if (flag==2) {
+                                _t.accpetAiResult(JTar,'r-model-gen-text','generateDocument');
+                            }else if(flag==3 || flag==4){
+                                _t.ignoreAiResult(JTar,'r-model-gen-text');
+                            }
+                            _t.closePopup();
+                            // 批量处理模式下，处理下一个节点
+                            if(_t.batchQueue && _t.batchQueue.length > 0) {
+                                _t.processNextBatchNode();
+                            }
+                        }
+                       
                     }
                 });
+            } else {
+                // 该节点不支持，继续处理下一个
+                if(from=='generateDocument' && _t.batchQueue && _t.batchQueue.length > 0) {
+                    _t.processNextBatchNode();
+                }
             }
 
         })
@@ -168,14 +199,14 @@ commonHM.component['hmAi'].fnSub("generator", {
             type:2,
             theam:1,
             width:"350px",
-            container:$body
+            container:$(relDom).parents(".cke_widget_wrapper_emrWidget")
          });
          _t.popup.container.attr('contenteditable',false).find('.sk-popup-container').renderTpl($docAi_tpl['docAi/tpl/generate'],{});
          _t.popup.setPostion(2,-80);
          _t.manageProgress(flag||1);
          _t.popup.container.on('click','.btn-stop',function(){
             _t.stopGenerate();
-        }).on('click','.btn-confirm',function(){
+        }).on('click','.btn-confirm',function(){ 
             _t.accpetAiResult(_t.popup.relEl[0],'r-model-gen-text');
             _t.closePopup();
         }).on('click','.btn-cancel',function(){
@@ -190,8 +221,8 @@ commonHM.component['hmAi'].fnSub("generator", {
      * 停止生成
      */
     stopGenerate:function(){
-        var _t = this;
-        _t.editorTool && _t.editorTool.callCommand('stopGenerate');
+        var _t = this; 
+        _t.parent.editorTool && _t.parent.editorTool.callCommand('stopGenerate');
         if (_t.fillInervalId) {
             clearInterval(_t.fillInervalId);
             _t.fillInervalId = null;
@@ -210,12 +241,15 @@ commonHM.component['hmAi'].fnSub("generator", {
     /**
      * 使用ai结果
      */
-    accpetAiResult:function(target,className){
+    accpetAiResult:function(target,className,from){
         var _t = this;
         var editor = this.parent.editor;
         var aiResult = $(target).find('.'+className);
         if (!aiResult.length) return;
         aiResult.contents().unwrap();
+        if(from=='generateDocument'){
+            return;
+        }
         // 设置光标到末尾
         var range = editor.createRange();
         var element = new CKEDITOR.dom.element(target);
@@ -295,6 +329,105 @@ commonHM.component['hmAi'].fnSub("generator", {
         if(_t.popup){
             _t.popup.remove();
             _t.popup = null;
+        }
+    },
+    /**
+     * 病历生成 - 获取当前widget中可AI生成的数据元节点并进行批量生成
+     */
+    generateDocument: function() {
+        var _t = this;
+        var editorTool = _t.parent.editorTool;
+        if(editorTool && editorTool.callCommand('isOpen')){
+            return;
+        }
+        var editor = this.parent.editor;
+        
+        // 检查是否有进行中的任务
+        if(_t.progressFlag==1 || _t.parent.hasTask){
+            console.warn('有进行中的任务，请等待完成');
+            return;
+        }
+        
+        // 获取所有可AI生成的数据元节点
+        var generateNodes;
+        if(_t.parent.$widget && _t.parent.$widget.length > 0) {
+            generateNodes = _t.parent.$widget.find('.new-textbox-content[generate="1"]');
+        } else {
+            console.warn('未找到可AI生成的病历');
+            return;
+        }
+        
+        if(generateNodes.length === 0) {
+            console.warn('未找到可AI生成的数据元节点');
+            return;
+        }
+        
+        console.log('找到可AI生成的数据元节点数量:', generateNodes.length);
+        
+        // 初始化批量处理队列
+        _t.batchQueue = [];
+        _t.batchProcessedCount = 0;
+        _t.batchTotalCount = generateNodes.length;
+        _t.batchProcessing = false;
+        
+        // 将需要处理的节点添加到队列
+        generateNodes.each(function(index, node) {
+            var $node = $(node);
+            
+            // 检查节点是否已经有生成结果
+            if($node.find('.r-model-gen-text').length === 0) {
+                _t.batchQueue.push({
+                    node: node,
+                    index: index
+                });
+            } else {
+                console.log('节点已有生成结果，跳过:', index);
+            }
+        });
+        
+        if(_t.batchQueue.length === 0) {
+            console.warn('所有节点都已有生成结果或无需处理');
+            return;
+        }
+        
+        console.log('病历生成已启动，将处理', _t.batchQueue.length, '个数据元节点');
+        
+        // 开始处理第一个节点
+        _t.processNextBatchNode();
+    },
+    
+    /**
+     * 处理批量队列中的下一个节点
+     */
+    processNextBatchNode: function() {
+        var _t = this;
+        
+        if(_t.batchProcessing) {
+            return; // 正在处理中，避免重复调用
+        }
+        
+        if(_t.batchQueue.length === 0) {
+            // 所有节点处理完成
+            _t.batchProcessing = false;
+            console.log('批量处理完成，共处理', _t.batchProcessedCount, '个节点');
+            return;
+        }
+        
+        _t.batchProcessing = true;
+        var nextNode = _t.batchQueue.shift();
+        
+        console.log('开始处理节点:', nextNode.index, '剩余:', _t.batchQueue.length);
+        
+        try {
+            _t.generateMessage(nextNode.node, 2, 'generateDocument');
+            _t.batchProcessedCount++;
+        } catch(e) {
+            console.error('处理节点失败:', e);
+            // 即使失败也要继续处理下一个
+            _t.batchProcessing = false;
+            setTimeout(function() {
+                _t.processNextBatchNode();
+            }, 100);
         }
     },
 });

@@ -1793,16 +1793,16 @@
 					var cell = path.contains( { 'td': 1, 'th': 1 }, 1 );
 					if ( cell && (!cell.isReadOnly()  || !editor.readOnly)) {
 						editor.scrollTop =editor.document.$.documentElement.scrollTop;
-						if(editor.HMConfig.designMode) {
+						// if(editor.HMConfig.designMode) {
 							return {
 								tablecell: CKEDITOR.TRISTATE_OFF,
 								tablerow: CKEDITOR.TRISTATE_OFF,
 								tablecolumn: CKEDITOR.TRISTATE_OFF
 							};
-						}
-						return {
-							tablerow: CKEDITOR.TRISTATE_OFF,
-						};
+						// }
+						// return {
+						// 	tablerow: CKEDITOR.TRISTATE_OFF,
+						// };
 					}
 
 					return null;

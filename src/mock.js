@@ -1,6 +1,125 @@
 // mock.js - 提供mock搜索接口注册方法
 var express = require('express');
 var router = express.Router();
+var fs = require('fs');
+var path = require('path');
+
+// 注册中文字体 simhei.ttf
+try {
+  const { registerFont } = require('canvas');
+  registerFont(path.join(__dirname, '../fontPackage/simhei.ttf'), { family: 'SimHei' });
+  console.log('已注册SimHei字体');
+} catch (e) {
+  console.warn('未能注册SimHei字体，中文可能显示异常:', e.message);
+}
+
+// 创建图片存储目录
+var imageDir = path.join(__dirname, '..', 'public', 'images', 'charts');
+if (!fs.existsSync(imageDir)) {
+  fs.mkdirSync(imageDir, { recursive: true });
+}
+
+// 图片文件管理
+var imageFiles = new Map(); // 存储文件信息 {filePath, createdAt, deleteTimer}
+
+// 清理过期图片文件的函数
+function cleanupExpiredImages() {
+  var now = Date.now();
+  var oneDay = 24 * 60 * 60 * 1000; // 24小时
+
+  for (var [fileId, fileInfo] of imageFiles.entries()) {
+    if (now - fileInfo.createdAt > oneDay) {
+      try {
+        if (fs.existsSync(fileInfo.filePath)) {
+          fs.unlinkSync(fileInfo.filePath);
+          console.log('已删除过期图片文件:', fileInfo.filePath);
+        }
+        if (fileInfo.deleteTimer) {
+          clearTimeout(fileInfo.deleteTimer);
+        }
+        imageFiles.delete(fileId);
+      } catch (error) {
+        console.error('删除过期图片文件失败:', error);
+      }
+    }
+  }
+}
+
+// 定时清理过期图片（每小时检查一次）
+setInterval(cleanupExpiredImages, 60 * 60 * 1000);
+
+// 安全的JSON序列化函数
+function safeStringify(obj, maxDepth) {
+  maxDepth = maxDepth || 3;
+  var seen = new WeakSet();
+
+  function replacer(key, value) {
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) {
+        return '[Circular Reference]';
+      }
+      seen.add(value);
+    }
+    return value;
+  }
+
+  try {
+    return JSON.stringify(obj, replacer, 2);
+  } catch (error) {
+    if (error.message.includes('Depth limit') || error.message.includes('object too deep')) {
+      // 如果遇到深度限制，返回简化版本
+      return JSON.stringify({
+        type: 'simplified',
+        message: '对象过于复杂，已简化显示',
+        keys: Object.keys(obj || {})
+      });
+    }
+    throw error;
+  }
+}
+
+// 生成唯一文件名
+function generateFileName() {
+  return 'chart_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.png';
+}
+
+// 保存图片文件并设置定时删除
+function saveImageFile(buffer, fileId) {
+  var fileName = generateFileName();
+  var filePath = path.join(imageDir, fileName);
+
+  try {
+    fs.writeFileSync(filePath, buffer);
+
+    var createdAt = Date.now();
+    var oneDay = 24 * 60 * 60 * 1000;
+
+    // 设置定时删除
+    var deleteTimer = setTimeout(function() {
+      try {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          console.log('定时删除图片文件:', filePath);
+        }
+        imageFiles.delete(fileId);
+      } catch (error) {
+        console.error('定时删除图片文件失败:', error);
+      }
+    }, oneDay);
+
+    // 记录文件信息
+    imageFiles.set(fileId, {
+      filePath: filePath,
+      createdAt: createdAt,
+      deleteTimer: deleteTimer
+    });
+
+    return fileName;
+  } catch (error) {
+    console.error('保存图片文件失败:', error);
+    throw error;
+  }
+}
 
 // 医护人员mock搜索接口
 router.post('/search/test', function(req, res) {
@@ -495,6 +614,1302 @@ router.post('/search/icd9', function(req, res) {
         }
     }
     res.json({ code: 10000, message: "success", data });
+});
+
+// ==================== MCP 服务器实现 ====================
+
+function SimpleMCPServer() {
+    this.tools = new Map();
+    this.prompts = new Map();
+}
+
+SimpleMCPServer.prototype.registerTool = function(name, handler, metadata) {
+  if (metadata === void 0) metadata = {};
+  this.tools.set(name, { handler: handler, metadata: metadata });
+};
+
+SimpleMCPServer.prototype.registerPrompt = function(name, handler, metadata) {
+  if (metadata === void 0) metadata = {};
+  this.prompts.set(name, { handler: handler, metadata: metadata });
+};
+
+SimpleMCPServer.prototype.getToolsCapabilities = function() {
+  var self = this;
+  return Array.from(this.tools.entries()).reduce(function(acc, entry) {
+    var name = entry[0];
+    var metadata = entry[1].metadata;
+    acc[name] = metadata;
+      return acc;
+    }, {});
+};
+
+SimpleMCPServer.prototype.getPromptsCapabilities = function() {
+  var self = this;
+  return Array.from(this.prompts.entries()).reduce(function(acc, entry) {
+    var name = entry[0];
+    var metadata = entry[1].metadata;
+    acc[name] = metadata;
+      return acc;
+    }, {});
+};
+
+SimpleMCPServer.prototype.handleRequest = function(req, res) {
+  var self = this;
+
+  return new Promise(function(resolve, reject) {
+    try {
+      var method = req.body.method;
+      var params = req.body.params;
+      var id = req.body.id;
+
+      console.log('MCP Mock request:', { method: method, params: params, id: id });
+
+      switch (method) {
+        case 'initialize':
+          var response = {
+            jsonrpc: '2.0',
+            id: id,
+            result: {
+              protocolVersion: '2025-06-18',
+              capabilities: {
+                tools: {},
+                prompts: {},
+                resources: {}
+              },
+              serverInfo: {
+                name: 'hmEditor-mcp-mock-server',
+                version: '1.0.0'
+              }
+            }
+          };
+          console.log('MCP Mock response:', response);
+          res.json(response);
+          break;
+
+        case 'notifications/initialized':
+          var response2 = {
+            jsonrpc: '2.0',
+            id: id,
+            result: { success: true }
+          };
+          console.log('MCP Mock response:', response2);
+          res.json(response2);
+          break;
+
+        case 'notifications/cancelled':
+          var response_cancel = {
+            jsonrpc: '2.0',
+            id: id,
+            result: { success: true }
+          };
+          console.log('MCP Mock response:', response_cancel);
+          res.json(response_cancel);
+          break;
+
+        case 'tools/list':
+          var response3 = {
+            jsonrpc: '2.0',
+            id: id,
+            result: {
+              tools: Array.from(self.tools.entries()).map(function(entry) {
+                var name = entry[0];
+                var metadata = entry[1].metadata;
+                return {
+                  name: name,
+                description: metadata.description || '',
+                inputSchema: metadata.inputSchema || {}
+                };
+              })
+            }
+          };
+          console.log('MCP Mock response:', response3);
+          res.json(response3);
+          break;
+
+        case 'tools/call':
+          var name = params.name;
+          var args = params.arguments;
+          var tool = self.tools.get(name);
+
+          if (!tool) {
+            var response4 = {
+              jsonrpc: '2.0',
+              id: id,
+              error: {
+                code: -32601,
+                message: 'Tool not found: ' + name
+              }
+            };
+            console.log('MCP Mock response:', response4);
+            res.json(response4);
+            return;
+          }
+
+          // 调用工具处理函数
+          Promise.resolve(tool.handler(args)).then(function(result) {
+            var response5 = {
+              jsonrpc: '2.0',
+              id: id,
+              result: result,
+              content: result.content
+            };
+            console.log('MCP Mock response:', response5);
+            res.json(response5);
+          }).catch(function(error) {
+            var response6 = {
+              jsonrpc: '2.0',
+              id: id,
+              error: {
+                code: -32603,
+                message: error.message
+              }
+            };
+            console.log('MCP Mock response:', response6);
+            res.json(response6);
+          });
+          break;
+
+        case 'prompts/list':
+          var response7 = {
+            jsonrpc: '2.0',
+            id: id,
+            result: {
+              prompts: Array.from(self.prompts.entries()).map(function(entry) {
+                var name = entry[0];
+                var metadata = entry[1].metadata;
+                return {
+                  name: name,
+                description: metadata.description || '',
+                arguments: metadata.arguments || {}
+                };
+              })
+            }
+          };
+          console.log('MCP Mock response:', response7);
+          res.json(response7);
+          break;
+
+        default:
+          console.log('Unknown method:', method);
+          var response8 = {
+            jsonrpc: '2.0',
+            id: id,
+            error: {
+              code: -32601,
+              message: 'Method \'' + method + '\' not found'
+            }
+          };
+          console.log('MCP Mock response:', response8);
+          res.json(response8);
+      }
+    } catch (error) {
+      console.error('Error handling MCP Mock request:', error);
+      var response9 = {
+        jsonrpc: '2.0',
+        id: id,
+        error: {
+          code: -32603,
+          message: error.message
+        }
+      };
+      console.log('MCP Mock response:', response9);
+      res.json(response9);
+    }
+  });
+};
+
+// 创建 MCP Mock 服务器实例
+var mcpMockServer = new SimpleMCPServer();
+
+// 注册生成图片工具
+mcpMockServer.registerTool('generateImage', function(args) {
+  console.log('generateImage called with args:', args);
+
+  try {
+    // 动态引入依赖
+    var canvas, echarts;
+    try {
+      canvas = require('canvas');
+      echarts = require('echarts');
+    } catch (e) {
+      console.error('缺少依赖包，请安装: npm install canvas echarts');
+      return Promise.resolve({
+        success: false,
+        message: '缺少依赖包，请安装: npm install canvas echarts'
+      });
+    }
+
+    // 获取参数
+    var width = args.width || 600;
+    var height = args.height || 400;
+    var title = args.title || '患者检验数据图表';
+
+    // 创建canvas
+    var chartCanvas = canvas.createCanvas(width, height);
+
+    // 设置最小的document对象
+    if (typeof document === 'undefined') {
+      global.document = {
+        createElement: function() { return chartCanvas; }
+      };
+    }
+
+    // 创建模拟数据
+    var categories = ['1月', '2月', '3月', '4月', '5月', '6月'];
+    var series = [{
+      name: '血糖值',
+      type: 'line',
+      data: [5.2, 5.8, 6.1, 5.9, 5.5, 5.3]
+    }, {
+      name: '血压值',
+      type: 'line',
+      data: [120, 125, 130, 128, 122, 118]
+    }];
+
+    // 构建ECharts配置
+    var echartsOption = {
+      backgroundColor: '#ffffff',
+      title: {
+        text: title,
+        left: 'center',
+        top: 20,
+        textStyle: {
+          fontSize: 16,
+          fontWeight: 'bold',
+          color: '#2c3e50'
+        }
+      },
+      tooltip: {
+        trigger: 'axis'
+      },
+      legend: {
+        data: series.map(function(s) { return s.name; }),
+        top: 50
+      },
+      grid: {
+        left: '15%',
+        right: '15%',
+        bottom: '15%',
+        top: '20%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        data: categories
+      },
+      yAxis: [{
+        type: 'value'
+      }],
+      series: series
+    };
+
+    var chart = echarts.init(chartCanvas);
+
+    // 设置配置并渲染
+    chart.setOption(echartsOption);
+
+    // 导出为PNG buffer
+    var buffer = chartCanvas.toBuffer('image/png');
+
+    // 清理资源
+    chart.dispose();
+
+    // 生成唯一ID
+    var imageId = 'img_' + Date.now();
+
+    // 保存图片文件并获取URL
+    var fileName = saveImageFile(buffer, imageId);
+    var imageUrl = '/emr-editor/public/images/charts/' + fileName;
+
+    return Promise.resolve({
+      success: true,
+      message: '图片生成成功',
+      result: {
+        imageId: imageId,
+        description: '生成的图片',
+        imageUrl: imageUrl,
+        fileName: fileName,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24小时后过期
+      },
+      content: {
+        type: "image/png",
+        url: imageUrl,
+        imageId: imageId,
+        description: '生成的图片',
+        imageUrl: imageUrl,
+        metadata: {
+          width: width,
+          height: height
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('生成图片失败:', error);
+    return Promise.resolve({
+      success: false,
+      message: '生成图片失败: ' + error.message
+    });
+  }
+}, {
+  description: '生成患者检验测试数据图表',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      width: { type: 'number', description: '图片宽度（像素）' },
+      height: { type: 'number', description: '图片高度（像素）' },
+      title: { type: 'string', description: '图表标题' }
+    },
+    required: []
+  },
+  outputSchema: {
+    type: "object",
+    properties: {
+      imageUrl: {
+        type: "string",
+        description: "图片url"
+      }
+    },
+    required: ["imageUrl"]
+  }
+});
+
+// 注册获取患者信息工具
+mcpMockServer.registerTool('getPatientInfo', function(args) {
+  console.log('getPatientInfo called with args:', args);
+
+  // 模拟患者信息
+  return Promise.resolve({
+    success: true,
+    message: '获取测试患者信息成功',
+    patientInfo: {
+      patientId: args.patientId || 'P001',
+      name: '张三',
+      age: 45,
+      gender: '男',
+      diagnosis: '高血压',
+      admissionDate: '2024-01-15',
+      vitalSigns: {
+        temperature: 36.5,
+        bloodPressure: '120/80',
+        heartRate: 72,
+        respiratoryRate: 18
+      },
+      labResults: {
+        whiteBloodCell: 6.5,
+        platelet: 250
+      }
+    }
+  });
+}, {
+  description: '获取测试患者基本信息',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      patientId: { type: 'string', description: '患者ID' }
+    },
+    required: ['patientId']
+  }
+});
+
+// 直接的ECharts图片生成接口
+router.post('/generateEchart', function(req, res) {
+  console.log('=== generateEchart 接口被调用 ===');
+  console.log('Content-Type:', req.get('Content-Type'));
+  console.log('req.body 类型:', typeof req.body);
+  console.log('req.body 内容:', req.body);
+  console.log('req.body 长度:', req.body ? req.body.length : 0);
+
+  var axisXTitle = 'X轴';
+  var categories = [];
+  var series = [];
+  var title = '';
+
+  try {
+    // 处理Dify发送的请求格式
+    var requestData = req.body;
+
+    // 如果req.body是字符串（text/plain格式），尝试解析为JSON
+    if (typeof req.body === 'string') {
+      console.log('检测到text/plain格式的请求体，尝试解析JSON');
+      console.log('原始字符串:', req.body);
+      try {
+        requestData = JSON.parse(req.body);
+        console.log('成功解析text/plain为JSON:', requestData);
+        console.log('解析后的字段:');
+        console.log('- axisXTitle:', requestData.axisXTitle);
+        console.log('- title:', requestData.title);
+        console.log('- categories:', requestData.categories);
+        console.log('- series:', requestData.series);
+      } catch (parseError) {
+        console.error('解析text/plain为JSON失败:', parseError);
+        res.status(400).json({
+          success: false,
+          message: '请求体格式错误，无法解析JSON: ' + parseError.message
+        });
+        return;
+      }
+    }
+
+    // 如果req.body是空对象，检查是否有原始请求体数据
+    if (Object.keys(requestData).length === 0) {
+      console.log('检测到空请求体，尝试从原始数据解析');
+      // 这里需要检查是否有其他方式获取原始数据
+      // 暂时使用默认值
+      requestData = {};
+    }
+
+    // 提取参数
+    axisXTitle = requestData.axisXTitle || '';
+    title = requestData.title || '';
+
+    // 处理categories - 支持字符串和数组两种格式
+    if (requestData.categories) {
+      if (typeof requestData.categories === 'string') {
+        // 处理单引号问题，将单引号替换为双引号
+        var categoriesStr = requestData.categories.replace(/'/g, '"');
+        categories = JSON.parse(categoriesStr);
+      } else if (Array.isArray(requestData.categories)) {
+        categories = requestData.categories;
+      }
+    }
+
+    // 处理series - 支持字符串和数组两种格式
+    if (requestData.series) {
+      if (typeof requestData.series === 'string') {
+        // 处理单引号问题，将单引号替换为双引号
+        var seriesStr = requestData.series.replace(/'/g, '"');
+        series = JSON.parse(seriesStr);
+      } else if (Array.isArray(requestData.series)) {
+        series = requestData.series;
+      }
+    }
+
+    console.log('解析后的参数:', { axisXTitle, categories, series, title });
+  } catch (e) {
+    console.error('解析参数失败:', e);
+    res.status(400).json({
+      success: false,
+      message: '参数解析失败: ' + e.message
+    });
+    return;
+  }
+
+  // 安全的JSON序列化函数，避免循环引用和深度限制
+
+
+  // 检查是否需要双Y轴
+  var needDualYAxis = false;
+  var yAxisIndices = new Set();
+
+  // 检查series中是否有yAxisIndex属性
+  for (var i = 0; i < series.length; i++) {
+    if (series[i].yAxisIndex !== undefined) {
+      needDualYAxis = true;
+      yAxisIndices.add(series[i].yAxisIndex);
+    }
+  }
+
+  // 构建ECharts配置
+  var echartsOption = {
+    backgroundColor: '#ffffff',
+    animation: true,
+    animationThreshold: 2000,
+    animationDuration: 1000,
+    animationEasing: 'cubicOut',
+    animationDelay: 0,
+    animationDurationUpdate: 300,
+    animationEasingUpdate: 'cubicOut',
+    animationDelayUpdate: 0,
+    color: [
+      '#5470c6',
+      '#91cc75',
+      '#fac858',
+      '#ee6666',
+      '#73c0de',
+      '#3ba272',
+      '#fc8452',
+      '#9a60b4',
+      '#ea7ccc'
+    ],
+    title: {
+      show: true,
+      text: title,
+      left: 'center',
+      top: 20,
+      padding: 5,
+      itemGap: 10,
+      textAlign: 'auto',
+      textVerticalAlign: 'auto',
+      triggerEvent: false,
+      textStyle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#2c3e50'
+      },
+      subtextStyle: {
+        fontWeight: 'bold'
+      }
+    },
+    tooltip: {
+      show: true,
+      trigger: 'axis',
+      triggerOn: 'mousemove|click',
+      axisPointer: {
+        type: 'line'
+      },
+      showContent: true,
+      alwaysShowContent: false,
+      showDelay: 0,
+      hideDelay: 100,
+      enterable: false,
+      confine: false,
+      appendToBody: false,
+      transitionDuration: 0.4,
+      textStyle: {
+        fontSize: 14
+      },
+      borderWidth: 0,
+      padding: 5,
+      order: 'seriesAsc'
+    },
+    legend: {
+      data: series.map(function(s, index) {
+        return s.axisYTitle || '系列' + (index + 1);
+      }),
+      selected: {},
+      show: true,
+      top: '5%',
+      padding: 5,
+      itemGap: 10,
+      itemWidth: 25,
+      itemHeight: 14,
+      textStyle: {
+        fontWeight: 'bold'
+      },
+      backgroundColor: 'transparent',
+      borderColor: '#ccc',
+      borderRadius: 0,
+      pageButtonItemGap: 5,
+      pageButtonPosition: 'end',
+      pageFormatter: '{current}/{total}',
+      pageIconColor: '#2f4554',
+      pageIconInactiveColor: '#aaa',
+      pageIconSize: 15,
+      animationDurationUpdate: 800,
+      selector: false,
+      selectorPosition: 'auto',
+      selectorItemGap: 7,
+      selectorButtonGap: 10
+    },
+    grid: {
+      left: '15%',
+      right: '15%',
+      bottom: '15%',
+      top: '20%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      show: true,
+      scale: false,
+      nameLocation: 'middle',
+      nameGap: 30,
+      name: axisXTitle,
+      nameTextStyle: {
+        fontWeight: 'bold'
+      },
+      gridIndex: 0,
+              axisLabel: {
+          show: true,
+          rotate: 0,
+          margin: 8,
+          fontWeight: 'bold',
+          valueAnimation: false,
+          formatter: function(value) {
+            // 将日期格式从 YYYY-MM-DD 转换为 MM-DD
+            if (typeof value === 'string' && value.includes('-')) {
+              var parts = value.split('-');
+              if (parts.length >= 3) {
+                return parts[1] + '-' + parts[2]; // 返回 MM-DD 格式
+              }
+            }
+            return value; // 如果不是日期格式，返回原值
+          }
+        },
+      inverse: false,
+      offset: 0,
+      splitNumber: 5,
+      minInterval: 0,
+      splitLine: {
+        show: true,
+        lineStyle: {
+          show: true,
+          width: 1,
+          opacity: 1,
+          curveness: 0,
+          type: 'solid'
+        }
+      },
+      animation: true,
+      animationThreshold: 2000,
+      animationDuration: 1000,
+      animationEasing: 'cubicOut',
+      animationDelay: 0,
+      animationDurationUpdate: 300,
+      animationEasingUpdate: 'cubicOut',
+      animationDelayUpdate: 0,
+      data: categories,
+      axisPointer: {
+        type: 'shadow'
+      }
+    },
+    yAxis: needDualYAxis ? [
+      {
+        type: 'value',
+        name: (series.find(s => s.yAxisIndex === 0) && series.find(s => s.yAxisIndex === 0).axisYTitle) || '',
+        show: true,
+        scale: false,
+        nameLocation: 'middle',
+        nameGap: 50,
+        nameTextStyle: {
+          fontWeight: 'bold'
+        },
+        gridIndex: 0,
+        axisLabel: {
+          show: true,
+          margin: 8,
+          fontWeight: 'bold',
+          valueAnimation: false
+        },
+        inverse: false,
+        position: 'left',
+        offset: 0,
+        splitNumber: 5,
+        minInterval: 0,
+        splitLine: {
+          show: true,
+          lineStyle: {
+            show: true,
+            width: 1,
+            opacity: 1,
+            curveness: 0,
+            type: 'solid'
+          }
+        },
+        animation: true,
+        animationThreshold: 2000,
+        animationDuration: 1000,
+        animationEasing: 'cubicOut',
+        animationDelay: 0,
+        animationDurationUpdate: 300,
+        animationEasingUpdate: 'cubicOut',
+        animationDelayUpdate: 0
+      },
+      {
+        type: 'value',
+        name: (series.find(s => s.yAxisIndex === 1) && series.find(s => s.yAxisIndex === 1).axisYTitle) || '',
+        show: true,
+        scale: false,
+        nameLocation: 'middle',
+        nameGap: 50,
+        nameTextStyle: {
+          fontWeight: 'bold'
+        },
+        gridIndex: 0,
+        axisLabel: {
+          show: true,
+          margin: 8,
+          fontWeight: 'bold',
+          valueAnimation: false
+        },
+        inverse: false,
+        position: 'right',
+        offset: 0,
+        splitNumber: 5,
+        minInterval: 0,
+        splitLine: {
+          show: false
+        },
+        animation: true,
+        animationThreshold: 2000,
+        animationDuration: 1000,
+        animationEasing: 'cubicOut',
+        animationDelay: 0,
+        animationDurationUpdate: 300,
+        animationEasingUpdate: 'cubicOut',
+        animationDelayUpdate: 0
+      }
+    ] : [{
+      type: 'value',
+      name: (series[0] && series[0].axisYTitle) || '',
+      show: true,
+      scale: false,
+      nameLocation: 'middle',
+      nameGap: 50,
+      nameTextStyle: {
+        fontWeight: 'bold'
+      },
+      gridIndex: 0,
+      axisLabel: {
+        show: true,
+        margin: 8,
+        fontWeight: 'bold',
+        valueAnimation: false
+      },
+      inverse: false,
+      position: 'left',
+      offset: 0,
+      splitNumber: 5,
+      minInterval: 0,
+      splitLine: {
+        show: true,
+        lineStyle: {
+          show: true,
+          width: 1,
+          opacity: 1,
+          curveness: 0,
+          type: 'solid'
+        }
+      },
+      animation: true,
+      animationThreshold: 2000,
+      animationDuration: 1000,
+      animationEasing: 'cubicOut',
+      animationDelay: 0,
+      animationDurationUpdate: 300,
+      animationEasingUpdate: 'cubicOut',
+      animationDelayUpdate: 0
+    }],
+    series: series.map(function(s, index) {
+      var colors = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'];
+      var color = colors[index % colors.length];
+
+      var seriesConfig = {
+        name: s.axisYTitle || '系列' + (index + 1),
+        type: s.type || 'line',
+        connectNulls: false,
+        xAxisIndex: 0,
+        symbolSize: 16,
+        showSymbol: true,
+        smooth: s.smooth !== undefined ? s.smooth : true,
+        clip: true,
+        step: false,
+        stackStrategy: 'samesign',
+        data: s.data || [],
+        hoverAnimation: true,
+        label: {
+          show: true,
+          position: 'top',
+          margin: 8,
+          fontWeight: 'bold',
+          valueAnimation: false
+        },
+        logBase: 10,
+        seriesLayoutBy: 'column',
+        lineStyle: {
+          show: true,
+          width: 4,
+          opacity: 1,
+          curveness: 0,
+          type: 'solid',
+          color: color
+        },
+        areaStyle: {
+          opacity: 0
+        },
+        itemStyle: {
+          color: color,
+          borderWidth: 3
+        },
+        zlevel: 0,
+        z: 0
+      };
+
+      // 如果指定了yAxisIndex，则使用对应的Y轴
+      if (s.yAxisIndex !== undefined) {
+        seriesConfig.yAxisIndex = s.yAxisIndex;
+      }
+
+      return seriesConfig;
+    })
+  };
+
+  // 生成图片
+  try {
+    // 动态引入依赖
+    var canvas, echarts;
+    try {
+      canvas = require('canvas');
+      echarts = require('echarts');
+    } catch (e) {
+      console.error('缺少依赖包，请安装: npm install canvas echarts');
+      res.status(500).json({
+        success: false,
+        message: '缺少依赖包，请安装: npm install canvas echarts',
+        option: safeStringify(echartsOption)
+      });
+      return;
+    }
+
+    // 创建canvas（减小尺寸以降低文件大小）
+    var chartCanvas = canvas.createCanvas(600, 450);
+
+    // 设置最小的document对象
+    if (typeof document === 'undefined') {
+      global.document = {
+        createElement: function() { return chartCanvas; }
+      };
+    }
+
+    var chart = echarts.init(chartCanvas);
+
+    // 设置配置并渲染
+    chart.setOption(echartsOption);
+
+    // 导出为PNG buffer
+    var buffer = chartCanvas.toBuffer('image/png');
+
+    // 清理资源
+    chart.dispose();
+
+    var chartId = 'chart_' + Date.now();
+
+    // 保存图片文件并获取URL
+    var fileName = saveImageFile(buffer, chartId);
+    var imageUrl = '/emr-editor/public/images/charts/' + fileName;
+
+    // 使用安全的JSON序列化
+    var safeOption = safeStringify(echartsOption);
+
+    res.json({
+      success: true,
+      message: 'ECharts图表生成成功',
+      result: {
+        chartId: chartId,
+        imageUrl: imageUrl,
+        fileName: fileName,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24小时后过期
+        option: safeOption
+      },
+      content: [
+        '已成功生成ECharts图表，包含以下配置：',
+        '- X轴标题：' + axisXTitle,
+        '- 数据点：' + categories.length + '个',
+        '- 数据系列：' + series.length + '个',
+        '- 图表类型：' + series.map(s => s.type).join(', '),
+        '- 图片URL：' + imageUrl,
+        '- 过期时间：24小时后自动删除',
+        '图表已生成，可在页面中查看效果。'
+      ]
+    });
+
+  } catch (error) {
+    console.error('生成图片失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '生成图片失败: ' + error.message,
+      option: safeStringify(echartsOption)
+    });
+  }
+});
+
+// 直接使用ECharts options生成图表的接口
+router.post('/generateEchartWithOptions', function(req, res) {
+  console.log('=== generateEchartWithOptions 接口被调用 ===');
+  console.log('Content-Type:', req.get('Content-Type'));
+  console.log('req.body 类型:', typeof req.body);
+  console.log('req.body 内容:', req.body);
+
+  try {
+    // 处理Dify发送的请求格式
+    var requestData = req.body;
+
+    // 如果req.body是字符串（text/plain格式），尝试解析为JSON
+    if (typeof req.body === 'string') {
+      console.log('检测到text/plain格式的请求体，尝试解析JSON');
+      console.log('原始字符串:', req.body);
+      try {
+        requestData = JSON.parse(req.body);
+        console.log('成功解析text/plain为JSON:', requestData);
+      } catch (parseError) {
+        console.error('解析text/plain为JSON失败:', parseError);
+        res.status(400).json({
+          success: false,
+          message: '请求体格式错误，无法解析JSON: ' + parseError.message
+        });
+        return;
+      }
+    }
+
+    // 验证options参数
+    var options = requestData.options || requestData;
+    if (!options || typeof options !== 'object') {
+      res.status(400).json({
+        success: false,
+        message: '缺少有效的options参数'
+      });
+      return;
+    }
+
+    console.log('接收到的ECharts options:', JSON.stringify(options, null, 2));
+
+    // 生成图片
+    try {
+      // 动态引入依赖
+      var canvas, echarts;
+      try {
+        canvas = require('canvas');
+        echarts = require('echarts');
+      } catch (e) {
+        console.error('缺少依赖包，请安装: npm install canvas echarts');
+        res.status(500).json({
+          success: false,
+          message: '缺少依赖包，请安装: npm install canvas echarts'
+        });
+        return;
+      }
+
+      // 创建canvas
+      var chartCanvas = canvas.createCanvas(800, 400);
+
+      // 设置最小的document对象
+      if (typeof document === 'undefined') {
+        global.document = {
+          createElement: function() { return chartCanvas; }
+        };
+      }
+
+      var chart = echarts.init(chartCanvas);
+
+      // 设置配置并渲染
+      chart.setOption(options);
+
+      // 导出为PNG buffer
+      var buffer = chartCanvas.toBuffer('image/png');
+
+      // 清理资源
+      chart.dispose();
+
+      var chartId = 'chart_options_' + Date.now();
+
+      // 保存图片文件并获取URL
+      var fileName = saveImageFile(buffer, chartId);
+      var imageUrl = '/emr-editor/public/images/charts/' + fileName;
+
+      // 使用安全的JSON序列化
+      var safeOption = safeStringify(options);
+
+      res.json({
+        success: true,
+        message: 'ECharts图表生成成功',
+        result: {
+          chartId: chartId,
+          imageUrl: imageUrl,
+          fileName: fileName,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24小时后过期
+          option: safeOption
+        },
+        content: [
+          '已成功生成ECharts图表，包含以下配置：',
+          '- 图表类型：' + (options.series ? options.series.map(s => s.type).join(', ') : '未知'),
+          '- 数据系列：' + (options.series ? options.series.length + '个' : '0个'),
+          '- 图片URL：' + imageUrl,
+          '- 过期时间：24小时后自动删除',
+          '图表已生成，可在页面中查看效果。'
+        ]
+      });
+
+    } catch (error) {
+      console.error('生成图片失败:', error);
+      res.status(500).json({
+        success: false,
+        message: '生成图片失败: ' + error.message,
+        option: JSON.stringify(options)
+      });
+    }
+
+  } catch (error) {
+    console.error('处理请求失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '处理请求失败: ' + error.message
+    });
+  }
+});
+
+// 生成表格图片接口
+router.post('/generateGridPicture', function(req, res) {
+  console.log('=== generateGridPicture 接口被调用 ===');
+
+  try {
+    var requestData = req.body;
+    console.log('接收到的请求数据:', JSON.stringify(requestData, null, 2));
+
+    // 验证请求数据
+    if (!requestData || !requestData.columns || !requestData.data) {
+      res.status(400).json({
+        success: false,
+        message: '缺少必要的数据：columns 和 data'
+      });
+      return;
+    }
+
+    var columns = requestData.columns || [];
+    var data = requestData.data || [];
+
+    console.log('列数:', columns.length);
+    console.log('数据行数:', data.length);
+
+    try {
+      var canvas;
+      try {
+        canvas = require('canvas');
+      } catch (e) {
+        console.error('缺少依赖包，请安装: npm install canvas');
+        res.status(500).json({
+          success: false,
+          message: '缺少依赖包，请安装: npm install canvas'
+        });
+        return;
+      }
+
+      var chartCanvas = canvas.createCanvas(800, 400);
+      var ctx = chartCanvas.getContext('2d');
+
+      // 渲染表格到Canvas
+      renderGridToCanvas(ctx, columns, data, 800, 400);
+
+      var buffer = chartCanvas.toBuffer('image/png');
+      var gridId = 'grid_' + Date.now();
+      var fileName = saveImageFile(buffer, gridId);
+      var imageUrl = '/emr-editor/public/images/charts/' + fileName;
+
+      res.json({
+        success: true,
+        message: '表格图片生成成功',
+        result: {
+          gridId: gridId,
+          imageUrl: imageUrl,
+          fileName: fileName,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          gridInfo: {
+            columnsCount: columns.length,
+            dataRowsCount: data.length,
+            canvasSize: '800x400'
+          }
+        },
+        content: [
+          '已成功生成表格图片，包含以下信息：',
+          '- 列数：' + columns.length + '列',
+          '- 数据行数：' + data.length + '行',
+          '- 图片尺寸：800x400像素',
+          '- 图片URL：' + imageUrl,
+          '- 过期时间：24小时后自动删除',
+          '表格图片已生成，可在页面中查看效果。'
+        ]
+      });
+
+    } catch (error) {
+      console.error('生成表格图片失败:', error);
+      res.status(500).json({
+        success: false,
+        message: '生成表格图片失败: ' + error.message
+      });
+    }
+
+  } catch (error) {
+    console.error('处理请求失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '处理请求失败: ' + error.message
+    });
+  }
+});
+
+// 在canvas上渲染表格的辅助函数
+function renderGridToCanvas(ctx, columns, data, canvasWidth, canvasHeight) {
+  console.log('开始渲染表格到Canvas');
+  console.log('Canvas尺寸:', canvasWidth, 'x', canvasHeight);
+  console.log('列数:', columns.length);
+  console.log('数据行数:', data.length);
+
+  // 设置画布背景
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+  // 表格配置
+  var padding = 20;
+  var headerHeight = 40;
+  var rowHeight = 35;
+  var maxRows = 10;
+  var maxCols = 10;
+
+  // 计算列宽
+  var availableWidth = canvasWidth - 2 * padding;
+  var colWidth = availableWidth / Math.min(columns.length, maxCols);
+
+  // 限制行数和列数
+  var displayColumns = columns.slice(0, maxCols);
+  var displayData = data.slice(0, maxRows - 1); // 留一行给省略号
+
+  console.log('显示列数:', displayColumns.length);
+  console.log('显示数据行数:', displayData.length);
+
+  // 绘制表头
+  ctx.fillStyle = '#f0f0f0';
+  ctx.fillRect(padding, padding, availableWidth, headerHeight);
+
+  // 绘制表头文字
+  ctx.fillStyle = '#333333';
+  ctx.font = 'bold 14px SimHei';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  for (var i = 0; i < displayColumns.length; i++) {
+    var col = displayColumns[i];
+    var x = padding + i * colWidth + colWidth / 2;
+    var y = padding + headerHeight / 2;
+
+    // 绘制列标题
+    var title = col.title || col.field || '';
+    if (title.length > 8) {
+      title = title.substring(0, 8) + '...';
+    }
+    ctx.fillText(title, x, y);
+
+    // 绘制列边框
+    ctx.strokeStyle = '#cccccc';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(padding + i * colWidth, padding, colWidth, headerHeight);
+  }
+
+  // 绘制数据行
+  ctx.font = '12px SimHei';
+  ctx.textAlign = 'left';
+
+  for (var rowIndex = 0; rowIndex < displayData.length; rowIndex++) {
+    var row = displayData[rowIndex];
+    var rowY = padding + headerHeight + rowIndex * rowHeight;
+
+    // 交替行背景色
+    if (rowIndex % 2 === 0) {
+      ctx.fillStyle = '#ffffff';
+    } else {
+      ctx.fillStyle = '#f9f9f9';
+    }
+    ctx.fillRect(padding, rowY, availableWidth, rowHeight);
+
+    // 绘制行边框
+    ctx.strokeStyle = '#cccccc';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(padding, rowY, availableWidth, rowHeight);
+
+    // 绘制单元格内容
+    ctx.fillStyle = '#333333';
+    for (var colIndex = 0; colIndex < displayColumns.length; colIndex++) {
+      var col = displayColumns[colIndex];
+      var field = col.field;
+      var value = row[field] || '';
+
+      // 格式化值
+      if (typeof value === 'number') {
+        value = value.toString();
+      } else if (typeof value === 'boolean') {
+        value = value ? '是' : '否';
+      } else if (value === null || value === undefined) {
+        value = '';
+      }
+
+      var x = padding + colIndex * colWidth + 8;
+      var y = rowY + rowHeight / 2;
+
+      // 文本截断
+      var maxTextWidth = colWidth - 16;
+      var metrics = ctx.measureText(value);
+      if (metrics.width > maxTextWidth) {
+        // 计算可以显示的字符数
+        var truncatedText = '';
+        for (var charIndex = 0; charIndex < value.length; charIndex++) {
+          var testText = truncatedText + value[charIndex];
+          var testMetrics = ctx.measureText(testText);
+          if (testMetrics.width > maxTextWidth) {
+            break;
+          }
+          truncatedText = testText;
+        }
+        value = truncatedText + '...';
+      }
+
+      ctx.fillText(value, x, y);
+
+      // 绘制列边框
+      ctx.strokeStyle = '#cccccc';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(padding + colIndex * colWidth, rowY, colWidth, rowHeight);
+    }
+  }
+
+  // 处理列数超限
+  if (columns.length > maxCols) {
+    var lastColX = padding + maxCols * colWidth;
+    var lastColY = padding;
+
+    // 绘制最后一列的背景
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(lastColX, lastColY, colWidth, headerHeight);
+
+    // 绘制省略号
+    ctx.fillStyle = '#666666';
+    ctx.font = 'bold 14px SimHei';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('...', lastColX + colWidth / 2, lastColY + headerHeight / 2);
+
+    // 绘制边框
+    ctx.strokeStyle = '#cccccc';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(lastColX, lastColY, colWidth, headerHeight);
+  }
+
+  // 处理行数超限
+  if (data.length > maxRows - 1) {
+    var lastRowY = padding + headerHeight + (maxRows - 1) * rowHeight;
+
+    // 绘制最后一行的背景
+    ctx.fillStyle = '#f9f9f9';
+    ctx.fillRect(padding, lastRowY, availableWidth, rowHeight);
+
+    // 绘制省略号（跨所有列）
+    ctx.fillStyle = '#666666';
+    ctx.font = '12px SimHei';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('...', padding + availableWidth / 2, lastRowY + rowHeight / 2);
+
+    // 绘制边框
+    ctx.strokeStyle = '#cccccc';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(padding, lastRowY, availableWidth, rowHeight);
+  }
+
+  console.log('表格渲染完成');
+}
+
+// MCP Mock HTTP接口
+router.post('/mcp-http', function(req, res) {
+  mcpMockServer.handleRequest(req, res);
+});
+
+router.get('/mcp-http', function(req, res) {
+  res.json({
+    jsonrpc: '2.0',
+    id: null,
+    result: {
+      tools: mcpMockServer.getToolsCapabilities(),
+      prompts: mcpMockServer.getPromptsCapabilities()
+    }
+  });
 });
 
 module.exports = router;

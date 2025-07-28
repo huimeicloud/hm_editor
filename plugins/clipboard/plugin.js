@@ -2457,15 +2457,15 @@ function removeBodyZeroWidthSpace(editor) {
 				return new this.dataTransfer( ( CKEDITOR.env.edge && evt && evt.data.$ && evt.data.$.clipboardData ) || null, sourceEditor );
 			} else if ( evt && evt.data && evt.data.$ ) {
 				var dataTransfer = new this.dataTransfer( evt.data.$.clipboardData, sourceEditor );
-				if(evt && evt.name == 'copy' && evt.data && !editor.HMConfig.designMode){
-					if(!editor.HMConfig.designMode){
+				if(evt && evt.name == 'copy' && evt.data && !sourceEditor.HMConfig.designMode){
+					if(!sourceEditor.HMConfig.designMode){
 						var content = dataTransfer.getData('text/html').replace(/[\r\n]/g, '');
 						var isTable=/^<table[^>]*>[\s\S]*?<\/[^>]*table>$/gi;
 						if (!isTable.test(content)) {
 							content = filterHtml(content);
 						}
 						dataTransfer.setData('text/html', content);
-						parent.copyInfo['复制内容']  = content;
+						parent.copyInfo && (parent.copyInfo['复制内容']  = content);
 						// parent.copyInfo['复制内容'] = clipboardData.getData('text/html').replace(/[\r\n]/g, '');
 						// var result = clipboardData.getData('text/html')
 						// parent.copyInfo['患者ID'] = getQueryString("患者ID");

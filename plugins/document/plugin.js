@@ -14,7 +14,6 @@ function initDisabledDatasourceState($body) {
 }
 // 只读
 function initDisabled($body) {
-    debugger;
     var disableDataSource = $body.find('[_isdisabled="true"]');
     if (disableDataSource.length == 0) {
         return;
@@ -433,16 +432,16 @@ CKEDITOR.plugins.add('document', {
     init: function (editor) {
 
         var currentUserInfo={}; // 暂时处理报错
-        var command = editor.addCommand('document', new CKEDITOR.dialogCommand('document', { readOnly: 0 }));
+        var command = editor.addCommand('documentinfo', new CKEDITOR.dialogCommand('document', { readOnly: 0 }));
         command.modes = { wysiwyg: 1, source: 1 };
         command.canUndo = false;
         command.readOnly = 0;
 
-        // editor.ui.addButton && editor.ui.addButton('Document', {
-        //     label: '文档信息',
-        //     command: 'document',
-        //     toolbar: 'hm'
-        // });
+        editor.ui.addButton && editor.ui.addButton('Document', {
+            label: '文档信息',
+            command: 'documentinfo',
+            toolbar: 'hm'
+        });
 
         function toggleParagraph(toggler) {
             var _element = editor.contextTargetElement;
@@ -829,8 +828,8 @@ CKEDITOR.plugins.add('document', {
             // editor.commands["trace"].disable();
 
             if (editor.HMConfig.designMode) {
-                editor.commands["document"].frozen = false;
-                editor.commands["document"].enable();
+                editor.commands["documentinfo"].frozen = false;
+                editor.commands["documentinfo"].enable();
                 editor.commands["datasource"].frozen = false;
                 editor.commands["datasource"].enable();
                 // 模板维护编辑模板禁用修订功能
@@ -843,10 +842,12 @@ CKEDITOR.plugins.add('document', {
             }else{
                 editor.commands["datasource"].frozen = true;
                 editor.commands["datasource"].disable();
-                editor.commands["table"].frozen = true;
-                editor.commands["table"].disable();
-                editor.commands["document"].frozen = true;
-                editor.commands["document"].disable();
+                // editor.commands["table"].frozen = true;
+                // editor.commands["table"].disable();
+                
+                editor.commands["documentinfo"].frozen = true;
+                editor.commands["documentinfo"].disable();
+                
                 if (editor.HMConfig.reviseMode) {
                     editor.commands["revise"].frozen = false;
                     editor.commands["revise"].enable();
@@ -990,8 +991,7 @@ CKEDITOR.plugins.add('document', {
 
         //书写界面判断表格是否有设置不可编辑，若设置不可编辑，则不允许删除
         function tableEditfalse() {
-            var designMode = editor.HMConfig.designMode;
-            if (designMode != 'true') {
+            if (!editor.HMConfig.designMode) {
                 var tableNode = ['td', 'tr', 'th', 'thead', 'tbody'];
                 var elements = editor.elementPath().elements;
                 if (elements && elements.length > 0) {
@@ -1007,8 +1007,7 @@ CKEDITOR.plugins.add('document', {
 
         //书写界面判断病历是否是表单模式，是表单模式且非数据元内元素，则不可选中删除
         function switchModelDelete() {
-            var designMode = editor.HMConfig.designMode;
-            if (designMode != 'true') {
+            if (!editor.HMConfig.designMode) {
                 var parentNode = editorIns.document.find('div.switchModel');
                 if (parentNode.$.length) {
                     var elements = editor.elementPath().elements;
@@ -1591,7 +1590,6 @@ CKEDITOR.plugins.add('document', {
             };
 
             editor.setDelMark = function (selection, text, curKeyCode) { //删除文本
-            debugger
                 var ranges = selection.getRanges();
                 var range0 = ranges[0];
                 var disabledParent = range0.startPath().lastElement ? range0.startPath().lastElement.getAttribute("contenteditable") == 'false' : false;
@@ -1758,9 +1756,7 @@ CKEDITOR.plugins.add('document', {
         });
 
         editor.deleteSelectionPart = function (range0, type, evt) {
-            var designMode = editor.HMConfig.designMode;
-            if (designMode != 'true') {
-
+            if (!editor.HMConfig.designMode) {
                 return;
             }
             if (type == 'del' && range0.endOffset == range0.startOffset) {
