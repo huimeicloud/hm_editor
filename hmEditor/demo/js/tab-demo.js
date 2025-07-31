@@ -46,14 +46,14 @@ class TabEditorManager {
      * @returns {Promise} 返回Promise对象
      */
     async createTab(title, editorOptions = {}, content = null, docParam = {}) {
-        console.log('docParam', docParam)
+        // console.log('docParam', docParam)
         this.tabCounter++;
         const tabId = 'tab_' + this.tabCounter;
         const editorId = 'editor_' + this.tabCounter;
 
         // 创建标签和内容容器
-        const tabItem = $(`<div class="tab-item" data-id="${tabId}" data-serial-number="${docParam.serialNumber||''}">${title}<span class="tab-close-btn">×</span></div>`);
-        const tabContent = $(`<div class="tab-content" data-id="${tabId}" data-name="${title.trim()}" data-record-name="${docParam.recordName||''}" data-serial-number="${docParam.serialNumber||''}"><div id="${editorId}" class="editor-container"></div></div>`);
+        const tabItem = $(`<div class="tab-item" data-id="${tabId}" data-serial-number="${docParam.serialNumber || ''}">${title}<span class="tab-close-btn">×</span></div>`);
+        const tabContent = $(`<div class="tab-content" data-id="${tabId}" data-name="${title.trim()}" data-record-name="${docParam.recordName || ''}" data-serial-number="${docParam.serialNumber || ''}"><div id="${editorId}" class="editor-container"></div></div>`);
 
         // 添加标签和内容
         this.tabHeader.append(tabItem);
@@ -127,7 +127,7 @@ class TabEditorManager {
         const serialNumber = $currentTab.data('serial-number') || '';
 
         // 根据serialNumber状态控制AI相关按钮
-        controlAiButtons(!!serialNumber);
+        controlAiButtons(serialNumber != '001');
 
         // 自动滚动tab-header，使新tab可见
         setTimeout(() => {
@@ -396,7 +396,7 @@ class DocumentTreeManager {
 
     // 文档加载完成后的处理方法
     async onDocumentLoaded(docParam) {
-        console.log('文档加载完成:', docParam);
+        // console.log('文档加载完成:', docParam);
         const title = docParam[0].docTplName;
         // const serialNumber = docParam[0].serialNumber || '';
         await window.tabManager.createTab(title, {}, docParam, docParam[0]);
@@ -476,12 +476,23 @@ $(document).ready(function () {
     // 初始化工具栏快捷键控制
     initToolbarShortcuts();
 
-    // 页面加载时默认隐藏工具栏（因为默认选中AI病历演示）
-    hideBtnPanel();
+    // 页面加载时默认显示工具栏
+    showBtnPanel();
+    // 显示工具栏切换按钮（因为工具栏默认显示，需要可以收起）
+    $('#toolbarToggleBtn').show();
+    // 设置切换按钮图标为向上（表示可以收起）
+    $('#toolbarToggleBtn i').removeClass('fa-caret-down').addClass('fa-caret-up');
+    // 页面加载时默认启用AI按钮（因为默认选中AI病历演示tab）
+    controlAiButtons(true);
 
     // 添加tab切换逻辑
     $('.tree-tab').on('click', function () {
         const tabType = $(this).data('tab');
+
+        // 关闭所有已打开的标签页
+        if (window.tabManager) {
+            window.tabManager.closeAllTabs();
+        }
 
         // 移除所有活动状态
         $('.tree-tab').removeClass('active');
@@ -491,20 +502,50 @@ $(document).ready(function () {
         $(this).addClass('active');
         if (tabType === 'normal') {
             $('#normalDocumentTree').addClass('active');
-            // 选中"常用病历模板"时显示工具栏
+            // 选中"常用病历模板"时显示工具栏，显示切换按钮，禁用AI按钮
             showBtnPanel();
+            $('#toolbarToggleBtn').show();
+            // 设置切换按钮图标为向上（表示可以收起）
+            $('#toolbarToggleBtn i').removeClass('fa-caret-down').addClass('fa-caret-up');
+            controlAiButtons(false);
         } else if (tabType === 'ai') {
             $('#aiDocumentTree').addClass('active');
-            // 选中"AI病历演示"时隐藏工具栏
-            hideBtnPanel();
+            // 选中"AI病历演示"时显示工具栏，显示切换按钮，启用AI按钮
+            showBtnPanel();
+            $('#toolbarToggleBtn').show();
+            // 设置切换按钮图标为向上（表示可以收起）
+            $('#toolbarToggleBtn i').removeClass('fa-caret-down').addClass('fa-caret-up');
+            controlAiButtons(true);
         }
 
         console.log('切换到', tabType === 'normal' ? '普通病历' : 'AI病历', '文档列表');
     });
 
-    window.aiServer = (window.location.host.includes('editor.huimei.com')) ?
-        'https://editor.huimei.com' :
-        'http://172.16.8.150';
+    // 工具栏切换按钮点击事件
+    $('#toolbarToggleBtn').on('click', function() {
+        const $btnPanel = $('#btnPanel');
+        const $toggleBtn = $(this);
+        const $icon = $toggleBtn.find('i');
+
+        if ($btnPanel.is(':visible')) {
+            // 隐藏工具栏
+            hideBtnPanel();
+            $icon.removeClass('fa-caret-up').addClass('fa-caret-down');
+        } else {
+            // 显示工具栏
+            showBtnPanel();
+            $icon.removeClass('fa-caret-down').addClass('fa-caret-up');
+        }
+    });
+
+    // 根据URL参数判断AI服务器地址
+    const serverParam = urlParams.get('aiServer');
+
+    if (serverParam === 'http://172.16.8.150') {
+        window.aiServer = 'http://172.16.8.150';
+    } else {
+        window.aiServer = 'https://editor.huimei.com';
+    }
 
     console.log('AI Server:', window.aiServer);
 
@@ -757,13 +798,13 @@ $(document).ready(function () {
         $('.dataInputDialog textarea').val(JSON.stringify([{
             code: 'DOC001',
             data: [{
-                    keyCode: '',
-                    keyValue: ''
-                },
-                {
-                    keyCode: '',
-                    keyValue: ['诊断1']
-                }
+                keyCode: '',
+                keyValue: ''
+            },
+            {
+                keyCode: '',
+                keyValue: ['诊断1']
+            }
             ]
         }], null, 2));
         $('.dataInputDialog').show();
@@ -1237,13 +1278,13 @@ $(document).ready(function () {
             return;
         }
         $('.insertDocDialog textarea').val(JSON.stringify([{
-                code: '新插入文档_1',
-                docContent: "<body><p>新插入文档_1</p></body>"
-            },
-            {
-                code: '新插入文档_2',
-                docContent: "<body><p>新插入文档_2</p></body>"
-            }
+            code: '新插入文档_1',
+            docContent: "<body><p>新插入文档_1</p></body>"
+        },
+        {
+            code: '新插入文档_2',
+            docContent: "<body><p>新插入文档_2</p></body>"
+        }
         ], null, 2));
         $('.insertDocDialog').show();
     });
@@ -1587,12 +1628,12 @@ $(document).ready(function () {
     // 取消设置只读模式
     $('#btnCancelReadOnly').on('click', function () {
         $('.readOnlyDialog').hide();
-        $('#readOnlyCode').val(''); 
+        $('#readOnlyCode').val('');
     });
 
     // ==================== 质控提醒相关代码 ====================
     // 质控提醒按钮点击事件
-    $('#btnHmAiQc').on('click', function () {
+    $('#btnHmAiQc').on('click', async function () {
         if (!window.tabManager.currentTabId) {
             showEditorNotOpenDialog('质控提醒');
             return;
@@ -1602,7 +1643,12 @@ $(document).ready(function () {
             return;
         }
         // 重置弹窗状态
-        $('.hmAiQcDialog textarea').val('');
+        const editor = await window.tabManager.getCurrentEditor();
+        const { docCode } = await getCurrentDocumentInfo();
+        // 使用公共方法更新params
+        let params = window.aiParams[docCode];
+        params = await updateProgressMessage(editor, docCode, params);
+        $('.hmAiQcDialog textarea').val(JSON.stringify(params, null, 2));
         $('.hmAiQcDialog').show();
     });
 
@@ -1614,11 +1660,11 @@ $(document).ready(function () {
         let progressNoteList = [];
         // 检查recordName是否存在于recordMapData中
         if (recordMapData.some(item => {
-                if (Array.isArray(item.recordName)) {
-                    return item.recordName.includes(recordName);
-                }
-                return item.recordName === recordName;
-            })) {
+            if (Array.isArray(item.recordName)) {
+                return item.recordName.includes(recordName);
+            }
+            return item.recordName === recordName;
+        })) {
             const recordInfo = getRecordInfo(recordName); // 根据当前tab的名称获取病历类型
             const textContent = await editor.getDocText('');
             if (textContent.length > 0) {
@@ -1748,7 +1794,7 @@ $(document).ready(function () {
 
     // ==================== AI认证相关代码 ====================
     // AI认证按钮点击事件
-    $('#btnHmAiAuth').on('click', function () {
+    $('#btnHmAiAuth').on('click', async function () {
         // 检查AI令牌
         const token = localStorage.getItem('HMAccessToken');
         if (!token) {
@@ -1758,8 +1804,32 @@ $(document).ready(function () {
             });
             return;
         }
-        // 重置弹窗状态
-        $('.hmAiAuthDialog textarea').val('');
+
+        // 获取当前选中的文档信息
+        const { docCode, serialNumber } = await getCurrentDocumentInfo();
+        let aiParam = null;
+        // 如果有docCode，尝试获取对应的aiParam
+        if (docCode && window.aiParams && window.aiParams[docCode]) {
+            aiParam = window.aiParams[docCode];
+        }
+        // 构建参考initAiAuth的params参数
+        const params = {
+            "aiServer": window.aiServer,
+            "authToken": localStorage.getItem('HMAccessToken'),
+            "userGuid": aiParam.userGuid || '',
+            "userName": '演示用户',
+            "doctorGuid": 'hmpm',
+            "serialNumber": serialNumber,
+            "department": "演示科室",
+            "doctorName": "pm",
+            "hospitalGuid": "1001",
+            "hospitalName": "惠每医生团队",
+            "customEnv": "1",
+            "flag": "m"
+        };
+
+        // 填充对话框
+        $('.hmAiAuthDialog textarea').val(JSON.stringify(params, null, 2));
         $('.hmAiAuthDialog').show();
     });
     window.isInitHMAuth = false;
@@ -1823,7 +1893,7 @@ $(document).ready(function () {
 
     // ==================== 唤醒AI相关代码 ====================
     // 唤醒AI按钮点击事件
-    $('#btnHmAiGen').on('click', function () {
+    $('#btnHmAiGen').on('click', async function () {
         if (!window.tabManager.currentTabId) {
             showEditorNotOpenDialog('唤醒AI');
             return;
@@ -1833,7 +1903,13 @@ $(document).ready(function () {
             return;
         }
         // 重置弹窗状态
-        $('.hmAiGenDialog textarea').val('');
+        const { recordName, docCode } = await getCurrentDocumentInfo();
+        const recordInfo = getRecordInfo(recordName);
+        const params = {
+            recordType: recordInfo.recordType,
+            progressGuid: docCode
+        };
+        $('.hmAiGenDialog textarea').val(JSON.stringify(params, null, 2));
         $('.hmAiGenDialog').show();
     });
 
@@ -2064,7 +2140,7 @@ $(document).ready(function () {
         HMEditorLoader.setAiToken(token);
         showAlertDialog('AI令牌已设置');
         $('.aiTokenDialog').hide();
-        
+
         console.log('触发aiTokenSet事件');
         // 触发自定义事件，通知令牌设置完成
         $(document).trigger('aiTokenSet');
@@ -2073,6 +2149,19 @@ $(document).ready(function () {
     $('#btnCloseAiToken').on('click', function () {
         $('.aiTokenDialog').hide();
         $('#aiTokenTextarea').val('');
+    });
+
+    // 无令牌尝试按钮点击事件
+    $('#btnNoTokenTry').on('click', function () {
+        // 关闭AI令牌弹窗
+        $('.aiTokenDialog').hide();
+        $('#aiTokenTextarea').val('');
+
+        // 切换到"常用病历模板"tab
+        $('.tree-tab[data-tab="normal"]').click();
+
+        // 显示提示信息
+        showAlertDialog('已切换到"常用病历模板"，您可以体验普通编辑功能而无需AI令牌。');
     });
 });
 
@@ -2208,7 +2297,7 @@ function maysonAutoHeight(bean) {
                     window.mayson.MaysonQuality.calculationHomeHeight();
                 }
                 window.mayson.setAutoHeight2();
-            } catch (e) {}
+            } catch (e) { }
         }
         $('#hm-mayson-iframe-part').height($("#assistantSmartPanel").height());
     }
@@ -2359,10 +2448,17 @@ function showAlertDialog(msg, onOk) {
 async function initAiAuth(docCode) {
     // 检查并等待AI令牌设置完成
     console.log('准备调用waitForValidAiToken...');
-    await waitForValidAiToken();
-    console.log('waitForValidAiToken执行完成');
+    const tokenValid = await waitForValidAiToken();
+    console.log('waitForValidAiToken执行完成，结果:', tokenValid);
+
+    // 如果用户取消了令牌设置，直接返回
+    if (tokenValid === false) {
+        console.log('用户取消了AI令牌设置');
+        return;
+    }
+
     console.log('AI令牌验证完成，开始执行认证流程');
-    
+
     const node = findNodeByDocCode(docCode, window.aiDocumentTreeData);
     const serialNumber = node ? node.serialNumber : '';
     const aiParam = window.aiParams[docCode];
@@ -2394,13 +2490,13 @@ async function initAiAuth(docCode) {
 function waitForValidAiToken() {
     return new Promise((resolve) => {
         console.log('开始等待AI令牌设置...');
-        
+
         const checkToken = () => {
             const token = localStorage.getItem('HMAccessToken');
             console.log('检查AI令牌:', token ? '存在' : '不存在');
-            
+
             let valid = true;
-            
+
             if (!token) {
                 valid = false;
                 console.log('AI令牌不存在，设置为无效');
@@ -2410,9 +2506,9 @@ function waitForValidAiToken() {
                 valid = checkAiToken(token);
                 console.log('checkAiToken返回结果:', valid);
             }
-            
+
             console.log('AI令牌验证最终结果:', valid);
-            
+
             if (!valid) {
                 console.log('AI令牌无效，显示设置对话框');
                 // 显示设置AI令牌的对话框
@@ -2420,41 +2516,44 @@ function waitForValidAiToken() {
                     console.log('用户点击确定，打开AI令牌设置对话框');
                     // 点击确定后直接打开AI令牌设置对话框
                     $('.aiTokenDialog').show();
-                    
+
                     // 监听AI令牌设置完成事件
                     const handleTokenSet = () => {
                         console.log('检测到AI令牌设置完成事件');
                         // 移除事件监听器
                         $(document).off('aiTokenSet.tokenSet');
                         $('#btnCloseAiToken').off('click.tokenSet');
-                        
+
                         // 直接继续执行，因为设置按钮已经验证过令牌了
                         console.log('AI令牌设置完成，直接继续执行');
-                        resolve(); // 令牌有效，继续执行
+                        resolve(true); // 令牌有效，继续执行
                     };
-                    
+
                     console.log('绑定aiTokenSet事件监听器');
                     // 绑定设置完成事件
                     $(document).on('aiTokenSet.tokenSet', handleTokenSet);
                     $('#btnCloseAiToken').on('click.tokenSet', () => {
                         console.log('用户取消AI令牌设置');
-                        // 用户取消设置，重新检查
-                        setTimeout(checkToken, 100);
+                        // 移除事件监听器
+                        $(document).off('aiTokenSet.tokenSet');
+                        $('#btnCloseAiToken').off('click.tokenSet');
+                        // 用户取消设置，直接拒绝Promise
+                        resolve(false);
                     });
                 });
             } else {
                 console.log('AI令牌有效，直接继续执行');
-                resolve(); // 令牌有效，继续执行
+                resolve(true); // 令牌有效，继续执行
             }
         };
-        
+
         checkToken();
     });
 }
 
 function checkAiToken(token) {
     console.log('开始验证AI令牌:', token ? token.substring(0, 10) + '...' : 'null');
-    
+
     // 验证AI令牌
     var valid = false;
     $.ajax({
@@ -2482,7 +2581,7 @@ function checkAiToken(token) {
             valid = false;
         }
     });
-    
+
     console.log('AI令牌验证最终结果:', valid);
     return valid;
 }
@@ -2508,11 +2607,14 @@ function findNodeByDocCode(docCode, treeData) {
 }
 
 // 质控提醒设置
-async function showQualityRemindSet(docCode, node) {
-    const params = window.aiParams[docCode];
-    const editor = await window.tabManager.getCurrentEditor();
-    const recordType = node ? node.recordType : 1;
-
+/**
+ * 更新病历文本内容到params中
+ * @param {Object} editor - 编辑器实例
+ * @param {string} docCode - 文档代码
+ * @param {Object} params - 参数对象
+ * @returns {Object} 更新后的params对象
+ */
+async function updateProgressMessage(editor, docCode, params) {
     // 动态获取当前病历的文本内容
     try {
         const textContent = await editor.getDocText(docCode);
@@ -2537,6 +2639,17 @@ async function showQualityRemindSet(docCode, node) {
         console.error('动态获取病历文本失败:', error);
         // 如果获取失败，继续使用原有的progressMessage
     }
+
+    return params;
+}
+
+async function showQualityRemindSet(docCode, node) {
+    let params = window.aiParams[docCode];
+    const editor = await window.tabManager.getCurrentEditor();
+    const recordType = node ? node.recordType : 1;
+
+    // 使用公共方法更新params
+    params = await updateProgressMessage(editor, docCode, params);
 
     const params1 = {
         recordType: recordType,
@@ -2591,7 +2704,7 @@ function formatQualityRemindParams(params) {
 
 // ==================== 工具栏快捷键控制脚本 ====================
 // 工具栏显示状态
-let btnPanelVisible = false;
+let btnPanelVisible = true;
 
 // 键盘事件监听器
 document.addEventListener('keydown', function (event) {
@@ -2661,9 +2774,48 @@ function initToolbarShortcuts() {
         });
     }
 
-    console.log('工具栏已隐藏 - 选中"常用病历模板"显示工具栏，或使用快捷键 Ctrl+Shift+-> 显示');
+    console.log('工具栏默认显示 - 使用快捷键 Ctrl+Shift+-> 切换显示/隐藏');
     // 可选：显示一个临时的提示信息
     setTimeout(function () {
-        console.log('💡 提示: 选中"常用病历模板"显示工具栏，或按 Ctrl+Shift+-> 可以显示/隐藏工具栏');
+        console.log('💡 提示: 工具栏默认显示，按 Ctrl+Shift+-> 可以切换显示/隐藏，按 ESC 可以隐藏工具栏');
     }, 1000);
+}
+
+// ==================== 获取当前文档信息的公共方法 ====================
+/**
+ * 获取当前文档信息
+ * @returns {Promise<{docCode: string, serialNumber: string}>} 返回包含docCode和serialNumber的对象
+ */
+async function getCurrentDocumentInfo() {
+    let docCode = '';
+    let serialNumber = '';
+    let recordName = '';
+
+    // 尝试从当前激活的tab获取文档信息
+    if (window.tabManager && window.tabManager.currentTabId) {
+        const $currentTab = window.tabManager.tabHeader.find(`.tab-item[data-id="${window.tabManager.currentTabId}"]`);
+        serialNumber = $currentTab.data('serial-number') || '';
+
+        // 尝试从当前编辑器内容中获取doc_code
+        try {
+            const editor = await window.tabManager.getCurrentEditor();
+            if (editor && editor.editor) {
+                const $body = $(editor.editor.document.getBody().$);
+                // 查找具有doc_code属性的元素
+                const $docElement = $body.find('[doc_code]').first();
+                if ($docElement.length > 0) {
+                    docCode = $docElement.attr('doc_code') || '';
+                    recordName = $docElement.attr('data-hm-widgetname') || '';;
+                    console.log('从编辑器内容获取到docCode:', docCode);
+                }
+            }
+        } catch (error) {
+            console.log('从编辑器获取docCode失败:', error);
+        }
+    }
+    return {
+        docCode: docCode,
+        serialNumber: serialNumber,
+        recordName: recordName
+    };
 }

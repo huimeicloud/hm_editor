@@ -16,50 +16,321 @@
         console.error.apply(console, arguments);
     }
 
+    // WebSocket连接状态监控器
+    var WebSocketMonitor = function() {
+        this.mcpHandler = null;
+        this.checkInterval = null;
+        this.checkIntervalMs = 10000; // 10秒检查一次
+        this.isMonitoring = false;
+        this.lastCheckTime = 0;
+        this.connectionStatus = {
+            isConnected: false,
+            lastHeartbeat: 0,
+            reconnectAttempts: 0,
+            lastError: null
+        };
+    };
+
+    WebSocketMonitor.prototype = {
+        /**
+         * 开始监控WebSocket连接
+         * @param {Object} mcpHandler MCP处理器实例
+         */
+        startMonitoring: function(mcpHandler) {
+            if (this.isMonitoring) {
+                console.log('WebSocket监控已在运行中');
+                return;
+            }
+
+            this.mcpHandler = mcpHandler;
+            this.isMonitoring = true;
+            console.log('🔍 开始监控WebSocket连接状态');
+
+            // 立即检查一次
+            this.checkConnection();
+
+            // 设置定期检查
+            this.checkInterval = setInterval(() => {
+                this.checkConnection();
+            }, this.checkIntervalMs);
+        },
+
+        /**
+         * 停止监控
+         */
+        stopMonitoring: function() {
+            if (this.checkInterval) {
+                clearInterval(this.checkInterval);
+                this.checkInterval = null;
+            }
+            this.isMonitoring = false;
+            //console.log('🔍 停止WebSocket连接状态监控');
+        },
+
+        /**
+         * 检查连接状态
+         */
+        checkConnection: function() {
+            if (!this.mcpHandler) {
+                console.warn('MCP处理器未初始化，无法检查连接状态');
+                return;
+            }
+
+            const now = Date.now();
+            this.lastCheckTime = now;
+
+            // 检查WebSocket连接状态
+            const ws = this.mcpHandler.ws;
+            const isConnected = ws && ws.readyState === WebSocket.OPEN;
+
+            // 如果正在连接中，跳过检查
+            if (this.mcpHandler.isConnecting) {
+                console.log('🔍 WebSocket正在连接中，跳过状态检查');
+                return;
+            }
+
+            // 检查心跳状态 - 增加更长的超时时间
+            const timeSinceLastHeartbeat = now - this.mcpHandler.lastHeartbeat;
+            const heartbeatTimeout = 120000; // 120秒无心跳认为超时
+
+            // 更新连接状态
+            this.connectionStatus.isConnected = isConnected;
+            this.connectionStatus.lastHeartbeat = this.mcpHandler.lastHeartbeat;
+            this.connectionStatus.reconnectAttempts = this.mcpHandler.reconnectAttempts;
+
+            // 检查是否需要重连
+            if (!isConnected) {
+                console.warn('⚠️ WebSocket连接已断开，尝试重连');
+                this.connectionStatus.lastError = '连接断开';
+                this.triggerReconnect();
+            } else if (timeSinceLastHeartbeat > heartbeatTimeout) {
+                console.warn('⚠️ WebSocket心跳超时，尝试重连');
+                this.connectionStatus.lastError = '心跳超时';
+                this.triggerReconnect();
+            } else {
+                this.connectionStatus.lastError = null;
+                //console.log('✅ WebSocket连接状态正常');
+            }
+        },
+
+        /**
+         * 触发重连
+         */
+        triggerReconnect: function() {
+            if (this.mcpHandler && typeof this.mcpHandler.reconnect === 'function') {
+                console.log('🔄 触发WebSocket重连');
+                this.mcpHandler.reconnect();
+            }
+        },
+
+        /**
+         * 获取连接状态
+         * @returns {Object} 连接状态信息
+         */
+        getConnectionStatus: function() {
+            return {
+                ...this.connectionStatus,
+                isMonitoring: this.isMonitoring,
+                lastCheckTime: this.lastCheckTime,
+                sessionId: this.mcpHandler ? this.mcpHandler.sessionId : null
+            };
+        },
+
+        /**
+         * 手动重连
+         */
+        manualReconnect: function() {
+            console.log('🔄 手动触发WebSocket重连');
+            this.triggerReconnect();
+        },
+
+        /**
+         * 重置重连计数
+         */
+        resetReconnectAttempts: function() {
+            if (this.mcpHandler) {
+                this.mcpHandler.reconnectAttempts = 0;
+                console.log('🔄 重置重连计数');
+            }
+        }
+    };
+
     var MCPHandler = function() {
         this.ws = null;
         this.sessionId = null;
         this.editorLoader = null;
         this.editors = new Map();
         this.pendingCommands = new Map();
+        this.wsUrl = null;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+        this.reconnectInterval = 3000; // 3秒
+        this.reconnectTimer = null;
+        this.heartbeatTimer = null;
+        this.isConnecting = false;
+        this.lastHeartbeat = Date.now();
+        this.monitor = new WebSocketMonitor(); // 创建监控器实例
     };
+
     MCPHandler.prototype = {
         init: function(wsUrl, editorLoader) {
             this.editorLoader = editorLoader;
+            this.wsUrl = wsUrl;
             this.connect(wsUrl);
+
+            // 移除这里的监控器启动，改为在连接成功后启动
+            // this.monitor.startMonitoring(this);
         },
+
         connect: function(wsUrl) {
+            if (this.isConnecting) {
+                mcpLog('🔌 [MCP Debug] 正在连接中，跳过重复连接');
+                return;
+            }
+
+            this.isConnecting = true;
             mcpLog('🔌 [MCP Debug] 开始连接 WebSocket:', wsUrl);
-            this.ws = new WebSocket(wsUrl);
 
-            this.ws.onopen = () => {
-                mcpLog('✅ [MCP Debug] MCP WebSocket 连接成功');
-                mcpLog('🔍 [MCP Debug] WebSocket 状态:', this.ws.readyState);
-                mcpLog('🔍 [MCP Debug] WebSocket URL:', this.ws.url);
-                // 连接成功后不再由前端生成sessionId，等待服务端推送
-            };
+            try {
+                this.ws = new WebSocket(wsUrl);
 
-            this.ws.onmessage = (event) => {
-                mcpLog('📨 [MCP Debug] 收到 WebSocket 消息，长度:', event.data.length);
-                this.handleMessage(event.data);
-            };
+                // 修改监控器启动时机
+                this.ws.onopen = () => {
+                    this.isConnecting = false;
+                    this.reconnectAttempts = 0; // 重置重连次数
+                    mcpLog('✅ [MCP Debug] MCP WebSocket 连接成功');
+                    mcpLog('🔍 [MCP Debug] WebSocket 状态:', this.ws.readyState);
+                    mcpLog('🔍 [MCP Debug] WebSocket URL:', this.ws.url);
 
-            this.ws.onclose = (event) => {
-                mcpLog('🔌 [MCP Debug] MCP WebSocket 连接关闭');
-                mcpLog('🔍 [MCP Debug] 关闭代码:', event.code);
-                mcpLog('🔍 [MCP Debug] 关闭原因:', event.reason);
-                mcpLog('🔍 [MCP Debug] 是否正常关闭:', event.wasClean);
-            };
+                    // 启动心跳检测
+                    this.startHeartbeat();
 
-            this.ws.onerror = (error) => {
-                mcpError('❌ [MCP Debug] MCP WebSocket 错误:', error);
-                mcpError('🔍 [MCP Debug] 错误详情:', error.message || error);
-            };
+                    // 延迟启动监控器，等待连接稳定
+                    setTimeout(() => {
+                        this.monitor.startMonitoring(this);
+                    }, 5000); // 延迟5秒启动监控
+
+                    // 连接成功后不再由前端生成sessionId，等待服务端推送
+                };
+
+                this.ws.onmessage = (event) => {
+                    mcpLog('📨 [MCP Debug] 收到 WebSocket 消息，长度:', event.data.length);
+                    this.handleMessage(event.data);
+                };
+
+                this.ws.onclose = (event) => {
+                    this.isConnecting = false;
+                    this.stopHeartbeat();
+
+                    // 停止监控器
+                    if (this.monitor) {
+                        this.monitor.stopMonitoring();
+                    }
+
+                    mcpLog('🔌 [MCP Debug] MCP WebSocket 连接关闭');
+                    mcpLog('🔍 [MCP Debug] 关闭代码:', event.code);
+                    mcpLog('🔍 [MCP Debug] 关闭原因:', event.reason);
+                    mcpLog('🔍 [MCP Debug] 是否正常关闭:', event.wasClean);
+
+                    // 如果不是正常关闭，尝试重连
+                    if (!event.wasClean && this.reconnectAttempts < this.maxReconnectAttempts) {
+                        this.scheduleReconnect();
+                    }
+                };
+
+                this.ws.onerror = (error) => {
+                    this.isConnecting = false;
+                    mcpError('❌ [MCP Debug] MCP WebSocket 错误:', error);
+                    mcpError('🔍 [MCP Debug] 错误详情:', error.message || error);
+                };
+            } catch (error) {
+                this.isConnecting = false;
+                mcpError('❌ [MCP Debug] 创建WebSocket连接失败:', error);
+                this.scheduleReconnect();
+            }
         },
+
+        // 安排重连
+        scheduleReconnect: function() {
+            if (this.reconnectTimer) {
+                clearTimeout(this.reconnectTimer);
+            }
+
+            this.reconnectAttempts++;
+            const delay = this.reconnectInterval * Math.pow(2, this.reconnectAttempts - 1); // 指数退避
+
+            mcpLog(`🔄 [MCP Debug] 计划 ${delay}ms 后重连 (第 ${this.reconnectAttempts} 次尝试)`);
+
+            this.reconnectTimer = setTimeout(() => {
+                if (this.reconnectAttempts <= this.maxReconnectAttempts) {
+                    mcpLog(`🔄 [MCP Debug] 开始第 ${this.reconnectAttempts} 次重连`);
+                    this.connect(this.wsUrl);
+                } else {
+                    mcpError('❌ [MCP Debug] 重连次数已达上限，停止重连');
+                }
+            }, delay);
+        },
+
+        // 启动心跳检测
+        startHeartbeat: function() {
+            this.stopHeartbeat();
+
+            this.heartbeatTimer = setInterval(() => {
+                const now = Date.now();
+                const timeSinceLastHeartbeat = now - this.lastHeartbeat;
+
+                // 增加心跳超时时间到120秒
+                if (timeSinceLastHeartbeat > 120000) {
+                    mcpLog('⚠️ [MCP Debug] 心跳超时，尝试重新连接');
+                    this.reconnect();
+                    return;
+                }
+
+                // 发送心跳包
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    try {
+                        this.ws.send(JSON.stringify({
+                            type: 'heartbeat',
+                            timestamp: now
+                        }));
+                        mcpLog('💓 [MCP Debug] 发送心跳包');
+                    } catch (error) {
+                        mcpError('❌ [MCP Debug] 发送心跳包失败:', error);
+                        this.reconnect();
+                    }
+                }
+            }, 30000); // 30秒发送一次心跳
+        },
+
+        // 停止心跳检测
+        stopHeartbeat: function() {
+            if (this.heartbeatTimer) {
+                clearInterval(this.heartbeatTimer);
+                this.heartbeatTimer = null;
+            }
+        },
+
+        // 手动重连
+        reconnect: function() {
+            mcpLog('🔄 [MCP Debug] 手动重连');
+            this.disconnect();
+            this.reconnectAttempts = 0; // 重置重连次数
+            setTimeout(() => {
+                this.connect(this.wsUrl);
+            }, 1000);
+        },
+
         handleMessage: function(data) {
             try {
                 const message = JSON.parse(data);
                 mcpLog('🔍 [MCP Debug] 收到消息:', JSON.stringify(message, null, 2));
+
+                // 处理心跳确认
+                if (message.type === 'heartbeat_ack') {
+                    this.lastHeartbeat = Date.now();
+                    mcpLog('💓 [MCP Debug] 收到心跳确认');
+                    return;
+                }
 
                 if (message.type === 'mcp_call' || (message.jsonrpc && message.method)) {
                     // 兼容jsonrpc风格
@@ -385,11 +656,22 @@
             }
         },
         disconnect: function() {
+            this.stopHeartbeat();
+            if (this.reconnectTimer) {
+                clearTimeout(this.reconnectTimer);
+                this.reconnectTimer = null;
+            }
             if (this.ws) {
                 this.ws.close();
                 this.ws = null;
             }
             this.editors.clear();
+            this.isConnecting = false;
+
+            // 停止监控
+            if (this.monitor) {
+                this.monitor.stopMonitoring();
+            }
         },
 
         // 将图片URL转换为base64数据
@@ -490,4 +772,35 @@
     };
 
     window.MCPHandler = MCPHandler;
+
+    // 创建全局WebSocketMonitor实例，方便外部访问
+    window.WebSocketMonitor = WebSocketMonitor;
+
+    // 页面可见性变化时检查连接
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && window.MCPHandler && window.MCPHandler.monitor && window.MCPHandler.monitor.isMonitoring) {
+            console.log('📱 页面变为可见，检查WebSocket连接状态');
+            setTimeout(() => {
+                window.MCPHandler.monitor.checkConnection();
+            }, 1000);
+        }
+    });
+
+    // 网络状态变化时检查连接
+    window.addEventListener('online', function() {
+        if (window.MCPHandler && window.MCPHandler.monitor && window.MCPHandler.monitor.isMonitoring) {
+            console.log('🌐 网络连接恢复，检查WebSocket连接状态');
+            setTimeout(() => {
+                window.MCPHandler.monitor.checkConnection();
+            }, 2000);
+        }
+    });
+
+    // 页面卸载前停止监控
+    window.addEventListener('beforeunload', function() {
+        if (window.MCPHandler && window.MCPHandler.monitor) {
+            window.MCPHandler.monitor.stopMonitoring();
+        }
+    });
+
 })(window);

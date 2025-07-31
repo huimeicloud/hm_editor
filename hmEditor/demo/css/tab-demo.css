@@ -123,6 +123,7 @@ body {
     flex-direction: column;
     height: 100%;
     padding-right: 20px;
+    position: relative;
 }
 
 /* 顶部工具栏面板 */
@@ -143,6 +144,28 @@ body {
     flex-shrink: 0;
     min-width: 500px;
     /* margin-right: 20px; */
+}
+
+/* 工具栏切换按钮 */
+.toolbar-toggle-btn {
+    display: none;
+    position: absolute;
+    /* width: 80px; */
+    /* background: #FFF;
+    box-shadow: 0 1px 4px rgba(43, 106, 238, .5); */
+    border-radius: 8px;
+    height: 10px;
+    line-height: 10px;
+    left: 5px;
+    /* top: 10px; */
+    cursor: pointer;
+    z-index: 60;
+}
+
+.toolbar-toggle-btn i {
+    color: #2563eb;
+    /* margin-left: 45%;
+    margin-top: -4px; */
 }
 
 /* 工具栏标题（在左侧面板中） */

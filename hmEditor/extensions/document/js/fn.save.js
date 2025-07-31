@@ -76,62 +76,126 @@ commonHM.component['documentModel'].fn({
      */
     getSourceData: function ($body) {
         var _t = this;
-        var sourceObj = [];
+        var sourceObj = {
+            data: [], // 非护理表单数据
+            nursingData: [] // 护理表单数据
+        };
+
+        // 处理普通数据元
+        _t.handleNormalDataElements($body, sourceObj);
+
+        // 处理护理表单数据
+        _t.handleNursingFormData($body, sourceObj);
+
+        return sourceObj;
+    },
+
+    /**
+     * 处理普通数据元
+     * @param {*} $body 文档内容
+     * @param {*} sourceObj 数据源对象
+     */
+    handleNormalDataElements: function ($body, sourceObj) {
+        var _t = this;
         var dataSourceList = $body.find('[data-hm-name]:not([data-hm-node="labelbox"])');
+
         for (var i = 0; i < dataSourceList.length; i++) {
-            var spanObj = {};
             var ele = dataSourceList[i];
-            var type = $(ele).attr('data-hm-node'); // 数据元类型
-            var keyCode = $(ele).attr('data-hm-code');
-            var keyId = $(ele).attr('data-hm-id');
-            var keyName = $(ele).attr('data-hm-name');
-            var keyValue = '';
-            spanObj.keyCode = keyCode || '';
-            spanObj.keyId = keyId || '';
-            spanObj.keyName = keyName || '';
-            spanObj.keyValue = keyValue;
-            // 处理不同类型的值
-            switch (type) {
-                case 'newtextbox':
-                    spanObj = _t.handleNewTextbox(ele, spanObj);
-                    break;
-                case 'dropbox':
-                    spanObj = _t.handleDropbox(ele, spanObj);
-                    break;
-                case 'cellbox':
-                    var value =  !$(ele).attr('_placeholdertext') ? $(ele).text() : '';
-                    spanObj.keyValue = value ? value.replace(/\u200B/g, '') : '';
-                    break;
-                case 'timebox':
-                    spanObj = _t.handleTimeBox(ele, spanObj);
-                    break;
-                case 'textboxwidget':
-                    var value =  !$(ele).attr('_placeholdertext') ? $(ele).text() : '';
-                    spanObj.keyValue = value ? value.replace(/\u200B/g, '') : '';
-                    break;
-                case 'expressionbox':
-                    var value =  !$(ele).attr('_placeholdertext') ? $(ele).attr('_expressionvalue') : '';
-                    spanObj.keyValue = value;
-                    break;
-                case 'searchbox':
-                    spanObj = _t.handleSearchbox(ele, spanObj);
-                    break;
-                case 'radiobox':
-                    spanObj = _t.handleRadiobox(ele, spanObj, $body);
-                    break;
-                case 'checkbox':
-                    spanObj = _t.handleCheckbox(ele, spanObj, $body);
-                    break;
-                default:
-                    spanObj = null;
+            if ($(ele).parents('[is_nursing_form]').length > 0) {
+                continue;
             }
-            // 如果spanObj不为空，则将spanObj添加到sourceObj中
+
+            var spanObj = _t.getDataElementObject(ele);
             if (spanObj) {
-                sourceObj.push(spanObj);
+                sourceObj.data.push(spanObj);
             }
         }
-        // 返回数据源对象
-        return sourceObj;
+    },
+
+    /**
+     * 处理护理表单数据
+     * @param {*} $body 文档内容
+     * @param {*} sourceObj 数据源对象
+     */
+    handleNursingFormData: function ($body, sourceObj) {
+        var _t = this;
+        var $nursingForms = $body.find('table[data-hm-datatable][is_nursing_form="true"]');
+
+        if (!$nursingForms.length) return;
+
+        $nursingForms.each(function () {
+            var $rows = $(this).find('tbody tr');
+
+            $rows.each(function () {
+                var rowData = [];
+                var $tds = $(this).find('[data-hm-node]');
+
+                $tds.each(function () {
+                    var cellObj = _t.getDataElementObject($(this));
+                    if (cellObj) {
+                        rowData.push(cellObj);
+                    }
+                });
+
+                if (rowData.length) {
+                    sourceObj.nursingData.push(rowData);
+                }
+            });
+        });
+    },
+
+    /**
+     * 创建数据元对象
+     * @param {*} ele 数据元元素
+     * @returns 数据元对象
+     */
+    getDataElementObject: function (ele) {
+        var _t = this;
+        var $ele = $(ele);
+        var type = $ele.attr('data-hm-node');
+        var spanObj = {
+            keyCode: $ele.attr('data-hm-code') || '',
+            keyId: $ele.attr('data-hm-id') || '',
+            keyName: $ele.attr('data-hm-name') || '',
+            keyValue: ''
+        };
+        console.log(type)
+        switch (type) {
+            case 'newtextbox':
+                spanObj = _t.handleNewTextbox(ele, spanObj);
+                break;
+            case 'dropbox':
+                spanObj = _t.handleDropbox(ele, spanObj);
+                break;
+            case 'cellbox':
+                var value = !$ele.attr('_placeholdertext') ? $ele.text() : '';
+                spanObj.keyValue = value ? value.replace(/\u200B/g, '') : '';
+                console.log(value)
+                break;
+            case 'textboxwidget':
+                var value = !$ele.attr('_placeholdertext') ? $ele.text() : '';
+                spanObj.keyValue = value ? value.replace(/\u200B/g, '') : '';
+                break;
+            case 'timebox':
+                spanObj = _t.handleTimeBox(ele, spanObj);
+                break;
+            case 'expressionbox':
+                spanObj.keyValue = !$ele.attr('_placeholdertext') ? $ele.attr('_expressionvalue') : '';
+                break;
+            case 'searchbox':
+                spanObj = _t.handleSearchbox(ele, spanObj);
+                break;
+            case 'radiobox':
+                spanObj = _t.handleRadiobox(ele, spanObj, $ele.closest('body'));
+                break;
+            case 'checkbox':
+                spanObj = _t.handleCheckbox(ele, spanObj, $ele.closest('body'));
+                break;
+            default:
+                return null;
+        }
+
+        return spanObj;
     },
     /**
      * 处理文本取值
@@ -158,14 +222,14 @@ commonHM.component['documentModel'].fn({
             var selectType = _con.attr('_selecttype'); // 下拉框类型
             var code = _con.attr('code'); // 下拉框编码
             var text = '';
-            if(!_con.attr('_placeholdertext')){
+            if (!_con.attr('_placeholdertext')) {
                 text = _con.text(); // 下拉框文本
-            } 
+            }
             spanObj.keyValue = text && selectType == '多选' ? text.split(',') : text;
             if (selectType == '多选') {
                 spanObj.keyName = code && code.split(',');
             }
-        } else { 
+        } else {
             if (!_con.attr('_placeholdertext')) {
                 spanObj.keyValue = _con.text();
             }
@@ -406,7 +470,8 @@ commonHM.component['documentModel'].fn({
         var _t = this;
         var _html = _t.getDocumentHtml(widget);
         var _text = _t.getDocumentText(widget);
-        var _data = _t.getFilterData(params.keyList || [], _t.getContentData(widget))
+        var _sourceData = _t.getContentData(widget); // 所有数据
+        var _data = _t.getFilterData(params.keyList || [], _sourceData.data); // 非护理表单数据
         var _id = $(widget).attr('data-hm-widgetid') || '';
         if (!params.code && !params.flag) {
             result.push({
@@ -439,6 +504,10 @@ commonHM.component['documentModel'].fn({
                     text: _text
                 });
             }
+        }
+        // 如果存在护理表单数据,则添加到result中
+        if ($(widget).find('[is_nursing_form="true"]').length > 0) {
+            result[0].nursingData = _sourceData.nursingData;
         }
         return result;
     }

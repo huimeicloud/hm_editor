@@ -24,7 +24,7 @@ const documentTreeData = [
            docName: '住院病案首页',
            recordName: '住院病案首页',
            type: 'file-edit',
-           serialNumber:'S2VPWB3391943'
+           serialNumber:'001'
        }]
     },
     {
@@ -37,7 +37,7 @@ const documentTreeData = [
                 docName: '入院记录',
                 recordName: '入院记录',
                 type: 'file-edit',
-                serialNumber:'S2VPWB3391943'
+                serialNumber:'001'
             },
             {
                 docCode: 'md2j7iys4h',
@@ -45,7 +45,7 @@ const documentTreeData = [
                 docName: '24小时内入出院记录',
                 recordName: '24小时内入出院记录',
                 type: 'file-edit',
-                serialNumber:'S2VPWB3391943'
+                serialNumber:'001'
             },
             {
                 docCode: 'md2j5ff3ra',
@@ -53,7 +53,7 @@ const documentTreeData = [
                 docName: '24小时出入院死亡记录',
                 recordName: '24小时出入院死亡记录',
                 type: 'file-edit',
-                serialNumber:'S2VPWB3391943'
+                serialNumber:'001'
             }
         ]
     },
@@ -67,7 +67,7 @@ const documentTreeData = [
                 docName: '首次病程记录',
                 recordName: '首次病程记录',
                 type: 'file-edit',
-                serialNumber:'S2VPWB3391943'
+                serialNumber:'001'
             },
             {
                 docCode: 'mcvon2f6g6',
@@ -75,7 +75,7 @@ const documentTreeData = [
                 docName: '日常病程记录',
                 recordName: '日常病程记录',
                 type: 'file-edit',
-                serialNumber:'S2VPWB3391943'
+                serialNumber:'001'
             },
             {
                 docCode: 'mcvoa64b2c',
@@ -83,7 +83,7 @@ const documentTreeData = [
                 docName: '主治医生查房记录',
                 recordName: '主治医生查房记录',
                 type: 'file-edit',
-                serialNumber:'S2VPWB3391943'
+                serialNumber:'001'
             },
             {
                 docCode: 'mcvoa64b2c',
@@ -91,7 +91,7 @@ const documentTreeData = [
                 docName: '主治医生首次查房记录',
                 recordName: '主治医生首次查房记录',
                 type: 'file-edit',
-                serialNumber:'S2VPWB3391943'
+                serialNumber:'001'
             },
             {
                 docCode: 'mcvoaxouei',
@@ -99,7 +99,7 @@ const documentTreeData = [
                 docName: '会诊记录',
                 recordName: '会诊记录',
                 type: 'file-edit',
-                serialNumber:'S2VPWB3391943'
+                serialNumber:'001'
             },
             {
                 docCode: 'mcvtf7iarr',
@@ -107,7 +107,7 @@ const documentTreeData = [
                 docName: '接班记录',
                 recordName: '接班记录',
                 type: 'file-edit',
-                serialNumber:'S2VPWB3391943'
+                serialNumber:'001'
             },
             {
                 docCode: 'md2j0r9nnp',
@@ -115,7 +115,7 @@ const documentTreeData = [
                 docName: '阶段小结',
                 recordName: '阶段小结',
                 type: 'file-edit',
-                serialNumber:'S2VPWB3391943'
+                serialNumber:'001'
             }
         ]
     },
@@ -129,7 +129,7 @@ const documentTreeData = [
             docName: '手术记录',
             recordName: '手术记录',
             type: 'file-edit',
-            serialNumber:'S2VPWB3391943'
+            serialNumber:'001'
         },
         {
             docCode: 'md2j52nq4h',
@@ -137,7 +137,7 @@ const documentTreeData = [
             docName: '术前小结',
             recordName: '术前小结',
             type: 'file-edit',
-            serialNumber:'S2VPWB3391943'
+            serialNumber:'001'
         }]
     },
     {
@@ -150,21 +150,21 @@ const documentTreeData = [
             docName: '出院记录',
             recordName: '出院记录',
             type: 'file-edit',
-            serialNumber:'S2VPWB3391943'
+            serialNumber:'001'
         },{
             docCode: 'md2j5ff3ra',
             docPath: 'file/discharge_record_1.html',
             docName: '死亡记录',
             recordName: '死亡记录',
             type: 'file-edit',
-            serialNumber:'S2VPWB3391943'
+            serialNumber:'001'
         },{
             docCode: 'md2kk093ne',
             docPath: 'file/discharge_record_2.html',
             docName: '死亡病例讨论记录',
             recordName: '死亡病例讨论记录',
             type: 'file-edit',
-            serialNumber:'S2VPWB3391943'
+            serialNumber:'001'
         }]
     }
     ,{
@@ -177,7 +177,7 @@ const documentTreeData = [
             docName: '一般护理记录单',
             recordName: '一般护理记录单',
             type: 'file-edit',
-            serialNumber:'S2VPWB3391943'
+            serialNumber:'001'
         }]
     }
 ];

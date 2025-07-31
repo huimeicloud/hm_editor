@@ -575,10 +575,12 @@ commonHM.component['documentModel'].fn({
             _t._handleTrMouseEnter($tr[0], $tr.index());
         }).on('click.tableActions', '.add-row-icon', function (e) {
             e.stopPropagation();
+            e.preventDefault();
             console.log('=====增加行=====');
             _t._addTableRow($(this).closest('tr'));
         }).on('click.tableActions', '.delete-row-icon', function (e) {
             e.stopPropagation();
+            e.preventDefault(); 
             console.log('=====删除行=====');
             _t._deleteTableRow($(this).closest('tr'));
         });
@@ -608,10 +610,10 @@ commonHM.component['documentModel'].fn({
             var totalRows = $tbody.find('tr').length;
 
             // 添加增加行图标
-            var $addIcon = $('<span class="add-row-icon" title="增加行"><i class="fa fa-plus-square"></i></span>');
+            var $addIcon = $('<span class="add-row-icon" title="增加行" contenteditable="false"><i class="fa fa-plus-square"></i></span>');
 
             // 添加删除行图标（只有当行数大于1时才显示）
-            var $deleteIcon = $('<span class="delete-row-icon" title="删除行"><i class="fa fa-minus-square"></i></span>');
+            var $deleteIcon = $('<span class="delete-row-icon" title="删除行" contenteditable="false"><i class="fa fa-minus-square"></i></span>');
             if (totalRows == 1) {
                 $deleteIcon.addClass('disabled').attr('title', '至少保留一行');
             }
@@ -624,10 +626,16 @@ commonHM.component['documentModel'].fn({
             var $lastTd = $tr.find('td').last();
             
             if ($firstTd.length) {
+                if ($firstTd.children().length === 0) {
+                    $firstTd.append('<span></span>');
+                }
                 $firstTd.css('position', 'relative').prepend($actionsContainerAdd);
             }
             if ($lastTd.length) {
-                $lastTd.css('position', 'relative').append($actionsContainerDel);
+                if ($lastTd.children().length === 0) {
+                    $lastTd.append('<span>\u200B</span>');
+                }
+                $lastTd.css('position', 'relative').prepend($actionsContainerDel);
             }
         } catch (error) {
             console.warn('处理表格行鼠标进入事件时发生错误:', error);

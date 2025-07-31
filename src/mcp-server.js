@@ -3,8 +3,13 @@ var WebSocket = require('ws');
 var router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 
-var wsClients = new Map(); // sessionId -> ws
+var wsClients = new Map(); // sessionId -> { ws, lastHeartbeat, connectTime }
 var pendingCommands = new Map(); // commandId -> { resolve, reject, timeout }
+var heartbeatInterval = null; // 心跳定时器
+
+// 心跳间隔时间（毫秒）
+const HEARTBEAT_INTERVAL = 30000; // 30秒
+const CLIENT_TIMEOUT = 120000; // 2分钟无心跳则断开
 
 function getSessionId(req) {
   // 从cookie、header或url参数获取sessionId
@@ -32,9 +37,9 @@ function broadcastCommand(method, params, targetSessionId) {
 
     if (targetSessionId) {
       // 发送给特定客户端
-      var ws = wsClients.get(targetSessionId);
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify(message));
+      var clientInfo = wsClients.get(targetSessionId);
+      if (clientInfo && clientInfo.ws && clientInfo.ws.readyState === WebSocket.OPEN) {
+        clientInfo.ws.send(JSON.stringify(message));
       } else {
         clearTimeout(timeout);
         pendingCommands.delete(commandId);
@@ -48,18 +53,107 @@ function broadcastCommand(method, params, targetSessionId) {
   });
 }
 
+// 启动心跳机制
+function startHeartbeat() {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+  }
+
+  heartbeatInterval = setInterval(() => {
+    const now = Date.now();
+    const disconnectedSessions = [];
+
+    wsClients.forEach((clientInfo, sessionId) => {
+      // 检查客户端是否超时 - 增加更长的超时时间
+      if (now - clientInfo.lastHeartbeat > CLIENT_TIMEOUT) {
+        console.log('客户端心跳超时，断开连接:', sessionId);
+        if (clientInfo.ws && clientInfo.ws.readyState === WebSocket.OPEN) {
+          clientInfo.ws.close(1000, 'Heartbeat timeout');
+        }
+        disconnectedSessions.push(sessionId);
+      } else {
+        // 发送心跳包 - 添加错误处理
+        if (clientInfo.ws && clientInfo.ws.readyState === WebSocket.OPEN) {
+          try {
+            clientInfo.ws.send(JSON.stringify({
+              type: 'heartbeat',
+              timestamp: now
+            }));
+            //console.log('发送心跳包到客户端:', sessionId);
+          } catch (error) {
+            console.error('发送心跳包失败:', error);
+            disconnectedSessions.push(sessionId);
+          }
+        }
+      }
+    });
+
+    // 清理断开的连接
+    disconnectedSessions.forEach(sessionId => {
+      wsClients.delete(sessionId);
+    });
+
+    // 清理超时的pending命令
+    pendingCommands.forEach((command, commandId) => {
+      if (now - command.createTime > 30000) { // 30秒超时
+        clearTimeout(command.timeout);
+        pendingCommands.delete(commandId);
+        command.reject(new Error('Command timeout'));
+      }
+    });
+  }, HEARTBEAT_INTERVAL);
+}
+
+// 停止心跳机制
+function stopHeartbeat() {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = null;
+  }
+}
+
 function registerMcpWebSocket(server) {
   var wss = new WebSocket.Server({ server: server, path: '/mcp-server/ws' });
 
+  // 启动心跳机制
+  startHeartbeat();
+
   wss.on('connection', function(ws, req) {
     let sessionId = uuidv4();
-    wsClients.set(sessionId, ws);
+    const connectTime = Date.now();
+
+    // 存储客户端信息
+    wsClients.set(sessionId, {
+      ws: ws,
+      lastHeartbeat: connectTime,
+      connectTime: connectTime
+    });
+
+    console.log('WebSocket客户端连接:', sessionId, '当前连接数:', wsClients.size);
+
     // 主动推送sessionId给前端
-    ws.send(JSON.stringify({ type: 'session', sessionId }));
+    ws.send(JSON.stringify({
+      type: 'session',
+      sessionId: sessionId,
+      timestamp: connectTime
+    }));
+
     ws.on('message', function(msg) {
       try {
         var data = JSON.parse(msg);
-        // 不再依赖前端主动注册sessionId
+        // 处理心跳响应
+        if (data.type === 'heartbeat') {
+          const clientInfo = wsClients.get(sessionId);
+          if (clientInfo) {
+            clientInfo.lastHeartbeat = Date.now();
+            // 发送心跳确认
+            ws.send(JSON.stringify({
+              type: 'heartbeat_ack',
+              timestamp: Date.now()
+            }));
+          }
+          return;
+        }
         console.log('Received WebSocket message:', data);
         // 处理响应
         var pending = pendingCommands.get(data.id);
@@ -78,15 +172,23 @@ function registerMcpWebSocket(server) {
       }
     });
 
-    ws.on('close', function() {
-      console.log('WebSocket client disconnected:', sessionId);
-      if (sessionId) wsClients.delete(sessionId);
+    ws.on('close', function(code, reason) {
+      console.log('WebSocket客户端断开连接:', sessionId, '代码:', code, '原因:', reason);
+      wsClients.delete(sessionId);
+      console.log('当前连接数:', wsClients.size);
     });
 
     ws.on('error', function(error) {
-      console.error('WebSocket error:', error);
-      if (sessionId) wsClients.delete(sessionId);
+      console.error('WebSocket错误:', sessionId, error);
+      wsClients.delete(sessionId);
     });
+  });
+
+  // 服务器关闭时清理
+  wss.on('close', function() {
+    stopHeartbeat();
+    wsClients.clear();
+    pendingCommands.clear();
   });
 
   return wss;
@@ -562,9 +664,52 @@ router.get('/', function(req, res) {
     version: '1.0.0',
     endpoints: {
       '/mcp-http': 'MCP HTTP接口',
-      '/mcp-server/ws': 'MCP WebSocket接口'
+      '/mcp-server/ws': 'MCP WebSocket接口',
+      '/mcp-server/status': 'WebSocket连接状态'
     }
   });
+});
+
+// WebSocket连接状态检查接口
+router.get('/mcp-server/status', function(req, res) {
+  const sessionId = req.query.sessionId;
+
+  if (sessionId) {
+    // 检查特定会话的连接状态
+    const clientInfo = wsClients.get(sessionId);
+    if (clientInfo) {
+      res.json({
+        success: true,
+        sessionId: sessionId,
+        isConnected: clientInfo.ws.readyState === WebSocket.OPEN,
+        lastHeartbeat: clientInfo.lastHeartbeat,
+        connectTime: clientInfo.connectTime,
+        uptime: Date.now() - clientInfo.connectTime
+      });
+    } else {
+      res.json({
+        success: false,
+        message: '会话不存在或已断开',
+        sessionId: sessionId
+      });
+    }
+  } else {
+    // 返回所有连接的状态统计
+    const connectedClients = Array.from(wsClients.entries()).map(([sessionId, clientInfo]) => ({
+      sessionId: sessionId,
+      isConnected: clientInfo.ws.readyState === WebSocket.OPEN,
+      lastHeartbeat: clientInfo.lastHeartbeat,
+      connectTime: clientInfo.connectTime,
+      uptime: Date.now() - clientInfo.connectTime
+    }));
+
+    res.json({
+      success: true,
+      totalConnections: wsClients.size,
+      connectedClients: connectedClients,
+      pendingCommands: pendingCommands.size
+    });
+  }
 });
 
 // MCP HTTP接口

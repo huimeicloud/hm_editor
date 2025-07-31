@@ -44,7 +44,7 @@
                             </div>
                             <div class="tree-tab active" data-tab="ai">
                                 <!-- <span class="tree-icon"></span> -->
-                                <span class="tree-title">AI病历演示</span>
+                                <span class="tree-title">AI病历演示 <i class="fa fa-key" style="color: #ffa500; margin-left: 4px;" title="需要AI令牌"></i></span>
                             </div>
                         </div>
 
@@ -66,6 +66,10 @@
             <!-- 主内容区域 -->
             <div class="main-content">
                 <div class="main-page">
+                    <!-- 工具栏切换按钮 -->
+                    <div class="toolbar-toggle-btn" id="toolbarToggleBtn" style="display: none;" title="展开/收起工具栏">
+                        <i class="fa fa-caret-down"></i>
+                    </div>
                     <!-- 顶部工具栏 -->
                     <div class="btn-panel" id="btnPanel" style="display: none;">
                         <div class="left-btn-container">
@@ -400,11 +404,11 @@
             <!-- 质控提醒对话框 -->
             <div class="dialogBox hmAiQcDialog">
                 <h3>演示用 - 质控提醒参数</h3>
-                <textarea placeholder="请输入JSON格式的质控参数"></textarea>
-                <div class="quick-links">
+                <textarea placeholder="请输入JSON格式的质控参数" readonly></textarea>
+                <!-- <div class="quick-links">
                     快速载入:
                     <a href="javascript:void(0);" class="quick-link quick-link-hmAi">病历参数示例</a>
-                </div>
+                </div> -->
                 <div>
                     <button id="btnConfirmHmAi" class="dialog-btn btn-primary">确定</button>
                     <button id="btnCancelHmAi" class="dialog-btn">取消</button>
@@ -463,11 +467,11 @@
             <!-- AI认证对话框 -->
             <div class="dialogBox hmAiAuthDialog">
                 <h3>演示用 - AI认证参数</h3>
-                <textarea placeholder="请输入JSON格式的AI认证参数"></textarea>
-                <div class="quick-links">
+                <textarea placeholder="请输入JSON格式的AI认证参数" readonly></textarea>
+                <!-- <div class="quick-links">
                     快速载入:
                     <a href="javascript:void(0);" class="quick-link quick-link-hmAiAuth">AI认证参数示例</a>
-                </div>
+                </div> -->
                 <div>
                     <button id="btnConfirmHmAiAuth" class="dialog-btn btn-primary">确定</button>
                     <button id="btnCancelHmAiAuth" class="dialog-btn">取消</button>
@@ -478,11 +482,11 @@
             <!-- 唤醒AI对话框 -->
             <div class="dialogBox hmAiGenDialog">
                 <h3>演示用 - 唤醒AI参数</h3>
-                <textarea placeholder="请输入JSON格式的AI参数"></textarea>
-                <div class="quick-links">
+                <textarea placeholder="请输入JSON格式的AI参数" readonly></textarea>
+                <!-- <div class="quick-links">
                     快速载入:
                     <a href="javascript:void(0);" class="quick-link quick-link-hmAiGen">AI参数示例</a>
-                </div>
+                </div> -->
                 <div>
                     <button id="btnConfirmHmAiGen" class="dialog-btn btn-primary">确定</button>
                     <button id="btnCancelHmAiGen" class="dialog-btn">取消</button>
@@ -509,11 +513,15 @@
             <!-- AI令牌弹窗 -->
             <div class="dialogBox aiTokenDialog" style="display:none;">
                 <h3>演示用 - AI令牌</h3>
+                <div style="background-color: #f0f8ff; border: 1px solid #b3d9ff; border-radius: 6px; padding: 16px; margin-bottom: 20px; font-size: 13px; color: #0066cc; max-width: 400px; line-height: 1.5;">
+                    <strong>💡 温馨提示：</strong>只有在使用AI相关功能（如AI对话、智能生成、AI质控等）时才需要配置AI令牌。普通编辑功能无需令牌即可正常使用。
+                </div>
                 <textarea id="aiTokenTextarea" placeholder="请输入AI令牌"></textarea>
                 <div>
                     <button id="btnSetAiToken" class="dialog-btn btn-primary">确定</button>
+                    <button id="btnNoTokenTry" class="dialog-btn">无令牌尝试</button>
                     <button id="btnCloseAiToken" class="dialog-btn">取消</button>
-                     <div class="help-text">如果您还没有AI令牌，请在钉钉群联系惠每工作人员获取。</div>
+                    <div class="help-text">如果您还没有AI令牌，请在钉钉群联系惠每工作人员获取。</div>
                 </div>
             </div>
         </div>
