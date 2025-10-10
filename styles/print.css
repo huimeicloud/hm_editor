@@ -1,3 +1,13 @@
+/**
+ * [Bug3 修复相关] 打印样式文件
+ * 
+ * 这个文件控制编辑器在打印模式下的样式表现
+ * Bug3 修复主要通过以下 CSS 规则实现：
+ * 1. @page 规则设置页面尺寸和边距
+ * 2. page-break-* 属性控制分页行为
+ * 3. orphans/widows 属性控制孤行/寡行
+ */
+
 body {
 	margin-bottom: 0px !important; 
 	word-break: normal;

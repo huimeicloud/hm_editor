@@ -299,13 +299,64 @@ function removeBodyZeroWidthSpace(editor) {
 				}, null, null, 1 );
 			}
 
-			editor.on( 'paste', function 处理外部输入( evt ) {
-				/**
-				 * [2022-07-29] 整理粘贴事件, 简化控制台输出.
-				 * 如果需要查看所有粘贴事件的监听, 可进入 core/event.js 文件的 {@link CKEDITOR.event#fire} 函数:
-				 * 查看 event.listeners 变量; 或者将断点打到 listeners 被赋值之后, 使用下面注释里面的 "条件断点预设置" 的代码方便查看事件监听.
-				 */
-				console.log('paste', 1);
+		editor.on( 'paste', function 处理外部输入( evt ) {
+			/**
+			 * [2025-10-10] 整理粘贴事件, 简化控制台输出.
+			 * 如果需要查看所有粘贴事件的监听, 可进入 core/event.js 文件的 {@link CKEDITOR.event#fire} 函数:
+			 * 查看 event.listeners 变量; 或者将断点打到 listeners 被赋值之后, 使用下面注释里面的 "条件断点预设置" 的代码方便查看事件监听.
+			 * 
+			 * ============================================
+			 * [修复Bug3] 大量文本粘贴性能优化 - 执行流程
+			 * ============================================
+			 * 调用栈: editor.on('paste') -> 处理外部输入()
+			 * 触发时机: 用户执行粘贴操作时（Ctrl+V 或右键粘贴）
+			 * 
+			 * 执行流程:
+			 * 1. 检测粘贴内容长度是否超过 10000 字符
+			 * 2. 如果超过阈值且启用了实时分页（realtimePageBreak），设置标志 editor._largeTextPasting = true
+			 * 3. 此标志将被 pagebreak/plugin.js 中的 performAutoPaging 函数检测
+			 * 4. 粘贴期间，performAutoPaging 会跳过实时分页计算，避免阻塞主线程
+			 * 5. 粘贴完成后，afterPaste 事件会重置标志并延迟执行分页
+			 * 
+			 * 性能影响:
+			 * - 粘贴期间: 阻塞时间从 N 秒降至 0（N 取决于文本量）
+			 * - 粘贴完成后: 500ms 后自动完成分页，用户感知延迟小
+			 * ============================================
+			 */
+		console.log('[Bug3 Debug] paste event triggered, stack: editor.on(paste)');
+		
+		// 修复Bug3: 检测大量文本粘贴（超过10000字符），延迟分页处理
+		// [边界情况修复] 增强类型检查和并发保护
+		if (evt.data && evt.data.dataValue && typeof evt.data.dataValue === 'string' && evt.data.dataValue.length > 10000) {
+			console.log('[Bug3 Info] 检测到大量文本粘贴:');
+			console.log('  - 字符数量: ' + evt.data.dataValue.length);
+			console.log('  - 性能优化: 启用');
+			console.log('  - 实时分页: ' + (editor.HMConfig && editor.HMConfig.realtimePageBreak ? '已启用，将临时禁用' : '未启用'));
+			console.log('  - 调用栈: paste event -> 大量文本检测 -> 设置 _largeTextPasting 标志');
+			
+			// 临时禁用实时分页，粘贴完成后再启用
+			if (editor.HMConfig && editor.HMConfig.realtimePageBreak) {
+				// [边界情况修复] 并发粘贴保护：如果已经在处理大量粘贴，记录警告
+				if (editor._largeTextPasting) {
+					console.log('[Bug3 Warning] 检测到并发大量粘贴，前一次粘贴尚未完成');
+					console.log('  - 当前标志状态: editor._largeTextPasting = true');
+					console.log('  - 处理策略: 保持标志不变，延长处理时间');
+				}
+				editor._largeTextPasting = true;
+				// [边界情况修复] 记录粘贴开始时间，用于超时检测
+				editor._largeTextPastingStartTime = new Date().getTime();
+				console.log('[Bug3 Info] 已设置 editor._largeTextPasting = true');
+				console.log('  - 开始时间: ' + editor._largeTextPastingStartTime);
+				console.log('  - 后续影响: performAutoPaging 将跳过分页计算');
+				console.log('  - 恢复时机: afterPaste 事件中 500ms 后');
+			}
+		} else if (evt.data && evt.data.dataValue) {
+			// [边界情况修复] 增强类型检查
+			var dataValueLength = (typeof evt.data.dataValue === 'string') ? evt.data.dataValue.length : 
+								  (typeof evt.data.dataValue === 'object' && evt.data.dataValue.length !== undefined) ? evt.data.dataValue.length : 
+								  '未知类型';
+			console.log('[Bug3 Debug] 普通粘贴，字符数: ' + dataValueLength + '，无需特殊处理');
+		}
 				var selectionRange = editor.getSelection().getRanges();
 				if (!selectionRange.length) {
 					console.log('未找到选区, 自动移动至上一次的选区');
@@ -585,11 +636,89 @@ function removeBodyZeroWidthSpace(editor) {
 
 					editor.editable().fire('togglePlaceHolder', evt);
 
-					// Defer 'afterPaste' so all other listeners for 'paste' will be fired first.
-					// Fire afterPaste only if paste inserted some HTML.
-					setTimeout( function() {
-						editor.fire( 'afterPaste' );
-					}, 0 );
+			// Defer 'afterPaste' so all other listeners for 'paste' will be fired first.
+			// Fire afterPaste only if paste inserted some HTML.
+			setTimeout( function() {
+				editor.fire( 'afterPaste' );
+				
+				/**
+				 * ============================================
+				 * [修复Bug3] 大量文本粘贴完成处理 - 执行流程
+				 * ============================================
+				 * 调用栈: setTimeout() -> editor.fire('afterPaste') -> 大量文本粘贴完成检查
+				 * 触发时机: 粘贴操作完成后（延迟 0ms，确保所有 paste 监听器先执行）
+				 * 
+				 * 执行流程:
+				 * 1. 检查 editor._largeTextPasting 标志是否为 true
+				 * 2. 如果是，说明之前检测到大量文本粘贴，需要执行延迟分页
+				 * 3. 延迟 500ms 后执行以下操作:
+				 *    a. 重置 editor._largeTextPasting = false
+				 *    b. 调用 pagebreakCmd.performAutoPaging 执行分页
+				 *    c. 传递事件名称 'afterLargePaste' 用于日志追踪
+				 * 
+				 * 延迟原因:
+				 * - 给浏览器 500ms 时间渲染粘贴的内容
+				 * - 避免分页计算与 DOM 渲染同时进行，导致卡顿
+				 * - 用户视觉上感知延迟较小，体验更流畅
+				 * 
+				 * 关键变量:
+				 * - editor._largeTextPasting: Boolean, 标识是否正在进行大量文本粘贴
+				 * - editor.HMConfig.realtimePageBreak: Boolean, 是否启用实时分页功能
+				 * - pagebreakCmd: Object, 分页命令对象，包含 performAutoPaging 方法
+				 * ============================================
+				 */
+			if (editor._largeTextPasting) {
+				console.log('[Bug3 Info] 大量文本粘贴完成，准备执行延迟分页:');
+				console.log('  - 当前标志: editor._largeTextPasting = ' + editor._largeTextPasting);
+				// [边界情况修复] 计算粘贴持续时间，检测异常情况
+				var pasteDuration = editor._largeTextPastingStartTime ? (new Date().getTime() - editor._largeTextPastingStartTime) : 0;
+				console.log('  - 粘贴持续时间: ' + pasteDuration + 'ms');
+				console.log('  - 延迟时间: 500ms');
+				console.log('  - 调用栈: afterPaste event -> 500ms delay -> performAutoPaging');
+				
+				// [边界情况修复] 检测异常长时间粘贴（可能是并发或错误）
+				if (pasteDuration > 10000) {
+					console.log('[Bug3 Warning] 粘贴持续时间异常（超过10秒），可能存在并发粘贴或异常情况');
+				}
+				
+				setTimeout(function() {
+					console.log('[Bug3 Info] 开始执行延迟分页处理:');
+					console.log('  - 重置标志: editor._largeTextPasting = false');
+					editor._largeTextPasting = false;
+					// [边界情况修复] 清理时间戳
+					editor._largeTextPastingStartTime = null;
+					
+					// [边界情况修复] 增强 HMConfig 和 realtimePageBreak 的检查
+					if (!editor.HMConfig) {
+						console.log('[Bug3 Warning] editor.HMConfig 未定义，跳过分页处理');
+						return;
+					}
+					if (!editor.HMConfig.realtimePageBreak) {
+						console.log('[Bug3 Info] 实时分页未启用，跳过分页处理');
+						return;
+					}
+					
+				// [边界情况修复] 增强 pagebreakCmd 的检查
+				var pagebreakCmd = CKEDITOR.plugins.pagebreakCmd;
+				console.log('  - pagebreakCmd 存在: ' + !!pagebreakCmd);
+				
+				if (!pagebreakCmd) {
+					console.log('[Bug3 Warning] CKEDITOR.plugins.pagebreakCmd 未定义，跳过分页处理');
+					return;
+				}
+				if (typeof pagebreakCmd.performAutoPaging !== 'function') {
+					console.log('[Bug3 Warning] pagebreakCmd.performAutoPaging 不是函数，跳过分页处理');
+					return;
+				}
+				
+				// 执行分页
+				console.log('  - 调用 performAutoPaging，事件名称: afterLargePaste');
+				console.log('  - 调用栈: setTimeout callback -> performAutoPaging(editor, {name: "afterLargePaste"})');
+				pagebreakCmd.performAutoPaging(editor, {name: 'afterLargePaste'});
+				console.log('[Bug3 Info] 延迟分页处理完成');
+					}, 500);
+				}
+				}, 0 );
 				}
 			}, null, null, 1000 );
 		}

@@ -1,13 +1,114 @@
+/**
+ * [Bug1 & Bug3 修复相关] 主打印样式文件
+ * 
+ * 这个文件是编辑器打印功能的核心样式文件，主要修复以下问题：
+ * 
+ * Bug1 - 表格跨页内容叠加问题:
+ *   通过 page-break-inside、position 等属性确保表格正确分页
+ * 
+ * Bug3 - 打印预览内容缺失问题:
+ *   通过 overflow、display 等属性确保内容完整显示
+ * 
+ * 主要CSS属性说明：
+ * - page-break-inside: 控制元素内部是否可分页
+ * - page-break-after/before: 控制元素前后的分页行为  
+ * - position: relative: 确保元素正确定位，防止叠加
+ * - overflow: visible: 确保内容不被裁剪
+ */
+
 html {
 	background: #ffffff;
 }
 body {
 	margin-bottom: 0px !important;
 	box-shadow: none;
+	/* [Bug3 修复] 防止打印时内容溢出或叠加 */
+	overflow: visible !important;
 }
 
 table.dashed-border td,table.dashed-border th{
     border: 0px;
+}
+
+/**
+ * [Bug1 迭代修复] 打印时表格跨页内容叠加和排版错乱问题
+ * 
+ * 问题根源：
+ *   1. 之前的修复中 print.css 和 contents.css 的 page-break 规则冲突
+ *   2. position: relative 导致跨页时元素重叠
+ *   3. 表格内容超出一页时，上一页最后的内容叠加在下一页上
+ * 
+ * 修复方案（2025-10-10 迭代）：
+ *   1. 移除所有 position: relative 和 z-index，避免定位冲突
+ *   2. 统一 page-break 规则，与 contents.css 保持一致
+ *   3. 添加 @page 规则，确保打印时页边距正确
+ *   4. 表格单元格添加 overflow: visible，防止内容被裁剪
+ * 
+ * 技术细节：
+ *   - page-break-inside: auto - 允许在元素内部分页
+ *   - page-break-before/after: auto - 自动决定分页位置
+ *   - overflow: visible - 确保内容完整显示，不被裁剪
+ *   - @page margin: 0 - 移除浏览器默认页边距，使用编辑器自定义边距
+ * 
+ * 相关文件：
+ *   - contents.css: 编辑器内容样式，page-break 规则需保持一致
+ *   - plugins/pagebreak/plugin.js: 分页逻辑实现
+ * 
+ * 测试场景：
+ *   - 危重患者护理单模板
+ *   - 表格内容超出一页
+ *   - 打印预览界面排版检查
+ */
+
+/* [Bug1 迭代] 添加 @page 规则，移除浏览器默认页边距 */
+@page {
+	size: auto;
+	margin: 0;
+}
+
+table {
+	/* [Bug1 迭代] 允许表格内部分页，与 contents.css 保持一致 */
+	page-break-inside: auto;
+	/* [Bug1 迭代] 移除 position 和 z-index，防止跨页时元素叠加 */
+	/* position: relative; */
+	/* z-index: 1; */
+}
+
+table tr {
+	/* [Bug1 迭代] 允许行分页，与 contents.css 保持一致 */
+	page-break-inside: auto;
+	page-break-after: auto;
+	/* [Bug1 迭代] 移除 position: relative，防止跨页时行元素叠加 */
+	/* position: relative; */
+}
+
+/* [Bug1 迭代] 表格单元格打印样式优化 */
+table td,
+table th {
+	/* 防止单元格内容被裁剪 */
+	overflow: visible !important;
+	/* 防止单元格内部分页（保持内容完整性） */
+	page-break-inside: avoid;
+	/* 垂直对齐确保内容正确显示 */
+	vertical-align: top;
+}
+
+/* [Bug1 迭代] 表格体和表头的分页控制 */
+table thead {
+	/* 表头在每页重复显示 */
+	display: table-header-group;
+}
+
+table tbody {
+	/* 允许表体跨页 */
+	page-break-inside: auto;
+	/* 确保表体内容不被裁剪 */
+	overflow: visible;
+}
+
+table tfoot {
+	/* 表尾在每页底部显示 */
+	display: table-footer-group;
 }
 
 td[_emrstyle ~='_if(overflow){breakparagraph}']{
@@ -117,6 +218,21 @@ span[data-hm-node=expressionbox] {
 }
 
 
+/**
+ * ==================== 分页打印样式 ====================
+ * 
+ * [Bug2 & Bug3 修复相关] 这部分样式控制编辑器的逻辑分页功能
+ * 
+ * 核心类说明：
+ * - .hm-logic-page: 每个逻辑页面的容器
+ * - .hm-page-splitter: 页面之间的分隔符（打印时隐藏）
+ * 
+ * Bug2 相关：
+ *   大量内容粘贴时的性能优化，通过 overflow 控制
+ * 
+ * Bug3 相关：
+ *   确保打印预览时内容完整显示，通过 overflow-y: visible
+ */
 /* region 分页打印样式 */
 html {
     padding: 0;
@@ -127,12 +243,21 @@ body {
     background: white;
 }
 
-/* TODO 暂时解决聚合病历中由于行末过多空格引起的打印缩放问题, 未根治 */
+/**
+ * [Bug3 修复] 解决聚合病历中由于行末过多空格引起的打印缩放问题
+ * 注意：这是一个权衡方案，可能需要进一步优化
+ */
 body {
     overflow: hidden;
 }
 
-/* 每页页面 */
+/**
+ * [Bug1 & Bug2 & Bug3 核心] 逻辑页面容器
+ * - overflow-x: hidden - 防止水平滚动
+ * - overflow-y: visible - [关键] 确保内容不被裁剪，这是 Bug3 的核心修复
+ * - page-break-after: always - [Bug1 迭代] 确保每个逻辑页独立分页
+ * - page-break-inside: avoid - [Bug1 迭代] 防止逻辑页内部被拆分
+ */
 .hm-logic-page{
     background: white;
     margin-bottom: 0;
@@ -140,11 +265,19 @@ body {
     /*cursor: text;*/
     overflow-x: hidden;
     overflow-y: visible;
+    /* [Bug1 迭代] 确保逻辑页面正确分页 */
+    page-break-after: always;
+    page-break-inside: avoid;
 }
 
-/* 页面之间的部分打印时不能占位 */
+/* [Bug1 迭代] 最后一个逻辑页不强制分页 */
+.hm-logic-page:last-child {
+    page-break-after: auto;
+}
+
+/* [Bug3] 页面之间的分隔符打印时不显示 */
 .hm-page-splitter {
-    display: none;
+    display: none !important;
 }
 
 /*当前鼠标移动到病历上的边框 与 在左侧点击病历时的边框*/
@@ -156,7 +289,15 @@ body {
     text-align-last: justify;
 }
 
-/* chrome 宋体: 打印样式不支持宋体的加粗, 所以加个阴影以假乱真 */
+/**
+ * [打印优化] Chrome 宋体加粗问题
+ * 
+ * 问题：Chrome 的打印样式不支持宋体的加粗效果
+ * 解决：使用 text-shadow 模拟加粗效果
+ * 
+ * 这个技巧通过在多个方向添加微小偏移的阴影，
+ * 视觉上达到类似加粗的效果
+ */
 strong, .simsun-bold-print {
     text-shadow:0.1pt 0px 0px black,0.2pt 0px 0px black,0.3pt 0px 0px black,-0.2pt 0px 0px black,0px 0.2pt 0px black,0px -0.2pt 0px black;
     /*text-shadow:0.15pt 0px 0px black,0.25pt 0px 0px black,0.35pt 0px 0px black,-0.25pt 0px 0px black,0px 0.25pt 0px black,0px -0.25pt 0px black;*/

@@ -935,9 +935,13 @@ em strong{
     /* 这个 margin-bottom 要跟 hm-page-splitter 一致*/
     margin-bottom: 30px;
     page-break-after: always;
-    box-shadow: 0 0 6px 6px #0000001a;
+    /* 修复Bug2: 使用轻量级边框替代box-shadow，减少渲染开销，解决分页卡顿和黑边问题 */
+    border: 1px solid #e0e0e0;
     position: relative;
     /*overflow: hidden;*/
+    /* 启用GPU加速优化渲染性能 */
+    transform: translateZ(0);
+    will-change: auto;
 }
 /* 分页符所在位置的元素 */
 .hm-page-splitter {
@@ -1044,9 +1048,12 @@ em strong{
     [_print_color=red]{
         color: red !important;
     }
-    .hm-page-break{
-        page-break-after:always;
-    }
+/* [Bug1 迭代] 强制分页标记 */
+.hm-page-break{
+    page-break-after:always;
+    /* 确保分页后的内容不叠加 */
+    clear: both;
+}
     span.fa-check-square-o[data-hm-node=checkbox][_color=red]{
         color: red !important;
     }
