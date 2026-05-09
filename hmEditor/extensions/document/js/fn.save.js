@@ -52,7 +52,12 @@ commonHM.component['documentModel'].fn({
         var meta_json = $body.getAttribute('meta_json');
         var papersize = paperSize || $(widget).attr('data-hm-subpapersize');
         var meta_json = meta_json || $(widget).attr('meta_json');
-        var style = $(widget).attr('data-hm-substyle');
+        // data-hm-substyle：子文档纸张等；style：容器样式对话框写在 .emrWidget-content 上的内联样式（仅用 innerHTML 会丢失外层 style，需并入 body）
+        var subStyle = $(widget).attr('data-hm-substyle') || '';
+        var containerInlineStyle = $(widget).attr('style') || '';
+        var style = [subStyle, containerInlineStyle].filter(function (s) {
+            return s && String(s).trim();
+        }).join(';');
 
         // 用克隆构建 HTML，并移除 AI 生成未保留内容（.r-model-gen），获取的 html 不包含未确认的草稿
         var $widgetForHtml = $(widget).clone(true);

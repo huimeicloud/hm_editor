@@ -152,7 +152,19 @@ commonHM.component['documentModel'].fn({
      */
     insertImageAtCursor: function(imageData) {
         var _t = this;
-        const imageHtml = `<span><img src="${imageData.src}" ${imageData.width ? `width="${imageData.width}"` : ''} ${imageData.height ? `height="${imageData.height}"` : ''} /></span>`;
+        // 将 width/height 设置到 style 中，而非 img 的 HTML 属性，确保获取数据元内容时 style 中包含宽高 (AIED-342)
+        var styleParts = [];
+        if (imageData.width) {
+            styleParts.push('width:' + (typeof imageData.width === 'number' ? imageData.width + 'px' : imageData.width));
+        }
+        if (imageData.height) {
+            styleParts.push('height:' + (typeof imageData.height === 'number' ? imageData.height + 'px' : imageData.height));
+        }
+        if (imageData.style) {
+            styleParts.push(imageData.style);
+        }
+        var styleStr = styleParts.length ? ' style="' + styleParts.join(';') + '"' : '';
+        var imageHtml = '<span><img src="' + imageData.src + '"' + styleStr + ' /></span>';
         _t.insertContentAtCursor(imageHtml);
     },
     /**

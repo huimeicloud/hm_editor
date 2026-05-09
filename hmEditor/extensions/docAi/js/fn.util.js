@@ -372,26 +372,36 @@ commonHM.component['hmAi'].fnSub("utils", {
      */
     focusInputFirst: function (target) {
         var editor = this.parent.editor;
+        // 勿用带 /g 的全局 HMConfig.zeroWidthChar 做 test（lastIndex 会导致结果不稳定）
+        var zwLooksEmpty = function (txt) {
+            return /^[\u200B-\u200D\uFEFF]+$/.test(String(txt || ''));
+        };
         var targetElement = new CKEDITOR.dom.element(target);
         var parentSpan = targetElement.getParent();
         var prevNode = targetElement.getPrevious();
         var range = editor.createRange();
         var selection = editor.getSelection();
 
-        if (prevNode && prevNode.type === CKEDITOR.NODE_TEXT) {
-            range.setStartAt(prevNode, CKEDITOR.POSITION_AFTER_END);
-        } else if (!prevNode || !zeroWidthChar.test(prevNode.getText())) {
-            var zeroWidthNode = new CKEDITOR.dom.text('\u200B');
-            zeroWidthNode.insertBefore(targetElement);
-            range.setStartAt(parentSpan, CKEDITOR.POSITION_AFTER_START);
+        if (!targetElement.$ || !parentSpan || !parentSpan.$) {
+            return;
         }
 
-        // 将光标定位到span的起始位置
-        range.collapse(true);
+        // 前驱为文本：贴在文本末尾；无前驱或前驱非「仅零宽」：插入 ZWSP 后置于草稿块外侧起始（图片等块级前驱走此分支）
+        // 前驱为非文本且 getText 仅零宽：原逻辑两个分支都不进，range 未初始化会导致 collapse 报错
+        if (prevNode && prevNode.type === CKEDITOR.NODE_TEXT) {
+            range.setStartAt(prevNode, CKEDITOR.POSITION_AFTER_END);
+            range.collapse(true);
+        } else if (!prevNode || !zwLooksEmpty(prevNode.getText ? prevNode.getText() : '')) {
+            var zeroWidthNode = new CKEDITOR.dom.text('\u200B');
+            zeroWidthNode.insertBefore(targetElement);
+            range.moveToPosition(targetElement, CKEDITOR.POSITION_BEFORE_START);
+        } else {
+            range.moveToPosition(targetElement, CKEDITOR.POSITION_BEFORE_START);
+        }
+
         selection.removeAllRanges();
         selection.selectRanges([range]);
 
-        // 聚焦到span
         parentSpan.focus();
     },
     /**

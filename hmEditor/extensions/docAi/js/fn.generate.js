@@ -23,6 +23,10 @@ commonHM.component['hmAi'].fnSub("generator", {
         _t.batchProcessedCount = 0;
         _t.batchTotalCount = 0;
         _t.batchProcessing = false;
+        /** 随手病历：点击正文时的外部回调（由 showAiDraft 注册） */
+        _t._casualDraftTextClick = null;
+        /** 当前保留/弃用弹窗关联的草稿根节点（.r-model-gen），用于区分 AI / 随手 */
+        _t._popupActiveDraftEl = null;
         $(window).resize(function () {
             _t.setPosition();
         });
@@ -153,7 +157,12 @@ commonHM.component['hmAi'].fnSub("generator", {
                     if(currText.length%10==0 && _t.popup){
                         _t.popup.setPostion(2,-80);
                     }
-                    _t.insertAiResult(JTar,{className:'r-model-gen',text:currText,uuid:uuid});
+                    _t.insertAiResult(JTar, {
+                        className: 'r-model-gen',
+                        text: currText,
+                        uuid: uuid,
+                        casualDraft: false
+                    });
                 } else {
                     if (_t.fillInervalId) {
                         clearInterval(_t.fillInervalId);
@@ -196,19 +205,21 @@ commonHM.component['hmAi'].fnSub("generator", {
             return false;
         }else{
             _t.closePopup();
-            _t.popupProgress(jTar[0],2);
+            _t.popupProgress(jTar[0],2, relDom);
         }
     },
     /**
      * 弹出进度条（保留/弃用）
      * @param {*} relDom - 关联的输入区域 DOM
      * @param {number} [flag] - 1=进行中，2=已完成，用于初始标题与按钮状态
+     * @param {HTMLElement} [activeDraftEl] - 当前操作的草稿根节点（.r-model-gen），用于区分 AI / 随手
      */
-    popupProgress:function(relDom,flag){
+    popupProgress:function(relDom,flag,activeDraftEl){
         var _t = this,editor = this.parent.editor;
         if( _t.popup){
             return;
         }
+        _t._popupActiveDraftEl = activeDraftEl != null ? activeDraftEl : null;
         var $body =_t.$body= $(editor.document.getBody().$);
         _t.popup=$(relDom).popupMessage({
             message: '',
@@ -220,14 +231,17 @@ commonHM.component['hmAi'].fnSub("generator", {
          });
          _t.popup.container.attr('contenteditable',false).find('.sk-popup-container').renderTpl($docAi_tpl['docAi/tpl/generate'],{});
          _t.popup.setPostion(2,-80);
+         if(activeDraftEl){
+            _t.resetPopupPosition(activeDraftEl,$body );
+         } 
          _t.manageProgress(flag||1);
          _t.popup.container.on('click','.btn-stop',function(){
             _t.stopGenerate();
         }).on('click','.btn-confirm',function(){ 
-            _t.accpetAiResult(_t.popup.relEl[0],'r-model-gen');
+            _t.accpetAiResult(_t.popup.relEl[0],'r-model-gen', undefined, _t._popupActiveDraftEl);
             _t.closePopup();
         }).on('click','.btn-cancel',function(){
-            _t.ignoreAiResult(_t.popup.relEl[0]);
+            _t.ignoreAiResult(_t.popup.relEl[0], 'r-model-gen', _t._popupActiveDraftEl);
             _t.closePopup();
         }).on('click',function(){
             return false;
@@ -248,30 +262,108 @@ commonHM.component['hmAi'].fnSub("generator", {
     //    _t.closePopup();
     },
     /**
-     * 弃用 AI 结果：移除 r-model-gen 整块并恢复空白占位
+     * 解析当前要操作的单个草稿根节点（优先 activeDraftEl / 弹窗关联节点）
+     * @param {jQuery} $target - .new-textbox-content
+     * @param {String} className
+     * @param {*} [activeDraftEl]
+     * @returns {jQuery}
      */
-    ignoreAiResult:function(target,uucode){
+    _resolveDraftBlock: function ($target, className, activeDraftEl) {
         var _t = this;
-        $(target).find('.r-model-gen').remove();
-        _t.restoreBlankContent(target);
+        var containerEl = $target[0];
+        if (!containerEl) return $();
+        var resolved = activeDraftEl != null ? activeDraftEl : _t._popupActiveDraftEl;
+        var $el = $();
+        if (resolved && $.contains(containerEl, resolved)) {
+            $el = $(resolved).closest('.' + className);
+            if (!$el.length) {
+                $el = $(resolved).filter('.' + className);
+            }
+        }
+        if (!$el.length) {
+            $el = $target.find('.' + className).not('.r-model-gen-casual').first();
+        }
+        if (!$el.length) {
+            $el = $target.find('.' + className + '.r-model-gen-casual').first();
+        }
+        return $el;
+    },
+    /**
+     * 弃用 AI 结果：移除对应草稿块；未指定时按 AI → 随手 顺序取首个
+     */
+    ignoreAiResult:function(target,uucode,activeDraftEl){
+        var _t = this;
+        var $target = $(target);
+        var containerEl = $target[0];
+        if (!containerEl) return;
+        var $block = _t._resolveDraftBlock($target, 'r-model-gen', activeDraftEl);
+        if ($block.length) {
+            $block.remove();
+        }
+        _t._popupActiveDraftEl = null;
+        _t.restoreBlankContent(containerEl);
     },
     /**
      * 使用 AI 结果：用 r-model-gen-text 的正文替换整块 r-model-gen，保留/弃用按钮不再展示
      * @param {*} from - 'generateDocument' 时仅替换内容不移动光标，用于批量生成
+     * @param {HTMLElement} [activeDraftEl] - 指定草稿根节点（与 confirmAiDraft 逐条传入一致）
      */
-    accpetAiResult:function(target,className,from){
+    accpetAiResult:function(target,className,from,activeDraftEl){
         var _t = this;
         var editor = this.parent.editor;
-        var aiResult = $(target).find('.'+className);
+        var $target = $(target);
+        var containerEl = $target[0];
+        if (!containerEl) return;
+        var aiResult = _t._resolveDraftBlock($target, className, activeDraftEl);
         if (!aiResult.length) return;
-        var textContent = aiResult.find('.r-model-gen-text').contents();
-        aiResult.replaceWith(textContent);
-        if(from=='generateDocument'){
+        var isCasual = aiResult.hasClass('r-model-gen-casual');
+        if (from === 'generateDocument') {
+            var textContentGd = aiResult.find('.r-model-gen-text').contents();
+            if (aiResult.hasClass('r-model-gen-casual')) {
+                aiResult.replaceWith($('<span>').addClass('r-model-casual-text').append(textContentGd));
+            } else {
+                aiResult.replaceWith(textContentGd);
+            }
+            _t._popupActiveDraftEl = null;
             return;
         }
+        if (isCasual) {
+            var textCasual = aiResult.find('.r-model-gen-text').contents();
+            aiResult.replaceWith($('<span>').addClass('r-model-casual-text').append(textCasual));
+        } else {
+            // AI 草稿：清空正文并写入采纳的 AI；已采纳随手（.r-model-casual-text）按相对 AI 块的前后顺序保留；未确认随手块保留在末尾
+            var $cloned = aiResult.find('.r-model-gen-text').contents().clone(true);
+            var aiEl = aiResult[0];
+            var $beforeCasualText = $();
+            var $afterCasualText = $();
+            var prec = typeof Node !== 'undefined' ? Node.DOCUMENT_POSITION_PRECEDING : 2;
+            var foll = typeof Node !== 'undefined' ? Node.DOCUMENT_POSITION_FOLLOWING : 4;
+            $target.find('.r-model-casual-text').each(function () {
+                var el = this;
+                if (!aiEl || el === aiEl || ($.contains && $.contains(aiEl, el))) return;
+                var pos = aiEl.compareDocumentPosition(el);
+                if (pos & prec) {
+                    $beforeCasualText = $beforeCasualText.add(el);
+                } else if (pos & foll) {
+                    $afterCasualText = $afterCasualText.add(el);
+                }
+            });
+            $beforeCasualText.detach();
+            $afterCasualText.detach();
+            var $casuals = $target.find('.r-model-gen-casual').detach();
+            $target.empty();
+            $target.append($beforeCasualText);
+            $target.append($cloned);
+            $target.append($afterCasualText);
+            $target.append($casuals);
+            if ($.trim($target.text() || '')) {
+                $target.removeAttr('_placeholdertext');
+            }
+        }
+        _t._popupActiveDraftEl = null;
         // 非批量时：将光标移到该节点末尾
         var range = editor.createRange();
-        var element = new CKEDITOR.dom.element(target);
+        var element = new CKEDITOR.dom.element($target[0]);
         range.selectNodeContents(element);
         range.collapse(false); // 折叠到末尾
 
@@ -280,23 +372,109 @@ commonHM.component['hmAi'].fnSub("generator", {
     },
     /**
      * 插入 AI 临时结果到目标容器
-     * 结构：r-model-gen > r-model-gen-text(正文) + r-model-gen-btn(「AI内容，请确认」)，单节点生成时按钮带 hidden 类，草稿时直接显示
+     * 结构：r-model-gen + r-model-gen-normal|r-model-gen-casual > r-model-gen-text + r-model-gen-btn
      * @param {jQuery} JTar - 目标输入框容器
-     * @param {Object} options - { className: 容器类名, text: 正文内容, uuid: 唯一标识, showBtn: 是否显示按钮（草稿为 true，单节点不传为 false） }
+     * @param {Object} options - className, text, uuid, showBtn, casualDraft, sourceId（随手时为当前 data 项的 sourceId）
+     * @param {String} [options.draftBtnText] 自定义草稿确认按钮文案；非空时 AI 草稿与随手病历均使用该文案，否则沿用各模式默认
+     *
+     * 实现要点：
+     * - 草稿根节点类名：r-model-gen + r-model-gen-normal | r-model-gen-casual
+     * - 子结构：r-model-gen-text（正文）、r-model-gen-btn（按钮，含隐藏态 class）
+     * - 新建与更新分支同步 class、按钮文案（随手「随手记录，请确认」）、扩展字段
+     * - 随手模式：写入 data-hm-casual-source-id；同一容器内相同 sourceId 复用并更新该块，不同 sourceId 追加
+     * - AI 模式：移除随手扩展字段
+     *
+     * 验收要点：
+     * - 方案 §3.4；打印/导出仍可统一按 .r-model-gen 处理（§3.6）
      */
     insertAiResult:function(JTar,options){
-        var container = JTar.find('.'+options.className);
-        if(container.length){
-            container.find('.r-model-gen-text').html(options.text);
+        // 兼容唤醒态占位：checkDataSource 会写入 .r-model-gen-remark（ctrl+/ 唤醒AI）
+        // 追加/覆盖草稿前统一移除，避免占位文案与草稿正文并存
+        JTar.find('.r-model-gen-remark').remove();
+        // 占位态：追加草稿/随手前须清空占位内容并去掉 _placeholdertext，避免与真实草稿并存
+        if (JTar.attr('_placeholdertext') === 'true') {
+            JTar.empty();
+            JTar.removeAttr('_placeholdertext');
+        }
+        // 判断是否为随手模式
+        var casual = !!options.casualDraft;
+        // 根据随手模式确定类名和按钮文案（draftBtnText 非空时草稿/随手均使用该文案）
+        var typeClass = casual ? 'r-model-gen-casual' : 'r-model-gen-normal';
+        var draftBtnTrim = options.draftBtnText != null && String(options.draftBtnText).trim() !== ''
+            ? String(options.draftBtnText).trim()
+            : '';
+        var btnLabel = draftBtnTrim || (casual ? '随手记录，请确认' : 'AI内容，请确认');
+        var syncCasualSource = function ($c) {
+            if (casual && options.sourceId !== undefined && options.sourceId !== null && options.sourceId !== '') {
+                $c.attr('data-hm-casual-source-id', String(options.sourceId));
+                $c.data('hmCasualSourceId', options.sourceId);
+            } else {
+                $c.removeAttr('data-hm-casual-source-id');
+                $c.removeData('hmCasualSourceId');
+            }
+        };
+        var updateGenBlock = function ($block) {
+            $block.find('.r-model-gen-text').html(options.text);
+            if (!$block.hasClass(typeClass)) {
+                $block.removeClass('r-model-gen-normal r-model-gen-casual').addClass(typeClass);
+            }
+            syncCasualSource($block);
+            var $btn = $block.find('.r-model-gen-btn');
+            if ($btn.length && $btn.text() !== btnLabel) {
+                $btn.text(btnLabel);
+            }
+        };
+        // 随手：相同 sourceId 替换（更新）已有块；不同 sourceId 在下方分支追加
+        if (casual && !options.forceNew) {
+            var sidRaw = options.sourceId;
+            if (sidRaw !== undefined && sidRaw !== null && sidRaw !== '') {
+                var sidKey = String(sidRaw);
+                var $sameSource = JTar.find('.' + options.className + '.r-model-gen-casual').filter(function () {
+                    var $el = $(this);
+                    var attr = $el.attr('data-hm-casual-source-id'); 
+                    if (attr !== undefined && attr !== null && String(attr) === sidKey) {
+                        return true;
+                    }
+                    var dj = $el.data('hmCasualSourceId');
+                    return dj !== undefined && dj !== null && String(dj) === sidKey;
+                });
+                if ($sameSource.length) {
+                    var $keep = $sameSource.first();
+                    if ($sameSource.length > 1) {
+                        $sameSource.slice(1).remove();
+                    }
+                    updateGenBlock($keep);
+                    return;
+                }
+            }
+        }
+        // AI 草稿与随手草稿共用 .r-model-gen，匹配时需区分，避免更新到错误的块
+        var container = JTar.find('.' + options.className).not('.r-model-gen-casual');
+        // forceNew=true 时强制新建节点，不复用已有 AI 草稿
+        if(container.length && !options.forceNew && !casual){
+            // 已存在 AI 草稿时仅保留首条并更新，避免重复追加多条
+            var $first = container.first();
+            if (container.length > 1) {
+                container.slice(1).remove();
+            }
+            updateGenBlock($first);
         }else{
             var btnClass = 'r-model-gen-btn' + (options.showBtn ? '' : ' r-model-gen-btn-hidden');
-            container = $('<span>').attr({
-                'class':options.className,
-                'uucode':options.uuid
-            }).append(
+            var fullClass = options.className + ' ' + typeClass;
+            var spanAttrs = {
+                'class': fullClass,
+                'uucode': options.uuid
+            };
+            if (casual && options.sourceId !== undefined && options.sourceId !== null && options.sourceId !== '') {
+                spanAttrs['data-hm-casual-source-id'] = String(options.sourceId);
+            }
+            container = $('<span>').attr(spanAttrs).append(
                 $('<span>').addClass('r-model-gen-text').html(options.text),
-                $('<span>').addClass(btnClass).text('AI内容，请确认')
+                $('<span>').addClass(btnClass).text(btnLabel)
             );
+            if (casual && options.sourceId !== undefined && options.sourceId !== null && options.sourceId !== '') {
+                container.data('hmCasualSourceId', options.sourceId);
+            }
             JTar.removeAttr('_placeholdertext').append(container);
         }
     },
@@ -356,6 +534,7 @@ commonHM.component['hmAi'].fnSub("generator", {
             _t.popup.remove();
             _t.popup = null;
         }
+        _t._popupActiveDraftEl = null;
     },
     /**
      * 病历生成 - 获取当前widget中可AI生成的数据元节点并进行批量生成
@@ -495,24 +674,56 @@ commonHM.component['hmAi'].fnSub("generator", {
     },
 
     /**
+     * 随手病历：data 数组单项是否包含有效 sourceId（与 showAiDraft 的 dataList 参考结构一致）
+     * @param {*} dataItem
+     * @returns {boolean}
+     */
+    _isValidCasualSourceId: function (dataItem) {
+        if (!dataItem || !Object.prototype.hasOwnProperty.call(dataItem, 'sourceId')) return false;
+        var sid = dataItem.sourceId;
+        if (sid === null || sid === undefined) return false;
+        if (typeof sid === 'number') return !isNaN(sid);
+        if (typeof sid === 'string') return $.trim(sid) !== '';
+        return true;
+    },
+
+    /**
      * 显示AI草稿内容（支持多份病历）
      * 与单节点生成保持一致：在对应数据元的 .new-textbox-content 内插入 r-model-gen 结构（正文 +「AI内容，请确认」），点击后复用单节点弹框与保留/弃用逻辑
-     * @param {Array} dataList 内容列表，每项格式同 setDocData
-     * @param {Number} displayType 展示方式：0-覆盖（先清空原内容再展示），1-追加（默认）
-     * @param {String} dataList[].code 文档唯一编号
-     * @param {Array} dataList[].data 数据元列表
-     * @param {String} dataList[].data[].keyCode 数据元编码
-     * @param {String} dataList[].data[].keyName 数据元名称
-     * @param {String|String[]} dataList[].data[].keyValue 数据元内容
+     * @param {Object} opts
+     * @param {Array} opts.dataList 内容列表，每项格式同 setDocData（已由 openApi 规范为数组）
+     * @param {Number} [opts.displayType] 展示方式：0-覆盖（先清空原内容再展示），1-追加（默认）
+     * @param {Boolean} [opts.casualDraft] 是否为随手病历：true 时增加随手样式与文案，正文点击走 onCasualTextClick，按钮点击打开保留/弃用弹框
+     * @param {String} [opts.draftBtnText] 自定义草稿确认按钮文案；传值且非空时 AI 草稿与随手病历均使用该文案，否则沿用各模式默认
+     * @param {Function} [opts.onCasualTextClick] 随手病历正文点击回调 function (nativeEvent, $rModelGen, sourceId)；sourceId 来自该块对应 data 项
+     *
+     * 实现要点：
+     * - displayType === 0 时覆盖「原文」与 AI 草稿（.r-model-gen-normal），已追加的随手块 .r-model-gen-casual 保留（同次插入的 sourceId 会从保留集中剔除以免重复）；追加时 AI 草稿复用首条并更新，随手同 sourceId 替换块、不同 sourceId 追加
+     * - casualDraft / onCasualTextClick 注册 _casualDraftTextClick（单例，最后一次为准）
+     * - 跳过 TABLE_ 前缀 keyCode（表格数据元不处理）
+     * - 随手模式下校验 sourceId 有效性（_isValidCasualSourceId），无效项 warn 并跳过
+     *
+     * 验收要点：
+     * - 方案 §3.3、§5.1；与需求 §3.2、§3.3 对齐
      */
-    showAiDraft: function (dataList, displayType) {
+    showAiDraft: function (opts) {
         var _t = this;
         var utils = _t.parent.utils;
 
+        // 关闭已有弹框
         _t.closePopup();
 
+        // 校验 opts 对象
+        if (!opts || typeof opts !== 'object') return;
+        var dataList = opts.dataList;
+        // 校验 dataList 数组
         if (!dataList || !Array.isArray(dataList) || dataList.length === 0) return;
-        displayType = displayType === 0 ? 0 : 1;
+        // 解析参数：displayType、casualDraft、onCasualTextClick
+        var displayType = opts.displayType === 0 ? 0 : 1;
+        var isCasual = !!opts.casualDraft;
+        var onCasualTextClick = opts.onCasualTextClick;
+        // 注册随手回调（单例，最后一次为准）
+        _t._casualDraftTextClick = isCasual && typeof onCasualTextClick === 'function' ? onCasualTextClick : null;
 
         var editor = _t.parent.editor;
         if (!editor || !editor.document || !editor.document.$) {
@@ -530,26 +741,56 @@ commonHM.component['hmAi'].fnSub("generator", {
                 if (!dataItem.keyCode && !dataItem.keyName) return;
                 if (dataItem.keyCode && dataItem.keyCode.indexOf('TABLE_') === 0) return;
 
+                if (isCasual && !_t._isValidCasualSourceId(dataItem)) {
+                    console.warn(
+                        'showAiDraft: 随手病历下每条 data 须含有效 sourceId（见 dataList 结构参考），已跳过：',
+                        dataItem.keyCode || dataItem.keyName || dataItem
+                    );
+                    return;
+                }
+
                 var text = _t._normalizeKeyValue(dataItem.keyValue);
 
                 $nodes.each(function () {
                     var $content = _t._getAiDraftContentBox($(this), dataItem);
                     if (!$content) return;
 
-                    var $existingGen = $content.find('.r-model-gen');
+                    var $preservedCasual = $();
                     if (displayType === 0) {
-                        $existingGen.remove();
+                        // 覆盖模式：只清原文与 AI 草稿，保留已追加的随手块
+                        $preservedCasual = $content.find('.r-model-gen-casual').detach();
                         $content.removeAttr('_placeholdertext').empty();
-                    } else if ($existingGen.length > 0) {
-                        $existingGen.remove();
                     }
-
                     _t.insertAiResult($content, {
                         className: 'r-model-gen',
                         text: text,
                         uuid: utils.getUUId(),
-                        showBtn: true
+                        showBtn: true,
+                        casualDraft: isCasual,
+                        sourceId: isCasual ? dataItem.sourceId : undefined,
+                        draftBtnText: opts.draftBtnText
                     });
+                    if (displayType === 0 && $preservedCasual.length) {
+                        var $toAppend = $preservedCasual;
+                        if (isCasual && _t._isValidCasualSourceId(dataItem)) {
+                            var keepSid = String(dataItem.sourceId);
+                            $toAppend = $preservedCasual.filter(function () {
+                                var $el = $(this);
+                                var a = $el.attr('data-hm-casual-source-id');
+                                if (a !== undefined && a !== null && String(a) === keepSid) {
+                                    return false;
+                                }
+                                var dj = $el.data('hmCasualSourceId');
+                                if (dj !== undefined && dj !== null && String(dj) === keepSid) {
+                                    return false;
+                                }
+                                return true;
+                            });
+                        }
+                        if ($toAppend.length) {
+                            $content.append($toAppend);
+                        }
+                    }
                 });
             });
         });
@@ -588,11 +829,12 @@ commonHM.component['hmAi'].fnSub("generator", {
      */
     confirmAiDraft: function (keyList) {
         var _t = this;
+        // 关闭已有弹框
         _t.closePopup(); // 关闭进度弹框
         var $fileds = _t._getAiDraftFileds(keyList); // 按 keyList 获取待确认的 .r-model-gen 草稿节点（不传则全部）
         $fileds.each(function () {
             var target = $(this).closest('.new-textbox-content')[0];
-            if (target) _t.accpetAiResult(target, 'r-model-gen'); // 用 r-model-gen-text 正文替换整块 r-model-gen
+            if (target) _t.accpetAiResult(target, 'r-model-gen', undefined, this);
         });
     },
     /**
@@ -601,11 +843,69 @@ commonHM.component['hmAi'].fnSub("generator", {
      */
     cancelAiDraft: function (keyList) {
         var _t = this;
+        // 关闭已有弹框
         _t.closePopup();
         var $fileds = _t._getAiDraftFileds(keyList);
         $fileds.each(function () {
             var target = $(this).closest('.new-textbox-content')[0];
-            if (target) _t.ignoreAiResult(target, 'r-model-gen');
+            if (target) _t.ignoreAiResult(target, 'r-model-gen', this);
         });
-    }
+    },
+     /**
+     * 重置弹窗位置
+     */
+    resetPopupPosition: function (activeDraftEl,$body ) {
+        var _t = this;
+        if (!_t.popup) {
+            return;
+        }
+        var container = _t.popup.container;
+        var relEl = activeDraftEl;
+        var relElBtn = $(relEl).find('.r-model-gen-btn');
+        var pos={
+            left: relEl.offsetLeft,
+            top: relEl.offsetTop
+        };
+        var btnPos = {
+            left: relElBtn[0].offsetLeft,
+            top: relElBtn[0].offsetTop
+        }; // 获取btnPos 的位置
+        var bodyW = $body.width();
+
+        var h = parseFloat($(relEl).outerHeight()),
+            cw = parseFloat(container.outerWidth());
+
+        var icon = container.find('.sk-popup-icon').addClass('sk-popup-icon-' + _t.popup.type);
+        var icw = icon.outerWidth();
+        var basWMar = cw / 2;
+
+        var itemPos, iconPos;  
+        var _left =  parseFloat(btnPos.left);
+        // 先判断按钮位置
+        // 如果按钮在body的右侧或者在body的左侧且在弹窗的右侧
+        if(btnPos.left > bodyW/2 || (btnPos.left < bodyW/2 && btnPos.left > cw/2)){
+            _left = _left - cw/2;
+            if(btnPos.left > bodyW/2){
+                _left= bodyW - btnPos.left > cw/2 ? _left : bodyW - cw;
+            } 
+        }else if(btnPos.left + relElBtn.width() < cw/2 ){ // 按钮在弹框左侧且在body的左侧
+            var diffLeft = cw/2 - (btnPos.left + relElBtn.width()); // 计算按钮与弹框左侧的距离
+            _left = 0; // 如果按钮与弹框左侧的距离大于body的宽度，则将按钮位置设置为0
+            if($body.offset().left > diffLeft){
+                _left = - diffLeft; // 如果按钮与弹框左侧的距离小于body的宽度，则将按钮位置设置为负的距离
+            }
+        }
+
+        itemPos = {
+            left: _left ,
+            top: parseFloat(pos.top) + h + 6
+        };
+        iconPos = {
+            left: basWMar - icw / 2,
+            top: -9
+        };
+        container.css(itemPos);
+
+        icon.css(iconPos);
+    },
 });

@@ -48,11 +48,18 @@
         color: #FB7F0C;
     }
 }
+// =============================================================================
+// Task 05: AI 草稿子类型样式
+// 文档：docs/03-development/task-05-ai-less-子类型样式 - 前端.md
+// =============================================================================
+
+/* AI 草稿根节点：支持随手病历与 AI 草稿两种子类型 */
 .r-model-gen{
     color: #bbb;
     background-color: #fffaf0;
     margin: 0 4px;
     cursor: pointer;
+    /* AI 草稿默认竖条（含仅含 .r-model-gen 的历史节点）—— 蓝色竖条 */
     &::before {
         content: '';
         display: inline-block;
@@ -61,7 +68,29 @@
         border-radius: 2px;
         margin: 0 8px;
         background: #1677FF;
-    } 
+    }
+    /* 显式 AI 草稿，与 .r-model-gen 默认条一致 */
+    &.r-model-gen-normal::before {
+        content: '';
+        display: inline-block;
+        width: 4px;
+        height: 12px;
+        border-radius: 2px;
+        margin: 0 8px;
+        background: #1677FF;
+    }
+    /* 随手记录：前置小喇叭图标（SVG data URI）—— 与需求§4 一致 */
+    &.r-model-gen-casual::before {
+        content: '';
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 0;
+        margin: 0 6px;
+        vertical-align: -2px;
+        background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%231677FF' d='M3 9v6h4l5 4V5L7 9H3zm13.5 3a4.5 4.5 0 0 1-2.5 4.03V7.97A4.5 4.5 0 0 1 16.5 12zM14 3.23v2.06A7 7 0 0 1 21 12a7 7 0 0 1-7 6.71v2.06A9 9 0 0 0 23 12a9 9 0 0 0-9-8.77z'/%3E%3C/svg%3E") no-repeat center;
+        background-size: contain;
+    }
     .r-model-gen-text{}
     .r-model-gen-btn{
         font-size: 12px;
@@ -92,6 +121,11 @@
         &.r-model-gen-btn-hidden {
             display: none !important;
         }
+    }
+    &.r-model-gen-casual .r-model-gen-btn {
+        background-color: #E6F4FF;
+        color: #0958D9;
+        border-color: #91CAFF;
     }
 }
 .r-model-gen-remark{

@@ -6,7 +6,6 @@ CKEDITOR.plugins.add('documenttree', {
 	requires: 'dialog',
 	lang: 'zh-cn',
 	icons: 'documenttree',
-	hidpi: true,
 	init: function(editor) {
 		// 添加文档树命令
 		var documentTreeCommand = editor.addCommand('documenttree', new CKEDITOR.dialogCommand('documenttree'));

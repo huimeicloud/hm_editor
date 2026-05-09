@@ -117,13 +117,27 @@ body {
 }
 
 .main-page {
-    overflow-x: auto;
+    /* 不可与 overflow-x:auto 同时用 visible-y，否则纵向会变成 auto 并裁剪工具栏下拉 */
+    overflow: visible;
     flex: 1;
     display: flex;
     flex-direction: column;
     height: 100%;
+    min-height: 0;
     padding-right: 20px;
     position: relative;
+}
+
+/* 仅标签/编辑区滚动；z-index 低于工具栏，避免盖住「更多」等绝对定位下拉 */
+.main-page-editor-scroll {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 0;
 }
 
 /* 顶部工具栏面板 */
@@ -133,6 +147,8 @@ body {
     justify-content: space-between;
     gap: 20px;
     position: relative;
+    z-index: 40;
+    overflow: visible;
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(226, 232, 240, 0.8);
@@ -206,47 +222,158 @@ body {
     width: 100%;
 }
 
+/* 固定两行：首行按钮；第二行左侧按钮 + 右侧「更多」「AI方法」 */
 .center-btn-container {
     display: flex;
     flex: 1 1 0;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     justify-content: flex-start;
+    gap: 0;
     min-width: 0;
-    max-height: 88px;
-    /* 2行高度，假设每行44px，可根据实际调整 */
-    overflow: hidden;
-    transition: max-height 0.3s;
+    width: 100%;
 }
 
-.center-btn-container.expanded {
-    max-height: none;
+.center-btn-toolbar-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    width: 100%;
 }
 
-.center-btn-toggle {
-    display: none;
-    position: absolute;
-    width: 80px;
-    background: #FFF;
-    -webkit-box-shadow:  0 1px 4px rgba(43, 106, 238, .5);
-    box-shadow: 0 1px 4px rgba(43, 106, 238, .5);
-    border-radius: 8px;
-    height: 10px;
-    line-height: 10px;
-    right: 50%;
-    bottom: -10px;
-    cursor: pointer;
+.center-btn-toolbar-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    width: 100%;
 }
 
-.center-btn-toggle i {
-    color: #2563eb;
-    margin-left: 45%;
-    margin-top: -4px;
+.center-btn-toolbar-row--2 {
+    flex-wrap: nowrap;
 }
 
-.center-btn-wrapper.show-toggle .center-btn-toggle {
+.center-btn-toolbar-row-inner {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.center-toolbar-dd-cluster {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.demo-toolbar-dd {
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+#toolbarMoreWrap[hidden] {
+    display: none !important;
+}
+
+#toolbarMoreWrap.is-empty {
+    display: none !important;
+}
+
+.btn-toolbar-dd-trigger .fa {
+    display: inline-block;
+    margin-left: 2px;
+    vertical-align: middle;
+    transition: transform 0.2s ease;
+}
+
+.btn-toolbar-dd-trigger {
     display: block;
+    padding: 8px 14px;
+    cursor: pointer;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    color: #475569;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    font-family: inherit;
+}
+
+.btn-toolbar-dd-trigger:hover {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    border-color: #cbd5e1;
+}
+
+#btnToolbarAi {
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+    border-color: #bbf7d0;
+    color: #166534;
+}
+
+#btnToolbarAi:hover {
+    background: linear-gradient(135deg, #dcfce7 0%, #d1fae5 100%);
+    border-color: #86efac;
+}
+
+.demo-toolbar-dd-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    /* 高于标签区内 iframe/遮罩常见层级，避免点击落到编辑器上 */
+    z-index: 5000;
+    min-width: 200px;
+    max-width: min(280px, 92vw);
+    max-height: min(70vh, 420px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+#toolbarMorePanel {
+    right: auto;
+    left: 0;
+}
+
+#toolbarAiPanel {
+    right: 0;
+    left: auto;
+}
+
+.demo-toolbar-dd-panel--ai {
+    min-width: 200px;
+}
+
+.btn-panel .demo-toolbar-dd-panel button {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: left;
+    white-space: normal;
+}
+
+.demo-toolbar-dd.is-open .btn-toolbar-dd-trigger .fa-caret-down {
+    transform: rotate(180deg);
 }
 
 .right-btn-container {
@@ -404,8 +531,8 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    height: calc(100% - 200px);
-    /* 减去工具栏高度 */
+    min-height: 0;
+    height: 100%;
     overflow: hidden;
     box-sizing: border-box;
     transition: margin-right 0.3s ease;
@@ -631,6 +758,111 @@ body {
 .dialogBox .quick-link-template:hover {
     color: #0d47a1;
     cursor: pointer;
+}
+
+.gen-doc-param-dialog {
+    display: none;
+    position: fixed;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.gen-doc-param-dialog.show {
+    display: flex;
+}
+
+.gen-doc-param-dialog-mask {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.gen-doc-param-dialog-box {
+    position: relative;
+    width: 680px;
+    max-width: 90vw;
+    max-height: 85vh;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.gen-doc-param-dialog-title {
+    margin: 0 0 16px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a2e;
+}
+
+.gen-doc-param-dialog-field {
+    margin-bottom: 12px;
+}
+
+.gen-doc-param-dialog-field label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: #374151;
+}
+
+.gen-doc-param-dialog-field textarea {
+    width: 100%;
+    height: 280px;
+    box-sizing: border-box;
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    resize: vertical;
+    white-space: pre;
+    overflow: auto;
+}
+
+.gen-doc-param-dialog-field textarea:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.gen-doc-param-fill-sample {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #6366f1;
+    text-decoration: none;
+}
+
+.gen-doc-param-fill-sample:hover {
+    color: #4f46e5;
+    text-decoration: underline;
+}
+
+.gen-doc-param-dialog-help {
+    margin-bottom: 14px;
+    font-size: 12px;
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+.gen-doc-param-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
 }
 
 .documentInfo .option-row, .insertMetaDataInfo .option-row {

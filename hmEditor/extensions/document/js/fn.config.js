@@ -209,6 +209,48 @@ commonHM.component['documentModel'].fn({
         }
     },
     /**
+     * 按数据元编码设置数据元 DOM 的内联样式（遍历所有病历内匹配节点，排除 labelbox）
+     * @param {String} eleCode 数据元编码（与 data-hm-code 一致）
+     * @param {Object} styles 样式对象，如 { color: 'red', fontWeight: 'bold' }，经 jQuery.fn.css 写入，合并进现有内联样式、同名覆盖
+     * @returns {Boolean} 是否至少更新了一个节点
+     */
+    setElementStyle: function (eleCode, styles) {
+        var _t = this;
+        if (!eleCode || typeof eleCode !== 'string') {
+            console.error('setElementStyle: eleCode 必须为非空字符串');
+            return false;
+        }
+        if (styles === null || typeof styles !== 'object' || Array.isArray(styles)) {
+            console.error('setElementStyle: styles 须为普通对象');
+            return false;
+        }
+        if (!_t.editor || !_t.editor.document) {
+            console.error('setElementStyle: 编辑器未就绪');
+            return false;
+        }
+        var $body = $(_t.editor.document.getBody().$);
+        var $widgetNodes = $body.find('[data-hm-widgetid]');
+        if (!$widgetNodes.length) {
+            console.warn('setElementStyle: 未找到病历文档节点');
+            return false;
+        }
+        var found = false;
+        for (var i = 0; i < $widgetNodes.length; i++) {
+            var $widget = $($widgetNodes[i]);
+            var $elements = $widget.find('[data-hm-code="' + eleCode + '"]:not([data-hm-node="labelbox"])');
+            if ($elements.length) {
+                found = true;
+                $elements.each(function () {
+                    $(this).css(styles);
+                });
+            }
+        }
+        if (!found) {
+            console.warn('setElementStyle: 未找到 data-hm-code 为 "' + eleCode + '" 的数据元节点');
+        }
+        return found;
+    },
+    /**
      * 设置单个数据元元素的只读/可编辑状态
      * 流程：① 被禁用元素直接跳过 ② 根据 flag 增删简洁模式 class ③ 按 data-hm-node 类型设置 pointer-events 或 contenteditable。
      * 只读时用 pointer-events:none 或 contenteditable:false 禁止交互；可编辑时恢复为 auto/true。

@@ -190,12 +190,13 @@
             var id = options.id || "hmEditor_" + new Date().getTime();
             var iframe = document.createElement("iframe");
 
-            // 设置iframe属性
+            // 设置iframe属性（allow=unload 避免 Permissions Policy 报错：jQuery 等会使用 unload）
             iframe.id = id;
             iframe.name = id;
             iframe.allowtransparency = true;
             iframe.frameBorder = "0";
             iframe.scrolling = "auto";
+            iframe.setAttribute('allow', 'unload');
 
             // 设置样式
             if (options.style) {
@@ -285,12 +286,13 @@
                 var id = options.id || "hmEditor_" + new Date().getTime();
                 var iframe = document.createElement("iframe");
 
-                // 设置iframe属性
+                // 设置iframe属性（allow=unload 避免 Permissions Policy 报错：jQuery 等会使用 unload）
                 iframe.id = id;
                 iframe.name = id;
                 iframe.allowtransparency = true;
                 iframe.frameBorder = "0";
                 iframe.scrolling = "auto";
+                iframe.setAttribute('allow', 'unload');
 
                 // 设置样式
                 if (options.style) {

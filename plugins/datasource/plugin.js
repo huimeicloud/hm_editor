@@ -577,6 +577,7 @@ CKEDITOR.plugins.add('datasource', {
                 var remark = resultInput.attr("remark") || '';
                 var userId = resultInput.attr('userid') || '';
                 var grade = resultInput.attr('grade') || '';
+                var pairSearchReturn = $pairNode.attr('_searchreturn') || '';
                 if (code == '未填写' && name == '未填写') {
                     $pairNode.removeAttr('_code').removeAttr('_name').removeAttr('_order').removeAttr('_remark').removeAttr('userid').removeAttr('_grade');
                     $node.removeAttr('_code').removeAttr('_name').removeAttr('_order').removeAttr('_remark').removeAttr('userid').removeAttr('_grade');
@@ -590,7 +591,7 @@ CKEDITOR.plugins.add('datasource', {
                     if (code) {
                         $pairNode.attr('_code', code);
                         $node.attr('_code', code);
-                        if ($pairNode.length == 1 && $pairNode.attr('_searchreturn').indexOf('编码') >= 0) {
+                        if ($pairNode.length == 1 && pairSearchReturn.indexOf('编码') >= 0) {
                             if ("null" != code) {
                                 $pairNode.text(code);
                             } else {
@@ -601,7 +602,7 @@ CKEDITOR.plugins.add('datasource', {
                     } else {
                         $pairNode.attr('_code', '');
                         $node.attr('_code', '');
-                        if ($pairNode.length == 1 && $pairNode.attr('_searchreturn').indexOf('编码') >= 0) {
+                        if ($pairNode.length == 1 && pairSearchReturn.indexOf('编码') >= 0) {
                             $pairNode.text("");
                         }
                     }
@@ -609,7 +610,7 @@ CKEDITOR.plugins.add('datasource', {
                     if (name) {
                         $pairNode.attr('_name', name);
                         $node.attr('_name', name);
-                        if ($pairNode.length == 1 && $pairNode.attr('_searchreturn').indexOf('名称') >= 0) {
+                        if ($pairNode.length == 1 && pairSearchReturn.indexOf('名称') >= 0) {
                             if ("null" != name) {
                                 $pairNode.text(name);
                             } else {
@@ -770,7 +771,8 @@ CKEDITOR.plugins.add('datasource', {
 
 
             selectable.on('select.editable-select', function (e, li) {
-                var isCode = $node.attr('_searchreturn').indexOf('编码') != -1 ? true : false;
+                var searchReturn = $node.attr('_searchreturn') || '';
+                var isCode = searchReturn.indexOf('编码') != -1 ? true : false;
                 var code = li.attr("code");
                 var name = li.attr("name");
                 var remark = li.attr("remark") || '';
@@ -4429,6 +4431,16 @@ function formatStringDate(date, _timeoption) {
             break;
     }
     return resultDate ? resultDate : "";
+}
+function spliceTime(date, sperator) {
+    for (var index = 0; index < date.length; index++) {
+        var element = date[index];
+        if (element.length < 2) {
+            element = '0' + element;
+        }
+        date[index] = element;
+    }
+    return date.join(sperator);
 }
 function checkDate(dateStr) {
     var date = new Date(dateStr);

@@ -951,7 +951,15 @@ function doPrint(editor, syncType, timeout, download, callback, downloadPdfCallb
     $(body.$).find('span[diag]').css('display','none');
     $(body.$).find('span[operation]').css('display','none');
     // 移除质控提醒 及  ai 提醒
-    removeDocReminder(body); 
+    removeDocReminder(body);
+    // 清除 FA 图标 span 内的零宽空格文本节点，防止 wkhtmltopdf 将其渲染成多余方框
+    $(body.$).find('span.fa[data-hm-node="checkbox"], span.fa[data-hm-node="radiobox"]').each(function() {
+        for (var i = this.childNodes.length - 1; i >= 0; i--) {
+            if (this.childNodes[i].nodeType === 3) {
+                this.removeChild(this.childNodes[i]);
+            }
+        }
+    });
 
     addReviseStyle(body, shouldShowReviseInPrint);
 

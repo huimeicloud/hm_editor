@@ -221,21 +221,42 @@ HMEditor.fn({
     },
     /**
      * 注册自定义工具栏按钮
-     * @returns
+     * @param {Object} options 配置选项
+     * @param {Array} options.customToolbar 自定义工具栏按钮数组，每个按钮可包含：
+     *   - name: 按钮名称（必需）
+     *   - label: 按钮标签（必需）
+     *   - icon: 按钮图标（可选）
+     *   - onExec: 点击执行函数（必需）
+     *   - position: 按钮位置配置（可选）
+     *     - groupIndex: 插入到第几个工具栏组（从0开始，默认添加到末尾）
+     *     - itemIndex: 在组内的位置（从0开始，默认添加到组末尾）
+     *     - createNewGroup: 是否创建新组（默认true）
+     * @returns {Boolean}
+     * 
+     * @example
+     * // 添加到第一个工具栏组的第2个位置
+     * position: { groupIndex: 0, itemIndex: 1 }
+     * 
+     * // 创建新组并插入到第3个位置
+     * position: { groupIndex: 2, createNewGroup: true }
      */
-    registerToolbar: function () {
+    registerToolbar: function (options) {
         var _t = this;
         if (!_t.editor) {
             return false;
         }
-        var customToolbar = _t.options.customToolbar || [];
+        
+        // 兼容旧方式：直接读取 _t.options.customToolbar
+        var customToolbar = (options && options.customToolbar) || _t.options.customToolbar || [];
+        
         customToolbar.forEach(function (btn) {
             var name = btn.name + $.getUUId();
-            _t.editor.config.toolbar.push({
-                name: name,
-                items: [name]
-            });
-            // 1. 创建命令
+            var position = btn.position || {};
+            var groupIndex = position.groupIndex;
+            var itemIndex = position.itemIndex;
+            var createNewGroup = position.createNewGroup !== false;
+            
+            // 创建命令
             _t.editor.addCommand(name, {
                 exec: function (editor) {
                     try {
@@ -253,8 +274,55 @@ HMEditor.fn({
                 icon: btn.icon || '',
                 toolbar: name
             });
+            
+            // 根据 position 配置决定按钮位置
+            var toolbar = _t.editor.config.toolbar;
+            
+            if (createNewGroup && typeof groupIndex === 'number') {
+                // 在指定位置创建新组
+                var newGroup = {
+                    name: name,
+                    items: [name]
+                };
+                
+                if (groupIndex >= 0 && groupIndex < toolbar.length) {
+                    toolbar.splice(groupIndex, 0, newGroup);
+                } else {
+                    toolbar.push(newGroup);
+                }
+            } else if (!createNewGroup && typeof groupIndex === 'number') {
+                // 插入到现有组的指定位置
+                if (groupIndex >= 0 && groupIndex < toolbar.length) {
+                    var group = toolbar[groupIndex];
+                    if (group && Array.isArray(group.items)) {
+                        if (typeof itemIndex === 'number' && itemIndex >= 0 && itemIndex <= group.items.length) {
+                            group.items.splice(itemIndex, 0, name);
+                        } else {
+                            group.items.push(name);
+                        }
+                    } else if (Array.isArray(group)) {
+                        // 兼容 toolbar 是数组的格式
+                        if (typeof itemIndex === 'number' && itemIndex >= 0 && itemIndex <= group.length) {
+                            group.splice(itemIndex, 0, name);
+                        } else {
+                            group.push(name);
+                        }
+                    }
+                } else {
+                    // 组索引无效，添加到末尾
+                    toolbar.push({
+                        name: name,
+                        items: [name]
+                    });
+                }
+            } else {
+                // 无位置配置，默认添加到末尾
+                toolbar.push({
+                    name: name,
+                    items: [name]
+                });
+            }
         });
-
 
         return true;
     }

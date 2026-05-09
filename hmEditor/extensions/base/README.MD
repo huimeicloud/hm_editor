@@ -1182,3 +1182,67 @@ var visible = HMEditor.getShowTools();
  */
 HMEditor.setPrintPageBreakConfig({ pageAnotherCodes: ['DOC001'], pageAloneCodes: ['DOC002'] });
 ```
+
+### 23. getSelectedElement / getSelectedContent 方法
+
+用于在**当前选区**上下文获取数据元或选中片段，实现见 `extensions/base/js/fn.openApi.js`。
+
+#### getSelectedElement
+
+从选区起点向上查找最近的、带 `data-hm-code` 的数据元节点（`data-hm-node` 为 `labelbox` 的除外），取值规则与 **文档保存** 一致（内部委托 `documentModel.getDataElementObject`，传入原生 DOM 节点）。
+
+```javascript
+/**
+ * 获取光标所在（或选区范围内）的数据元
+ * @returns {Object|null} 含 keyCode、keyId、keyName、keyValue；无编辑器、无选区或未落在数据元上时返回 null
+ */
+HMEditor.getSelectedElement();
+```
+
+#### getSelectedContent
+
+```javascript
+/**
+ * 获取当前选中的内容
+ * @param {String} [type='html'] 'html' 返回 HTML；'text' 返回纯文本
+ * @returns {String} 无选区时返回空字符串
+ */
+HMEditor.getSelectedContent('html');
+HMEditor.getSelectedContent('text');
+```
+
+#### 使用示例
+
+```javascript
+var meta = HMEditor.getSelectedElement();
+if (meta) {
+  console.log(meta.keyCode, meta.keyName, meta.keyValue);
+}
+
+var html = HMEditor.getSelectedContent('html');
+var text = HMEditor.getSelectedContent('text');
+```
+
+#### 说明
+
+- `getSelectedElement` 与整份病历的 `getDocData` 不同：前者只反映**当前光标/选区**所落数据元。
+- 若在集成页面对编辑器方法做 **AOP/日志挂钩**，请勿用 `async function` 包裹同步 API，否则会返回 `Promise`，与上述同步语义不一致。
+
+### 24. setElementStyle 方法
+
+按数据元编码（`data-hm-code`）在病历文档内查找对应节点并设置内联样式，通过 jQuery `css` 写入；与元素已有内联样式合并，同名属性覆盖。不处理 `data-hm-node="labelbox"` 的节点。
+
+```javascript
+/**
+ * 按数据元编码设置数据元内联样式
+ * @param {String} eleCode 数据元编码（与 DOM 上 data-hm-code 一致）
+ * @param {Object} styles 样式对象（普通对象），语义与 jQuery.css(对象) 一致
+ * @returns {Boolean} 是否至少更新了一个匹配节点
+ */
+```
+
+#### 使用示例
+
+```javascript
+HMEditor.setElementStyle('DE08.10.013.00.012', { color: 'red', fontWeight: 'bold' });
+```

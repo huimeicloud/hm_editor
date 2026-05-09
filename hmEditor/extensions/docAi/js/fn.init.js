@@ -145,6 +145,17 @@ commonHM.component['hmAi'].fn({
     /**
      * 绑定警告信息事件
      */
+    /**
+     * 绑定警告信息事件与 AI 草稿点击委托
+     * 
+     * 实现要点：
+     * - .r-model-gen 委托：非随手整块打开 reOpenPopupProgress
+     * - 随手按 .r-model-gen-text / .r-model-gen-btn 分支处理
+     * - $body 段落几何命中对随手正文/按钮短路，避免重复弹框
+     * 
+     * 验收要点：
+     * - 方案 §3.5、需求§4；随手块非正文非按钮区域行为与方案§5.2 一致
+     */
     bindWarnAcion: function () {
         var _t = this;
 
@@ -200,12 +211,50 @@ commonHM.component['hmAi'].fn({
             _t.composer.ignoreWarn(ele.attr('uucode'), 2);
         }).on('click', '.r-model-gen-remark', function () {
             _t.utils.focusInputFirst(this);
-        }).on('click', '.r-model-gen', function () {
+        }).on('click', '.r-model-gen', function (e) {
+            // 随手病历与 AI 草稿的点击委托处理
+            var $gen = $(this);
+            if ($gen.hasClass('r-model-gen-casual')) {
+                // 随手模式：分区域处理
+                if ($(e.target).closest('.r-model-gen-btn').length) {
+                    // 点击按钮：打开保留/弃用弹框
+                    _t.generator.reOpenPopupProgress(this);
+                    return;
+                }
+                if ($(e.target).closest('.r-model-gen-text').length) {
+                    // 点击正文：触发 onCasualTextClick 回调
+                    var cb = _t.generator._casualDraftTextClick;
+                    if (typeof cb === 'function') {
+                        var sourceId = $gen.data('hmCasualSourceId');
+                        if (sourceId === undefined) {
+                            var attrSid = $gen.attr('data-hm-casual-source-id');
+                            sourceId = attrSid !== undefined ? attrSid : undefined;
+                        }
+                        cb.call(this, e, $gen, sourceId);
+                    }
+                    return;
+                }
+                return;
+            }
             _t.generator.reOpenPopupProgress(this);
         }).on('click', function (e) {
+            // $body 全局点击处理：段落几何命中打开弹框
             _t.editorTool && _t.editorTool.callCommand('destoryGenPopup');
             _t.$body.attr('contenteditable', 'true');
             if (_t.generator.progressFlag != 1) {
+                // 随手病历短路处理：正文/按钮已在 .r-model-gen 委托中处理，避免重复弹框
+                var $casual = $(e.target).closest('.r-model-gen-casual');
+                if($(e.target).closest('.r-model-casual-text').length){
+                    return;
+                }
+                if ($casual.length) {
+                    var inBtn = $(e.target).closest('.r-model-gen-btn').length;
+                    var inText = $(e.target).closest('.r-model-gen-text').length;
+                    if (inBtn || inText) {
+                        // 已在委托中处理，直接返回
+                        return;
+                    }
+                }
                 var jTar = $(e.target).closest('p');
                 // 获取所有子元素
                 var $children = jTar.find('.r-model-gen');

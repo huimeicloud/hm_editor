@@ -1718,7 +1718,6 @@ var removeSplitterDebugger = false; // 调试保存使用, 去除所有分页符
 
                             nextPageContent = nextPage && nextPage.getElementsByClassName(PAGE_CONTENT_CLASS)[0];
 
-                            updateHeaderByMultiPartHeader(editor, prevPage);
                             timeLogger('预处理', 0);
                             // 预处理1: 重新计算前一页的表格冗余量
                             // 在 chrome 中, 表格渲染时是精确渲染; 然而在打印时是向上取整. 故要对每个表格行的误差进行统计. (什么? 两个表并排的情况? 啊哈哈哈哈哈哈)
@@ -2034,6 +2033,15 @@ var removeSplitterDebugger = false; // 调试保存使用, 去除所有分页符
                                         combineFormat(editor, bookmarkParent, false);
                                     }
                                 }
+                            }
+                        }
+
+                        // 分页布局稳定后再刷新各逻辑页页眉数据元（转科后科室/床位等），避免在分页循环内调用影响分页
+                        if (!forceStopPaging) {
+                            var pagesForMultiHeader = body.getElementsByClassName(LOGIC_PAGE_CLASS);
+                            var hi;
+                            for (hi = 0; hi < pagesForMultiHeader.length; hi++) {
+                                updateHeaderByMultiPartHeader(editor, pagesForMultiHeader[hi]);
                             }
                         }
 
@@ -5587,40 +5595,40 @@ function updateHeaderByMultiPartHeader(editor, prevPage) {
     var multiPartHeader = editor.HMConfig.multiPartHeader || {};
     var headerList = multiPartHeader.headerList || [];
     var controlElementName = multiPartHeader.controlElementName || "";
-    
+
     if (widgets.length > 0 && headerList.length > 0) {
         // 获取当前页面首个病历
         var widget = widgets[0];
         var widgetId = widget.getAttribute('data-hm-widgetid');
         // console.log("当前页面首个病历ID: " + widgetId);
-        
+
         // 当前页面首个病历的记录时间
-        var recordTime = $(widget).find('[data-hm-name="'+controlElementName+'"]:not([data-hm-node="labelbox"])').text();
+        var recordTime = $(widget).find('[data-hm-name="' + controlElementName + '"]:not([data-hm-node="labelbox"])').first().text();
         var recordTimePage = new Date(recordTime).getTime();
         // 获取当前页面页眉信息
         var pagehead = $(prevPage).find('.hm-page-header-group table[_paperheader="true"]')[0];
-        
+
         // 替换转科换床记录
         for (var d = 0; d < headerList.length; d++) {
             var moveRecord = headerList[d];
             // 检查是否满足时间条件，处理空值情况
             var startTime = null;
             var endTime = null;
-            
-            if(moveRecord['startTime']) {
+
+            if (moveRecord['startTime']) {
                 startTime = new Date(moveRecord['startTime']).getTime();
             }
-            
-            if(moveRecord['endTime']) {
+
+            if (moveRecord['endTime']) {
                 endTime = new Date(moveRecord['endTime']).getTime();
             }
             // 处理headerData的通用函数
             function handleHeaderData(headerData, pagehead) {
-                if(!headerData) return;
-                
-                for(var key in headerData) {
-                    var headerName = $(pagehead).find('[data-hm-name="'+key+'"]:not([data-hm-node="labelbox"])');
-                    if(headerName.length > 0) {
+                if (!headerData) return;
+
+                for (var key in headerData) {
+                    var headerName = $(pagehead).find('[data-hm-name="' + key + '"]:not([data-hm-node="labelbox"])');
+                    if (headerName.length > 0) {
                         var headercontent = $(headerName).find("span.new-textbox-content");
                         headercontent.removeAttr('_placeholdertext');
                         headercontent.html(headerData[key]);
@@ -5630,21 +5638,21 @@ function updateHeaderByMultiPartHeader(editor, prevPage) {
 
             // 检查时间条件
             var shouldApplyHeader = false;
-            if(startTime && endTime) {
+            if (startTime && endTime) {
                 // 检查时间范围
-                shouldApplyHeader = startTime <= endTime && 
-                                  recordTimePage > startTime && 
-                                  recordTimePage <= endTime;
-            } else if(!startTime) {
+                shouldApplyHeader = startTime <= endTime &&
+                    recordTimePage > startTime &&
+                    recordTimePage <= endTime;
+            } else if (!startTime) {
                 // 只检查endTime
                 shouldApplyHeader = recordTimePage <= endTime;
-            } else if(!endTime) {
+            } else if (!endTime) {
                 // 只检查startTime
                 shouldApplyHeader = recordTimePage > startTime;
             }
 
             // 应用headerData
-            if(shouldApplyHeader) {
+            if (shouldApplyHeader) {
                 handleHeaderData(moveRecord['headerData'], pagehead);
                 break; // 找到匹配的记录后跳出循环，避免被后面的记录覆盖
             }

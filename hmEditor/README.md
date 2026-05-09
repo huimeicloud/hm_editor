@@ -60,11 +60,13 @@ HMEditorLoader.createEditor({
             }
         ]
     },
-    customToolbar: [    // 自定义工具栏按钮
+    customToolbar: [    // 自定义工具栏按钮（可选 position 控制插入位置，见下方参数表）
         {
             name: 'customButton',
             label: '自定义按钮',
             icon: '/path/to/icon.png',
+            // position: { groupIndex: 0, itemIndex: 1, createNewGroup: false }, // 插入到第 0 组内第 1 个按钮位置
+            // position: { groupIndex: 2, createNewGroup: true },                  // 在第 2 组前新建一组并放入按钮（默认 createNewGroup 为 true 时可省略）
             onExec: function(editor) {
                 // 点击按钮时执行的代码
                 console.log('自定义按钮被点击了');
@@ -106,11 +108,13 @@ HMEditorLoader.createEditorAsync({
         departmentCode: '0001',
         doctorCode: '0001'
     },
-    customToolbar: [    // 自定义工具栏按钮
+    customToolbar: [    // 自定义工具栏按钮（可选 position 控制插入位置，见下方参数表）
         {
             name: 'customButton',
             label: '自定义按钮',
             icon: '/path/to/icon.png',
+            // position: { groupIndex: 0, itemIndex: 1, createNewGroup: false }, // 插入到第 0 组内第 1 个按钮位置
+            // position: { groupIndex: 2, createNewGroup: true },                  // 在第 2 组前新建一组并放入按钮（默认 createNewGroup 为 true 时可省略）
             onExec: function(editor) {
                 // 点击按钮时执行的代码
                 console.log('自定义按钮被点击了');
@@ -217,7 +221,11 @@ HMEditorLoader.destroyEditor(editorId);
 | editShowPaddingTopBottom | Boolean | 否 | 编辑时纸张设置里面的上下边距是否有效，默认为false |
 | allowModifyDatasource | Boolean | 否 | 允许修改数据元名称和编码，true允许，默认false |
 | customParams | Object | 否 | 自定义参数，用于动态数据源接口入参，例：{departmentCode:'0001',doctorCode:'0001'} |
-| customToolbar | Array | 否 | 自定义工具栏按钮，例：[{name:'customButton',label:'自定义按钮',icon:'/path/to/icon.png',onExec:function(editor){},onRefresh:function(editor,path){}}] |
+| customToolbar | Array | 否 | 自定义工具栏按钮数组；每项含 name、label、onExec，可选 icon、onRefresh、**position**（见下） |
+| customToolbar[].position | Object | 否 | 按钮在工具栏上的位置；不传则在工具栏**末尾追加一个新组** |
+| customToolbar[].position.groupIndex | Number | 否 | 工具栏**组**下标，从 0 开始。与 createNewGroup、itemIndex 配合使用 |
+| customToolbar[].position.itemIndex | Number | 否 | 仅当 **createNewGroup 为 false** 时有效：插入到该组 `items` 内的下标（从 0 开始）；未传或无效则追加到该组末尾 |
+| customToolbar[].position.createNewGroup | Boolean | 否 | 是否新建独立工具栏组，**默认 true**。为 true 时在 `groupIndex` 处插入**新组**（仅含当前按钮）；为 false 时将按钮**插入已有**第 `groupIndex` 组 |
 | printConfig | Object | 否 | 打印配置参数 |
 | printConfig.pageBreakPrintPdf | Boolean | 否 | 分页模式打印是否生成pdf |
 | printConfig.pageAnotherTpls | Array | 否 | 另页打印模板名称 |
@@ -230,6 +238,29 @@ HMEditorLoader.destroyEditor(editorId);
 | multiPartHeader.headerList[].startTime | String | 否 | 时间段开始时间，格式：yyyy-MM-dd |
 | multiPartHeader.headerList[].endTime | String | 否 | 时间段结束时间，格式：yyyy-MM-dd，为空表示从startTime开始的所有时间 |
 | multiPartHeader.headerList[].headerData | Object | 是 | 页眉数据对象，键为页面元素的data-hm-name属性值，值为显示内容 |
+
+### 默认工具栏组（与 `customToolbar.position.groupIndex` 对照）
+
+内置工具栏定义在仓库根目录的 [`config.js`](../config.js) 中 `config.toolbar`（按从左到右顺序）。`position.groupIndex` 即下表中的 **组下标**；若集成方通过 `editorConfig` 等方式覆盖了 `toolbar`，以下顺序以运行时的 `editor.config.toolbar` 为准。
+
+| 组下标 | `name` | 组内按钮（`items`，`-` 为分隔符） |
+| --- | --- | --- |
+| 0 | document | Save、Print、PagebreakByHand、Sync、Paper、Datasource、Document、Revise、Album、Image |
+| 1 | clipboard | Copy、Undo、Redo |
+| 2 | indent | Outdent、Indent |
+| 3 | paragraph | JustifyLeft、JustifyCenter、JustifyRight、JustifyBlock |
+| 4 | list | NumberedList、BulletedList |
+| 5 | insert | Table、HorizontalRule、SpecialChar |
+| 6 | styles | Containerstyle、Font、FontSize |
+| 7 | basicstyles | Bold、Italic、Underline、Strike、Subscript、Superscript、RemoveFormat |
+| 8 | colors | TextColor、BGColor |
+| 9 | clear | Clear |
+| 10 | pagebreak | PageBreak |
+| 11 | switchmodel | SwitchModel |
+| 12 | find | Find、Replace |
+| 13 | documenttree | DocumentTree |
+
+共 **14** 组（下标 **0～13**）。未配置 `position` 的自定义按钮会在末尾**再追加一组**（实现见 `hmEditor/extensions/base/js/fn.baseInit.js` 的 `registerToolbar`）。
 
 ## 常见问题
 
@@ -1058,6 +1089,39 @@ HMEditorLoader.getEditorInstanceAsync(editorId)
 - `elementList` 必须是包含数据元code的数组，不能为空
 - 该方法只会影响指定的数据元元素，不会影响文档中的其他元素
 - 已被禁用的元素（`_isdisabled` 为 `true`）不会被处理
+
+#### setElementStyle - 按数据元编码设置数据元内联样式
+
+根据 `data-hm-code` 在文档内查找对应数据元节点并设置 CSS（通过 jQuery 的 `css` 写入），适用于按编码高亮、调整单个字段样式等。不会处理 `data-hm-node="labelbox"` 的节点。
+
+**方法签名：**
+```javascript
+setElementStyle(eleCode, styles)
+```
+
+**参数说明：**
+
+| 参数名 | 类型 | 必填 | 描述 |
+| --- | --- | --- | --- |
+| eleCode | String | 是 | 数据元编码，与 DOM 上 `data-hm-code` 一致 |
+| styles | Object | 是 | 样式对象（普通对象），键名为 CSS 属性名（驼峰或含连字符均可），语义与 jQuery `.css(样式对象)` 一致；与元素已有**内联样式**合并，同名属性覆盖 |
+
+**返回值：** Boolean，至少更新了一个匹配节点为 `true`，未找到节点为 `false`。
+
+**使用示例：**
+```javascript
+HMEditorLoader.getEditorInstanceAsync(editorId)
+    .then(function(editorInstance) {
+        editorInstance.setElementStyle('DE08.10.013.00.012', { color: 'red', fontWeight: 'bold' });
+    })
+    .catch(function(error) {
+        console.error('获取编辑器实例失败:', error);
+    });
+```
+
+**使用说明：**
+- 仅在带有 `[data-hm-widgetid]` 的病历区域内查找；按 `data-hm-code` 匹配，并排除 labelbox。
+- 第二参数必须为**普通对象**，不支持 CSS 字符串。
 
 
 ## 文档修订模式控制功能
@@ -2709,6 +2773,53 @@ HMEditorLoader.getEditorInstanceAsync(editorId)
 
 AI 草稿功能允许开发者将 AI 生成的内容以草稿形式展示在编辑器中，用户可逐项或批量确认采纳或弃用，适用于 AI 辅助书写、预填内容审核等场景。
 
+### generateDocumentDirect - 直接生成整份病历草稿
+
+请求大模型直接生成整份病历，并在生成完成后自动调用 `showAiDraft` 以 AI 草稿形式回填到对应文书中。
+
+#### 基本用法
+
+```javascript
+HMEditorLoader.getEditorInstanceAsync(editorId)
+    .then(function(editorInstance) {
+        editorInstance.generateDocumentDirect({
+            agent_code: 'admission_record_generate',
+            docCode: 'DOC001',
+            agent_name: '入院记录生成',
+            agent_id: 'agent_001',
+            agent_query: '请结合患者主诉、现病史生成入院记录',
+            agent_type: 'document',
+            progress_type: 'admission'
+        });
+    })
+    .catch(function(error) {
+        console.error("获取编辑器实例失败:", error);
+    });
+```
+
+#### generateDocumentDirect 方法说明
+
+| 字段 | 类型 | 必填 | 描述 |
+| --- | --- | --- | --- |
+| agent_code | String | 是 | 智能体编码，不能为空 |
+| docCode | String | 是 | 病历文书编码，不能为空 |
+| agent_name | String | 否 | 智能体名称，按接口约定透传 |
+| agent_id | String | 否 | 智能体 ID，按接口约定透传 |
+| agent_query | String | 否 | 用户补充问题或上下文 |
+| agent_type | String\|Number | 否 | 智能体类型 |
+| progress_type | String\|Number | 否 | 诊疗阶段或进度类型 |
+
+**返回值：** 无
+
+**使用说明：**
+
+1. `generateDocumentDirect` 只接收单个 `params` 对象，不支持位置参数。
+2. 调用前需确保编辑器已完成初始化，且 `documentModel.generateDocumentLLM` 可用。
+3. 方法内部会校验 `agent_code`、`docCode` 和编辑器就绪状态；校验不通过时会直接返回，并输出对应错误日志。
+4. 生成成功后会自动调用 `showAiDraft` 展示整份病历草稿，供用户确认采纳或弃用。
+
+---
+
 ### showAiDraft - 显示 AI 草稿
 
 将数据以 AI 草稿形式填入对应数据元，界面会展示草稿内容供用户确认采纳或取消。参数格式与 `setDocData` 一致。
@@ -2726,12 +2837,31 @@ var dataList = [
         ]
     }
 ];
+// 随手病历：dataList 形态见产品需求 §3.2；每条 data 可含 sourceId，供正文点击回调第三参
+var dataListCasual = [
+    {
+        code: 'DOC001',
+        data: [
+            { sourceId: '1', keyCode: 'PATIENT_NAME', keyName: '患者姓名', keyValue: '张三' },
+            { sourceId: '2', keyCode: 'DIAGNOSIS', keyName: '诊断信息', keyValue: '感冒' }
+        ]
+    }
+];
 
 HMEditorLoader.getEditorInstanceAsync(editorId)
     .then(function(editorInstance) {
-        editorInstance.showAiDraft(dataList);
-        // 或指定展示方式：0-覆盖，1-追加（默认）
-        editorInstance.showAiDraft(dataList, 1);
+        // 必须传入含 dataList 的 options（单文档写 { dataList: { code, data } }）
+        editorInstance.showAiDraft({ dataList: dataList });
+        editorInstance.showAiDraft({ dataList: dataList, displayType: 1 });
+        // 随手：点正文回调第三参与对应 data 条目的 sourceId 一致
+        editorInstance.showAiDraft({
+            dataList: dataListCasual,
+            displayType: 1,
+            casualDraft: true,
+            onCasualTextClick: function (evt, $gen, sourceId) {
+                console.log('随手正文点击', sourceId, $gen);
+            }
+        });
     })
     .catch(function(error) {
         console.error("获取编辑器实例失败:", error);
@@ -2740,14 +2870,18 @@ HMEditorLoader.getEditorInstanceAsync(editorId)
 
 #### showAiDraft 方法说明
 
-| 参数名 | 类型 | 必填 | 描述 |
+**入参：** 单个 `options` 对象，且 **必须** 包含自有属性 `dataList`。不支持 `showAiDraft(dataList)` 等位置参数写法；单份病历须使用 `showAiDraft({ dataList: { code, data } })`。
+
+| 字段 | 类型 | 必填 | 描述 |
 | --- | --- | --- | --- |
-| dataList | Array\|Object | 是 | 内容列表或单个内容对象，结构同 setDocData |
+| dataList | Array\|Object | 是 | 内容列表或单个内容对象；与 `setDocData` 一致，随手场景下单条 `data` 结构见需求文档 `dataList` 参考 |
 | displayType | Number | 否 | 展示方式：0-覆盖（先清空原内容再展示），1-追加（默认） |
+| casualDraft | Boolean | 否 | 是否为随手病历。`true` 时使用 `r-model-gen-casual` 样式与小喇叭图标，确认条为「随手记录，请确认」；点击正文触发 `onCasualTextClick`，点击确认条打开保留/弃用弹框。默认 `false`（AI 草稿，类名含 `r-model-gen-normal`） |
+| onCasualTextClick | Function | 否 | 仅当 `casualDraft === true` 时有效：`(event, $rModelGen, sourceId) => void`，点击 `.r-model-gen-text` 时调用；`sourceId` 对应当前块对应 **data 条目** 上的 `sourceId` |
 
 **返回值：** 无
 
-**使用说明：** 将 `dataList` 中的内容以 AI 草稿形式填入对应数据元，用户可在界面中确认采纳或弃用。
+**使用说明：** 将 `dataList` 中的内容以草稿形式填入对应数据元。AI 草稿下用户点击整块草稿即可打开保留/弃用弹框；随手病历下需点击确认条打开弹框，点击正文触发 `onCasualTextClick`（第三参与对应 `data` 条目约定字段一致，见需求 `dataList` 参考）。
 
 ---
 
@@ -2809,7 +2943,8 @@ HMEditorLoader.getEditorInstanceAsync(editorId)
 
 | 方法 | 参数 | 返回值 | 描述 |
 | --- | --- | --- | --- |
-| showAiDraft | dataList:Array\|Object, [displayType:Number] | void | 显示 AI 草稿，参数同 setDocData |
+| generateDocumentDirect | params:{agent_code, docCode, [agent_name], [agent_id], [agent_query], [agent_type], [progress_type]} | void | 请求大模型直接生成整份病历，并在成功后自动展示 AI 草稿 |
+| showAiDraft | options:{dataList, [displayType], [casualDraft], [onCasualTextClick]} | void | 显示 AI/随手草稿；必须传入含 `dataList` 的 options |
 | confirmAiDraft | [keyList:Array\|String] | void | 确认（采纳）全部或指定数据元的 AI 草稿 |
 | cancelAiDraft | [keyList:Array\|String] | void | 弃用全部或指定数据元的 AI 草稿 |
 

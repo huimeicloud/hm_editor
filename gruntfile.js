@@ -228,8 +228,12 @@ module.exports = function( grunt ) {
                     });
                     // 合并模块内部脚本以及相关模板
                     // 经过html2js,现在singleJsModule是模板内容,再次合并它并保存产生期望内容
+                    var extraJsSrc = [];
+                    if (titleName === 'base') {
+                        extraJsSrc.push('vendor/sse.js');
+                    }
                     grunt.config(util.format('concat.%s', taskName), {
-                        src: [singleJsModule, rootdir+'/'+name+'/module.js', rootdir+'/' + name + '/js/*.js'],
+                        src: [singleJsModule, rootdir+'/'+name+'/module.js'].concat(extraJsSrc, [rootdir+'/' + name + '/js/*.js']),
                         dest: singleJsModule
                     });
                     // 清除临时文件
@@ -336,7 +340,7 @@ module.exports = function( grunt ) {
             }
             var childPath = rootdir+'/'+name+'/component';
             if(fs.existsSync(path.join(__dirname,childPath))){
-                buildComponentDir(target,childPath,resultdir,name)
+                buildComponentDir(target,childPath,resultdir,name);
             }
         });
     }

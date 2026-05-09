@@ -565,6 +565,7 @@ class ApiLogger {
             // 从fn.openApi.js
             'setDocContent', 'setDocData', 'getDocContent',
             'getDocHtml', 'getDocText', 'getDocData',
+            'getSelectedElement', 'getSelectedContent',
             'showWarnInfo', 'execEditorMethod', 'execCommand',
             'addCustomMenu', 'setDocReadOnly', 'setDocReviseMode',
             'setTemplateDatasource','setDocWatermark',
@@ -583,39 +584,40 @@ class ApiLogger {
             const originalMethod = editorInstance[methodName];
 
             if (typeof originalMethod === 'function') {
-                editorInstance[methodName] = async function(...args) {
-                    // 记录调用前
+                // 勿用 async 包装：async 会把同步返回值包成 Promise，破坏 getSelectedElement 等同步 API。
+                editorInstance[methodName] = function(...args) {
                     self.log(`调用 HMEditor.${methodName}(${self.formatArgs(args)})`);
 
-                    try {
-                        // 确保同步方法也能正确记录
-                        let result;
-                        if (originalMethod.constructor.name === 'AsyncFunction') {
-                            // 异步方法
-                            result = await originalMethod.apply(this, args);
-                        } else {
-                            // 同步方法
-                            result = originalMethod.apply(this, args);
-                        }
-
-                        // 记录调用成功，对于getter方法显示结果摘要
+                    const logSuccess = (result) => {
                         if (methodName === 'getDocData') {
-                            // 数据元Data结果特殊处理，完整显示格式化后的JSON
                             self.log(`HMEditor.${methodName} 返回: ${JSON.stringify(result)}`);
                         } else if (methodName.startsWith('get')) {
-                            // 其他getter方法可能会返回较大数据，显示摘要
                             const jsonResult = JSON.stringify(result);
-                            const shortResult = jsonResult.length > 300
+                            const shortResult = jsonResult && jsonResult.length > 300
                                 ? jsonResult.substring(0, 297) + '...'
                                 : jsonResult;
                             self.log(`HMEditor.${methodName} 返回: ${shortResult}`);
                         } else {
                             self.log(`HMEditor.${methodName} 调用成功`);
                         }
+                    };
 
+                    try {
+                        const result = originalMethod.apply(this, args);
+
+                        if (result != null && typeof result.then === 'function') {
+                            return result.then(function (resolved) {
+                                logSuccess(resolved);
+                                return resolved;
+                            }).catch(function (error) {
+                                self.log(`HMEditor.${methodName} 调用失败: ${error.message}`, 'error');
+                                throw error;
+                            });
+                        }
+
+                        logSuccess(result);
                         return result;
                     } catch (error) {
-                        // 记录调用失败
                         self.log(`HMEditor.${methodName} 调用失败: ${error.message}`, 'error');
                         throw error;
                     }
@@ -640,7 +642,7 @@ class ApiLogger {
                             // 如果后来被设置为函数，则重新挂钩
                             self.log(`检测到 ${methodName} 被设置为函数，重新挂钩`);
                             const originalFunc = newValue;
-                            editorInstance[methodName] = async function(...args) {
+                            editorInstance[methodName] = function(...args) {
                                 self.log(`调用 HMEditor.${methodName}(${self.formatArgs(args)})`);
                                 try {
                                     const result = originalFunc.apply(this, args);

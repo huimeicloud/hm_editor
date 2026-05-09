@@ -76,37 +76,55 @@
                             <button id="btnAddTab" class="btn-primary" style="height:80px">加载文档</button>
                         </div>
                         <div class="center-btn-wrapper">
-                            <div class="center-btn-container">
-                                <button id="btnInsertDoc">插入文档</button>
-                                <button id="btnDeleteDoc">删除文档</button>
-                                <button id="btnSetData">设置数据</button>
-                                <button id="btnInsertDataAtCursor">光标插入内容</button>
-                                <button id="btnInsertImageAtCursor">光标插入图片</button>
-                                <button id="btnInsertHtml">插入HTML</button>
-                                <button id="btnMenu">自定义菜单</button>
-                                <button id="btnReadOnly">只读模式</button>
-                                <button id="btnRevise">修订模式</button>
-                                <button id="btnShowTools">显示/隐藏工具栏</button>
-                                <button id="btnWatermark">设置水印</button>
-                                <button id="btnGetHtml">获取HTML</button>
-                                <button id="btnGetText">获取TEXT</button>
-                                <button id="btnGetMetaData">获取数据元</button>
-                                <button id="btnExportPdf">下载PDF</button>
-                                <button id="btnCustomProperties">自定义属性</button>
-                                <button id="btnRevisionHistory">修订记录</button>
-                                <button id="btnMultiPartHeader">设置分段页眉</button>
-                                <button id="btnSetTablePerssion">设置表格权限</button>
-                                <button id="btnInsMetaData" disabled class="next-feature-btn">插入数据元</button>
-                                <button id="btnFocusElement">定位元素</button>
-                                <button id="btnHmAiToken" disabled class="next-feature-btn">AI令牌</button>
-                                <button id="btnHmAiAuth" disabled class="next-feature-btn">AI认证</button>
-                                <button id="btnHmAiGen" disabled class="next-feature-btn">指尖AI</button>
-                                <button id="btnNodeGen" disabled class="next-feature-btn">段落生成</button>
-                                <button id="btnDocGen" disabled class="next-feature-btn">病历生成</button>
-                                <button id="btnHmAiQc" disabled class="next-feature-btn">质控提醒</button>
-                            </div>
-                            <div class="center-btn-toggle">
-                                 <i class="fa fa-caret-down"></i>
+                            <div class="center-btn-container" id="centerBtnToolbar">
+                                <div class="center-btn-toolbar-rows">
+                                    <div id="centerBtnRow1" class="center-btn-toolbar-row">
+                                        <button id="btnInsertDoc" type="button">插入文档</button>
+                                        <button id="btnDeleteDoc" type="button">删除文档</button>
+                                        <button id="btnSetData" type="button">设置数据</button>
+                                        <button id="btnInsertDataAtCursor" type="button">光标插入内容</button>
+                                        <button id="btnInsertImageAtCursor" type="button">光标插入图片</button>
+                                        <button id="btnInsertHtml" type="button">插入HTML</button>
+                                        <button id="btnMenu" type="button">自定义菜单</button>
+                                        <button id="btnReadOnly" type="button">只读模式</button>
+                                        <button id="btnRevise" type="button">修订模式</button>
+                                        <button id="btnShowTools" type="button">隐藏工具栏</button>
+                                        <button id="btnWatermark" type="button">设置水印</button>
+                                        <button id="btnGetHtml" type="button">获取HTML</button>
+                                        <button id="btnGetText" type="button">获取TEXT</button>
+                                        <button id="btnGetMetaData" type="button">获取数据元</button>
+                                        <button id="btnExportPdf" type="button">下载PDF</button>
+                                        <button id="btnCustomProperties" type="button">自定义属性</button>
+                                        <button id="btnRevisionHistory" type="button">修订记录</button>
+                                        <button id="btnMultiPartHeader" type="button">设置分段页眉</button>
+                                        <button id="btnSetTablePerssion" type="button">设置表格权限</button>
+                                        <button id="btnInsMetaData" type="button" disabled class="next-feature-btn">插入数据元</button>
+                                        <button id="btnFocusElement" type="button">定位元素</button>
+                                        <button id="btnGetSelectedElement" type="button">获取选中数据元</button>
+                                        <button id="btnGetSelectedContent" type="button">获取选中内容</button>
+                                    </div>
+                                    <div class="center-btn-toolbar-row center-btn-toolbar-row--2">
+                                        <div id="centerBtnRow2" class="center-btn-toolbar-row-inner"></div>
+                                        <div class="center-toolbar-dd-cluster">
+                                            <div class="demo-toolbar-dd is-empty" id="toolbarMoreWrap">
+                                                <button type="button" class="btn-toolbar-dd-trigger" id="btnToolbarMore" aria-haspopup="true" aria-expanded="false">更多 <i class="fa fa-caret-down" aria-hidden="true"></i></button>
+                                                <div class="demo-toolbar-dd-panel" id="toolbarMorePanel" style="display: none" role="menu" aria-label="更多操作"></div>
+                                            </div>
+                                            <div class="demo-toolbar-dd" id="toolbarAiWrap">
+                                                <button type="button" class="btn-toolbar-dd-trigger" id="btnToolbarAi" aria-haspopup="true" aria-expanded="false" title="AI 相关能力">AI方法 <i class="fa fa-caret-down" aria-hidden="true"></i></button>
+                                                <div class="demo-toolbar-dd-panel demo-toolbar-dd-panel--ai" id="toolbarAiPanel" style="display: none" role="menu" aria-label="AI 方法">
+                                                    <button id="btnHmAiToken" type="button" disabled class="next-feature-btn">AI令牌</button>
+                                                    <button id="btnHmAiAuth" type="button" disabled class="next-feature-btn">AI认证</button>
+                                                    <button id="btnHmAiGen" type="button" disabled class="next-feature-btn">指尖AI</button>
+                                                    <button id="btnNodeGen" type="button" disabled class="next-feature-btn">段落生成</button>
+                                                    <button id="btnDocGen" type="button" disabled class="next-feature-btn">病历生成</button>
+                                                    <button id="btnGenerateDocumentDirect" type="button" disabled class="next-feature-btn">AI病历生成</button>
+                                                    <button id="btnHmAiQc" type="button" disabled class="next-feature-btn">质控提醒</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="right-btn-container">
@@ -114,8 +132,10 @@
                             <button id="btnCloseTab" class="btn-danger">销毁编辑器</button>
                         </div>
                     </div>
-                    <!-- 标签页容器 -->
-                    <div id="tabContainer" class="tab-container"></div>
+                    <!-- 标签/编辑区单独滚动，避免 .main-page 的 overflow 裁剪「更多」下拉 -->
+                    <div class="main-page-editor-scroll">
+                        <div id="tabContainer" class="tab-container"></div>
+                    </div>
                 </div>
             </div>
 
@@ -645,6 +665,26 @@
                         <button id="closeAiSettingsBtn" class="dialog-btn">取消</button>
                     </div>
                     <div style="color:#888;font-size:13px;margin-top:8px;">请填写MCP/LLM完整配置，支持多服务和大模型参数，uuid自动生成。</div>
+                </div>
+            </div>
+
+            <!-- AI病历生成参数弹框 -->
+            <div class="gen-doc-param-dialog" id="generateDocumentDirectDialog">
+                <div class="gen-doc-param-dialog-mask"></div>
+                <div class="gen-doc-param-dialog-box">
+                    <h3 class="gen-doc-param-dialog-title">AI病历生成 - 参数</h3>
+                    <div class="gen-doc-param-dialog-field">
+                        <label for="generateDocumentDirectTextarea">生成参数（JSON）：</label>
+                        <textarea id="generateDocumentDirectTextarea" rows="12"
+                            placeholder="请输入JSON格式的AI病历生成参数"></textarea>
+                        <a href="javascript:void(0);" id="generateDocumentDirectFillSample"
+                            class="gen-doc-param-fill-sample">填充示例</a>
+                    </div>
+                    <div class="gen-doc-param-dialog-help">默认参数已展示在输入框 placeholder 中；若未带出 `docCode`，可手动补充后再发起生成。</div>
+                    <div class="gen-doc-param-dialog-actions">
+                        <button id="btnConfirmGenerateDocumentDirect" class="dialog-btn btn-primary">确定</button>
+                        <button id="btnCancelGenerateDocumentDirect" class="dialog-btn">取消</button>
+                    </div>
                 </div>
             </div>
 

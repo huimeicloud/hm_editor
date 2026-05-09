@@ -2,9 +2,20 @@
  * @file ai-draft-demo.js
  * @description AI 草稿功能演示页
  *
+ * Task 06: 示例与对外说明
+ * 文档：docs/03-development/task-06-demo-前端.md
+ *
+ * 实现要点：
+ * - 演示 showAiDraft({ dataList, displayType, casualDraft, onCasualTextClick }) 调用方式
+ * - 随手 data 条目含有效 sourceId 示例（见 SAMPLE_AI_DRAFT_DATA）
+ * - 支持 AI 草稿/随手病历两种模式切换
+ *
+ * 验收要点：
+ * - 需求 G5；存量调用迁移说明与技术方案 §6 风险表一致
+  *
  * 功能说明：
  * - 默认加载 HM 编辑器并渲染「入院记录」模板
- * - AI草稿病历：弹窗输入 dataList（JSON）、displayType（0=覆盖/1=追加），调用 showAiDraft 展示 AI 生成内容
+ * - AI草稿病历：弹窗输入 dataList（JSON）、displayType、可选「随手病历」，调用 showAiDraft({ dataList, displayType, ... })（随手时 data 条目形态见需求 §3.2）
  * - 保留全部：对指定数据元编码执行 confirmAiDraft，将 AI 草稿确认为正式内容
  * - 弃用全部：对指定数据元编码执行 cancelAiDraft，丢弃 AI 草稿
  * - 获取 HTML/Text/数据元：在排除 AI 草稿状态下导出文档内容，支持弹窗预览与文件下载
@@ -30,6 +41,7 @@
     const SAMPLE_KEYLIST = ['DE04.01.119.00', 'DE02.10.071.00', 'DE02.10.099.00'];
 
     /**
+     * Task 06 演示数据：随手病历示例（含有效 sourceId）
      * 测试用 AI 草稿数据
      * @constant {Array<{code: string, data: Array<{keyCode: string, keyName: string, keyValue: string}>}>}
      */
@@ -37,9 +49,9 @@
         {
             code: DOC_CODE,
             data: [
-                { keyCode: 'DE04.01.119.00', keyName: '主诉', keyValue: '【AI生成】患者因右上腹痛伴皮肤黄染3天入院。' },
-                { keyCode: 'DE02.10.071.00', keyName: '现病史', keyValue: '【AI生成】入院前1天患者因右上腹疼痛伴皮肤黄染于当地医院就诊，行上腹部CT检查示：胆总管扩张，内见强回声光团伴声影，考虑"胆总管结石"可能性大，未治疗。患者自发病以来伴有恶心、厌油、尿色深黄。今为进一步明确诊断及治疗，门诊拟以"胆总管结石"收入院。' },
-                { keyCode: 'DE02.10.099.00', keyName: '既往史', keyValue: '【AI生成】高血压2年余，自服"美托洛尔片"，未规律测量血压。糖尿病4年余，口服二甲双胍规律治疗。否认病毒性肝炎、肺结核病史，否认外伤、输血、手术史，过敏史：否认药物、食物过敏史。' }
+                { sourceId: '1', keyCode: 'DE04.01.119.00', keyName: '主诉', keyValue: '【AI生成】患者因右上腹痛伴皮肤黄染3天入院。' },
+                { sourceId: '2', keyCode: 'DE02.10.071.00', keyName: '现病史', keyValue: '【AI生成】入院前1天患者因右上腹疼痛伴皮肤黄染于当地医院就诊，行上腹部CT检查示：胆总管扩张，内见强回声光团伴声影，考虑"胆总管结石"可能性大，未治疗。患者自发病以来伴有恶心、厌油、尿色深黄。今为进一步明确诊断及治疗，门诊拟以"胆总管结石"收入院。' },
+                { sourceId: '3', keyCode: 'DE02.10.099.00', keyName: '既往史', keyValue: '【AI生成】高血压2年余，自服"美托洛尔片"，未规律测量血压。糖尿病4年余，口服二甲双胍规律治疗。否认病毒性肝炎、肺结核病史，否认外伤、输血、手术史，过敏史：否认药物、食物过敏史。' }
             ]
         }
     ];
@@ -196,8 +208,21 @@
             displayType = num;
         }
         hideDialog($cache.aiDraftParamDialog);
+        var casualDraft = !!document.getElementById('aiDraftCasualDraft').checked;
         try {
-            editorInstance.showAiDraft(dataList, displayType);
+            // Task 06：随手病历调用示例（带 onCasualTextClick 回调）
+            if (casualDraft) {
+                editorInstance.showAiDraft({
+                    dataList: dataList,
+                    displayType: displayType,
+                    casualDraft: true,
+                    onCasualTextClick: function (evt, $gen, sourceId) {
+                        console.log('随手病历正文点击', { sourceId: sourceId, $gen: $gen });
+                    }
+                });
+            } else {
+                editorInstance.showAiDraft({ dataList: dataList, displayType: displayType });
+            }
         } catch (e) {
             console.error('showAiDraft 失败:', e);
             alert('展示 AI 草稿失败: ' + (e.message || e));
@@ -385,6 +410,7 @@
         $('#aiDraftFillSample').on('click', function () {
             $cache.aiDraftDataListInput.val(JSON.stringify(SAMPLE_AI_DRAFT_DATA, null, 2));
             $cache.aiDraftDisplayTypeInput.val('1');
+            document.getElementById('aiDraftCasualDraft').checked = false;
         });
         // 填充演示 KeyList（确认/取消共用 SAMPLE_KEYLIST）
         $('#confirmAllFillSample').on('click', function () {

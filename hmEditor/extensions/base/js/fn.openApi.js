@@ -73,21 +73,70 @@ HMEditor.fn({
     },
     /**
      * 显示AI草稿内容（支持多份病历）
-     * 参数同 setDocData，将 data 中的内容以 AI 草稿形式填入对应数据元，用户可确认采纳或取消
-     * @param {Array|Object} dataList 内容列表或单个内容对象
-     * @param {Number} displayType 展示方式：0-覆盖（先清空原内容再展示），1-追加（默认）
-     * @param {String} dataList[].code 文档唯一编号(必传)
-     * @param {Array} dataList[].data 初始化数据(必传)
-     * @param {String} dataList[].data[].keyCode 数据元编码(必传)
-     * @param {String} dataList[].data[].keyName 数据元名称
-     * @param {String|String[]} dataList[].data[].keyValue 数据元内容，可以是字符串或字符串数组(必传)
-     * @param {Array} dataList[].nursingData 护理表单数据(可选)
+     * 必须传入包含 `dataList` 的 **options 对象**（不再支持位置参数）。
+     *
+     * @param {Object} options
+     * @param {Array|Object} options.dataList 内容列表或单个内容对象，结构同 setDocData
+     * @param {Number} [options.displayType] 展示方式：0-覆盖（先清空原内容再展示），1-追加（默认）
+     * @param {Boolean} [options.casualDraft] 是否为随手病历：true 时使用随手样式与「随手记录，请确认」；正文点击触发 onCasualTextClick；按钮点击打开保留/弃用弹框
+     * @param {String} [options.draftBtnText] 自定义草稿确认按钮文案；传值且去首尾空白后非空时，AI 草稿与随手病历均使用该文案，否则沿用各模式默认（「AI内容，请确认」/「随手记录，请确认」）
+     * @param {Function} [options.onCasualTextClick] 随手病历下点击正文时回调 function (event, $rModelGen, sourceId)；与对应 data 项一致
+     *
+     * 使用示例：
+     * // 单份病历（推荐写法）
+     * HMEditor.showAiDraft({
+     *   dataList: { code: 'DOC_001', data: [{ keyCode: 'KEY_01', keyValue: '内容' }] },
+     *   displayType: 1,
+     *   casualDraft: false
+     * });
+     *
+     * // 多份病历
+     * HMEditor.showAiDraft({
+     *   dataList: [
+     *     { code: 'DOC_001', data: [...] },
+     *     { code: 'DOC_002', data: [...] }
+     *   ],
+     *   displayType: 0,
+     *   casualDraft: true,
+     *   onCasualTextClick: function (event, $rModelGen, sourceId) {
+     *     console.log('点击随手病历正文', sourceId);
+     *   }
+     * });
+     *
+     * 验收要点：
+     * - G1：仅接受 options 对象，不支持位置参数
+     * - G4：openApi 层校验并数组化，委托给 hmAi.generator.showAiDraft
+     * - G5：非法入参时 console.error 并 return，不插入草稿
      */
-    showAiDraft: function (dataList, displayType) {
-        if (dataList && typeof dataList === 'object' && !Array.isArray(dataList)) {
-            dataList = [dataList];
+    showAiDraft: function (options) {
+        // G5：校验 options 必须为普通对象且非数组
+        if (!options || typeof options !== 'object' || Array.isArray(options)) {
+            console.error('showAiDraft: 请传入 options 对象（非数组）');
+            return;
         }
-        this.hmAi.generator.showAiDraft(dataList, displayType);
+        // G5：校验 options 必须包含 dataList 自有属性
+        if (!Object.prototype.hasOwnProperty.call(options, 'dataList')) {
+            console.error('showAiDraft: options 必须包含 dataList，例如 showAiDraft({ dataList: [...] })');
+            return;
+        }
+        // G5：校验 dataList 不能为空
+        if (options.dataList == null) {
+            console.error('showAiDraft: dataList 不能为空');
+            return;
+        }
+        // G4：将单文档对象规范为数组
+        var dl = options.dataList;
+        if (dl && typeof dl === 'object' && !Array.isArray(dl)) {
+            dl = [dl];
+        }
+        // G4：委托给 hmAi.generator.showAiDraft，仅传递归一后的 opts
+        this.hmAi.generator.showAiDraft({
+            dataList: dl,
+            displayType: options.displayType,
+            casualDraft: options.casualDraft,
+            draftBtnText: options.draftBtnText,
+            onCasualTextClick: options.onCasualTextClick
+        });
     },
     /**
      * AI 草稿确认全部或按数据元编码批量确认
@@ -483,6 +532,36 @@ HMEditor.fn({
         _t.documentModel.insertImageAtCursor(imageData);
     },
     /**
+     * 请求大模型直接生成整份病历并以 AI 草稿形式回填
+     * @param {Object} params 生成参数对象
+     * @param {String} params.agent_code 智能体编码(必传)
+     * @param {String} params.docCode 病历文书编码(必传)
+     * @param {String} [params.agent_name] 智能体名称
+     * @param {String} [params.agent_id] 智能体 ID
+     * @param {String} [params.agent_query] 用户补充问题或上下文
+     * @param {String|Number} [params.agent_type] 智能体类型
+     * @param {String|Number} [params.progress_type] 诊疗阶段或进度类型
+     */
+    generateDocumentDirect: function (params) {
+        if (!params || Object.prototype.toString.call(params) !== '[object Object]') {
+            console.log('generateDocumentDirect: 请传入生成参数对象');
+            return;
+        }
+        if (!params.agent_code || (typeof params.agent_code === 'string' && !params.agent_code.replace(/\s/g, ''))) {
+            console.log('generateDocumentDirect: 请传入智能体编码 agent_code');
+            return;
+        }
+        if (!params.docCode || (typeof params.docCode === 'string' && !params.docCode.replace(/\s/g, ''))) {
+            console.log('generateDocumentDirect: 请传入病历文书编码 docCode');
+            return;
+        }
+        if (!this.documentModel || typeof this.documentModel.generateDocumentLLM !== 'function') {
+            console.log('generateDocumentDirect: 编辑器未就绪，暂时无法生成病历');
+            return;
+        }
+        this.documentModel.generateDocumentLLM(params);
+    },
+    /**
      * 病历生成 - 获取当前widget中可AI生成的数据元节点并进行批量生成
      */
     generateDocument: function () {
@@ -674,5 +753,88 @@ HMEditor.fn({
      */
     insertHtml: function (htmlContent, posTag) {
         return this.documentModel.insertHtml(htmlContent, posTag);
+    },
+    /**
+     * 获取光标所在（或选区范围内）的数据元
+     * 从选区起点向上查找最近的带 data-hm-code 的数据元节点（不含 labelbox），取值规则与文档保存一致
+     * @returns {Object|null} 数据元对象；无编辑器、无选区或未落在数据元上时返回 null
+     * @returns {String} keyCode 数据元编码
+     * @returns {String} keyId 数据元 ID
+     * @returns {String} keyName 数据元名称
+     * @returns {String} keyValue 数据元值
+     * 
+     * 使用示例：
+     * const meta = editor.getSelectedElement();
+     * if (meta) {
+     *   console.log('数据元编码:', meta.keyCode);
+     *   console.log('数据元名称:', meta.keyName);
+     *   console.log('数据元值:', meta.keyValue);
+     * }
+     */
+    getSelectedElement: function () {
+        if (!this.editor) return null;
+        var selection = this.editor.getSelection();
+        if (!selection) return null;
+        var startElement = selection.getStartElement();
+        if (!startElement) return null;
+        // 向上查找最近的 data-hm-code 节点（排除 labelbox）
+        var dataMetaNode = startElement.getAscendant(function (node) {
+            if (!node.data || typeof node.data !== 'function') return false;
+            var hmCode = node.data('hm-code');
+            var hmNode = node.data('hm-node');
+            return hmCode && hmNode !== 'labelbox';
+        }, true);
+        if (!dataMetaNode) return null;
+        // getDataElementObject 内使用 jQuery($(ele))，须传原生 DOM；CKEDITOR.dom.element 不能直接传入
+        var domEl = dataMetaNode.$ != null ? dataMetaNode.$ : dataMetaNode;
+        var meta = null;
+        if (this.documentModel && typeof this.documentModel.getDataElementObject === 'function') {
+            meta = this.documentModel.getDataElementObject(domEl);
+        }
+        // 有效对象：含至少一个可序列化字段；null、undefined、{} 则走 data-* 兜底
+        if (meta != null && typeof meta === 'object' && Object.keys(meta).length > 0) {
+            return meta;
+        }
+        return {
+            keyCode: dataMetaNode.data('hm-code') || '',
+            keyId: dataMetaNode.data('hm-id') || '',
+            keyName: dataMetaNode.data('hm-name') || '',
+            keyValue: dataMetaNode.data('hm-value') || ''
+        };
+    },
+    /**
+     * 获取光标选中内容
+     * @param {String} [type='html'] 返回类型：'html' 或 'text'
+     * @returns {String} 选中的内容；无选区时返回空字符串
+     * 
+     * 使用示例：
+     * // 获取 HTML 格式
+     * const html = editor.getSelectedContent('html');
+     * // 获取纯文本
+     * const text = editor.getSelectedContent('text');
+     */
+    getSelectedContent: function (type) {
+        if (!this.editor) return '';
+        var _type = (type || 'html').toLowerCase();
+        if (_type === 'text') {
+            // 纯文本模式
+            var sel = this.editor.getSelection();
+            return sel ? sel.getSelectedText() : '';
+        } else {
+            // HTML 模式（默认）
+            return this.editor.getSelectedHtml(true);
+        }
+    },
+    /**
+     * 设置数据元元素的 CSS 样式（合并进元素现有内联样式，同名属性覆盖）
+     * @param {String} eleCode 数据元编码（data-hm-code）
+     * @param {Object} styles 样式对象，使用 jQuery.css 设置
+     * @returns {Boolean} 是否找到并设置成功
+     * 
+     * 使用示例：
+     * editor.setElementStyle('DE08.10.013.00.012', { color: 'red', fontWeight: 'bold' });
+     */
+    setElementStyle: function (eleCode, styles) {
+        return this.documentModel.setElementStyle(eleCode, styles);
     }
 });

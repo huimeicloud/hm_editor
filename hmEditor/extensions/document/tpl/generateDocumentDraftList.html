@@ -1,0 +1,24 @@
+<div class="hm-generate-document-draft-list">
+    <% for (var i = 0; i < docs.length; i++) { %>
+    <% var doc = docs[i]; %>
+    <div class="hm-generate-document-draft-doc">
+        <% for (var j = 0; j < doc.list.length; j++) { %>
+        <% var item = doc.list[j]; %>
+        <div class="hm-generate-document-draft-item-content">
+            <p class="hm-generate-document-draft-item-title">
+                <%= item.item_name %>
+                <span class="hm-generate-document-draft-item-content-back ai-draft-back"></span>
+            </p>
+            <p>
+                <span contenteditable="false" data-hm-id="<%= getUUId(10, 36)%>" data-hm-node="newtextbox"
+                    data-hm-code="<%= item.item_code %>" data-hm-name="<%= item.item_name %>"
+                    _placeholder="<%= item.item_name %>" _texttype="纯文本" class="new-textbox">
+                    <span class="new-textbox-content" contenteditable="false"
+                        _placeholder="<%= item.item_name %>" _texttype="纯文本"><%= (item.value || '').replace(/^\s*[\r\n]+|[\r\n]+\s*$/g, '').replace(/(\r?\n){2,}/g, '\n') %></span>
+                </span>
+            </p>
+        </div>
+        <% } %>
+    </div>
+    <% } %>
+</div>

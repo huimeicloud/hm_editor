@@ -22,6 +22,9 @@ app.use(function(req, res, next) {
 	next();
 });
 
+// 路由前缀
+var HM = '/hmEditor';
+
 // 显式挂载 demo 目录：本地/完整部署用 hmEditor/demo，Docker 构建用 editorDist/demo（grunt copy:demo 产出）
 var fs = require('fs');
 var demoDir = path.join(__dirname, 'hmEditor', 'demo');
@@ -29,8 +32,9 @@ if (!fs.existsSync(demoDir)) {
 	demoDir = path.join(__dirname, 'editorDist', 'demo');
 }
 if (fs.existsSync(demoDir)) {
-	app.use('/demo', express.static(demoDir, { index: ['index.html'] }));
-	app.use('/hmEditor/demo', express.static(demoDir, { index: ['index.html'] }));
+	var demoStatic = express.static(demoDir, { index: ['index.html'] });
+	app.use('/demo', demoStatic);
+	app.use(HM + '/demo', demoStatic);
 }
 
 // 允许跨域请求
@@ -53,28 +57,30 @@ app.engine('dot',async function (path, options, callback) {
     callback(null, html);
 });
 
-// "/" 路径按优先级访问：/hmEditor > /editorDist > /
-app.use(express.static(__dirname + '/hmEditor'));
-app.use(express.static(__dirname + '/editorDist'));
-app.use(express.static(__dirname + '/'));
+// 静态资源
+var staticStack = express.Router();
+staticStack.use(express.static(__dirname + '/hmEditor'));
+staticStack.use(express.static(__dirname + '/editorDist'));
+staticStack.use(express.static(__dirname + '/'));
 
-// "/hmEditor" 路径转发到 "/"，可以访问 /、/editorDist、/hmEditor
-app.use('/hmEditor', express.static(__dirname + '/hmEditor'));
-app.use('/hmEditor', express.static(__dirname + '/editorDist'));
-app.use('/hmEditor', express.static(__dirname + '/'));
+// emr-editor 路由
+var emrEditorRouter = express.Router();
+emrEditorRouter.use('/public', express.static(__dirname + '/public'));
+emrEditorRouter.use('/album', serveIndex(__dirname + '/album', { template: './album_public/directory.html' }));
+emrEditorRouter.use('/mock', mock);
+emrEditorRouter.use('/', editor);
 
-app.use('/emr-editor/public', express.static(__dirname + '/public'));
-
-app.use('/emr-editor/album',
-	serveIndex(__dirname + '/album',{
-		template:"./album_public/directory.html"
-	}));
-
-app.use('/emr-editor/mock', mock);
-app.use('/emr-editor', editor);
-app.use('/emr-print', print);
-app.use('/mcp-server', mcpServer.router);
-app.use('/ai-chat', aiChat);
+// 以下路由同时挂载在 path 与 HM + path
+[
+	['/', staticStack],
+	['/emr-editor', emrEditorRouter],
+	['/hmEditor/emr-print', print],
+	['/mcp-server', mcpServer.router],
+	['/ai-chat', aiChat]
+].forEach(function (r) {
+	app.use(r[0], r[1]);
+	app.use(HM + r[0], r[1]);
+});
 
 var server = app.listen(process.env.PORT||3071,'0.0.0.0',function(){
 	var port = process.env.PORT||3071;
@@ -85,19 +91,17 @@ var server = app.listen(process.env.PORT||3071,'0.0.0.0',function(){
 	console.log('官网地址：https://editor.huimei.com/');
 	console.log('========================================\n');
 	
-	console.log('📄 Demo 页面地址：');
-	console.log('   ' + baseUrl + '/demo/index.html');
-	console.log('   ' + baseUrl + '/demo/ai-draft-demo.html');
-	console.log('或 ' + baseUrl + '/hmEditor/demo/index.html');
-	console.log('   ' + baseUrl + '/hmEditor/demo/ai-draft-demo.html');
+	console.log('📄 Demo 页面地址（本地）：');
+	console.log('   ' + baseUrl + HM + '/demo/index.html');
+	console.log('   ' + baseUrl + HM + '/demo/ai-draft-demo.html');
 	console.log('');
 	
 	console.log('📦 JS 引用方式：');
-	console.log('   <script src="' + baseUrl + '/hmEditor/iframe/HmEditorIfame.js"></script>');
+	console.log('   <script src="' + baseUrl + HM + '/iframe/HmEditorIfame.js"></script>');
 	console.log('');
 	
 	console.log('🔗 SDK Host 地址：');
-	console.log('   ' + baseUrl + '/hmEditor');
+	console.log('   ' + baseUrl + HM);
 	console.log('\n========================================\n');
 
 });

@@ -440,7 +440,7 @@
 		 * @param {CKEDITOR.plugins.undo.Image} image
 		 */
 		restoreImage: function (image, evt) {
-			var that=this;
+			var that=this; 
 			function callback4RestoreImage(){
 
 				// Bring editor focused to restore selection.
@@ -466,8 +466,20 @@
 				var body = that.editor.document.getBody();
 				for (var _ in image.bodyStyle) {
 					body.setStyle(_, image.bodyStyle[_]);
-				}
+				} 
 
+                // 恢复表单模式下的 contenteditable
+                var $body = $(body.$);
+                var switchCmd = CKEDITOR.plugins.switchmodelCmd;
+                var isFormMode = (switchCmd && switchCmd.currentModel === '表单模式');
+                    
+
+                if (isFormMode) {
+                    $body.find('[data-hm-widgetid][_contenteditable]').each(function() {
+                        var $widget = $(this);
+                        $widget.prop('contenteditable', $widget.attr('_contenteditable') === 'true');
+                    }); 
+                }
 				// initEditPermissions(editor, 'undo');
 
 				try {
@@ -497,8 +509,8 @@
 				// the original snapshot due to dom change. (http://dev.ckeditor.com/ticket/4622)
 				// ↑ 翻译过来就是 data-cke-widget-id 会变... 所以我们需要保留 tags, data-cke-widget-id 变了就变了
 				that.update();
-				that.refreshState();
-
+				that.refreshState(); 
+                
 				editor.fire('change', {name: 'restoreImage', data: evt});
 			}
 

@@ -1314,14 +1314,17 @@
 		 * Focuses a widget by selecting it.
 		 */
 		focus: function() {
-			var sel = this.editor.getSelection();
+			var sel = this.editor.getSelection(),
+				wrapper = this.wrapper,
+				editable = this.editor.editable();
 
-			// Fake the selection before focusing editor, to avoid unpreventable viewports scrolling
-			// on Webkit/Blink/IE which is done because there's no selection or selection was somewhere else than widget.
-			if ( sel ) {
+			// Only fake-select when the wrapper is actually inside the editable. If insertElement failed
+			// (e.g. no selection range) the wrapper can remain under a documentFragment; CKEDITOR.dom.node#getParent
+			// returns null for fragment parents by default, so CKEDITOR.dom.selection#fake → setStartBefore → setStart crashes on null.type.
+			if ( sel && wrapper && wrapper.$ && editable && editable.contains( wrapper ) ) {
 				var isDirty = this.editor.checkDirty();
 
-				sel.fake( this.wrapper );
+				sel.fake( wrapper );
 
 				!isDirty && this.editor.resetDirty();
 			}

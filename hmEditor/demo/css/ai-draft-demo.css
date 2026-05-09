@@ -221,6 +221,38 @@ html, body {
     border-color: #6366f1;
 }
 
+/* casualDraft 参数名 */
+.ai-draft-param-name {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: #374151;
+    font-weight: normal;
+}
+
+/* 随手病历 checkbox + 文案 */
+.ai-draft-casual-draft-label {
+    display: flex !important;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    background: #eef2ff;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    user-select: none;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.ai-draft-casual-draft-label input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+    cursor: pointer;
+}
+
 .ai-draft-fill-sample {
     display: inline-block;
     margin-top: 6px;

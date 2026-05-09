@@ -435,6 +435,8 @@ commonHM.component['documentModel'].fn({
                                 }
                             });
                         }
+                        // 勾选「默认当前时间」(_autoshowcurtime) 的 timebox：无业务值时补当前时间（含未出现在 data 中的项）
+                        _t._applyTimeboxAutoshowCurtime($node);
                     });
                 }
             }
@@ -652,11 +654,9 @@ commonHM.component['documentModel'].fn({
                     }
                 });
 
-                // 清空单选框选中状态
-                $newTd.find('[data-hm-node=radiobox]').prop('checked', false);
-
-                // 清空复选框选中状态  
-                $newTd.find('[data-hm-node=checkbox]').prop('checked', false);
+                // 清空单选/复选：仅处理 _selected="true" 的选项节点，避免误改外层容器
+                $newTd.find('span[data-hm-node="radiobox"][_selected="true"]:not([data-hm-node="labelbox"])').removeClass('fa-dot-circle-o').addClass('fa-circle-o').removeAttr('_selected');
+                $newTd.find('span[data-hm-node="checkbox"][_selected="true"]:not([data-hm-node="labelbox"])').removeClass('fa-check-square-o').addClass('fa-square-o').removeAttr('_selected');
 
                 // 清空时间选中状态
                 $newTd.find('[data-hm-node=timebox]').html('&nbsp;');
@@ -878,6 +878,9 @@ commonHM.component['documentModel'].fn({
             case 'timebox':
                 try {
                     var _timeoption = datasourceNode.attr('_timeoption');
+                    if (datasourceNode.attr('_autoshowcurtime') === 'true' && _t._isTimeboxBindValEmpty(bindVal)) {
+                        bindVal = new Date();
+                    }
                     bindVal = _t.formatStringDate(bindVal, _timeoption);
                 } catch (e) {
                     console.log(bindVal);
@@ -925,10 +928,11 @@ commonHM.component['documentModel'].fn({
                 var valArr = bindVal.value;
                 var newArr = [];
                 for (var i = 0; i < valArr.length; i++) {
-                    newArr.push(valArr[i] + '(' + codeArr[i] + ')');
+                    var codeItem = codeArr && codeArr[i];
+                    newArr.push(codeItem ? valArr[i] + '(' + codeItem + ')' : valArr[i]);
                 }
                 var $ds = datasourceNode;
-                $ds.find('span[data-hm-node="checkbox"]:not([data-hm-node="labelbox"])').removeClass('fa-check-square-o').addClass('fa-square-o').attr('_selected', 'false');
+                $ds.find('span[data-hm-node="checkbox"]:not([data-hm-node="labelbox"])').removeClass('fa-check-square-o').addClass('fa-square-o').removeAttr('_selected');
                 for (var j = 0; j < newArr.length; j++) {
                     // 对值进行转义处理
                     var escapedVal = newArr[j].replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, "\\$&");
@@ -938,7 +942,7 @@ commonHM.component['documentModel'].fn({
             case 'radiobox':
                 var $ds = datasourceNode;
                 var val = bindVal.code ? bindVal.value + '(' + bindVal.code + ')' : bindVal.value;
-                $ds.find('span[data-hm-node="radiobox"]:not([data-hm-node="labelbox"])').removeClass('fa-dot-circle-o').addClass('fa-circle-o').attr('_selected', 'false');
+                $ds.find('span[data-hm-node="radiobox"]:not([data-hm-node="labelbox"])').removeClass('fa-dot-circle-o').addClass('fa-circle-o').removeAttr('_selected');
                 var escapedVal = val.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, "\\$&");
                 $ds.find('span[data-hm-node="radiobox"][data-hm-itemname="' + escapedVal + '"]:not([data-hm-node="labelbox"])').addClass('fa-dot-circle-o').attr('_selected', 'true');
                 break;
@@ -1104,6 +1108,50 @@ commonHM.component['documentModel'].fn({
         } else {
             return true;
         }
+    },
+    /**
+     * 时间框展示是否视为「无值」（与 handleTimeBox 取值的空白处理一致）
+     * @param {string} text
+     * @returns {boolean}
+     */
+    _isTimeboxDisplayEmpty: function (text) {
+        if (text === undefined || text === null) {
+            return true;
+        }
+        var v = String(text).replace(/\u200B/g, '').replace(/\u3000/g, '');
+        v = v.replace(/\u00a0/g, ' ').trim();
+        return v.length === 0;
+    },
+    /**
+     * setDocData 绑定的 keyValue 是否视为空（需补默认当前时间）
+     * @param {*} bindVal
+     * @returns {boolean}
+     */
+    _isTimeboxBindValEmpty: function (bindVal) {
+        if (bindVal === undefined || bindVal === null) {
+            return true;
+        }
+        if (typeof bindVal === 'string') {
+            return this._isTimeboxDisplayEmpty(bindVal);
+        }
+        return false;
+    },
+    /**
+     * 文档加载后：对勾选 _autoshowcurtime 且仍无展示值的时间框填入当前时间（按 _timeoption 格式化）
+     * @param {jQuery} $root 单个文档片段（doc_code 对应节点）
+     */
+    _applyTimeboxAutoshowCurtime: function ($root) {
+        var _t = this;
+        $root.find('span[data-hm-node="timebox"][_autoshowcurtime="true"]').each(function () {
+            var $el = $(this);
+            if (_t._isTimeboxDisplayEmpty($el.text())) {
+                var opt = $el.attr('_timeoption');
+                var formatted = _t.formatStringDate(new Date(), opt);
+                if (formatted) {
+                    $el.text(formatted);
+                }
+            }
+        });
     },
     /**
      * 初始化将带有不可编辑属性数据元状态置为不可编辑状态
@@ -1865,7 +1913,11 @@ commonHM.component['documentModel'].fn({
             //提取widget 中的文档属性
             var papersize = paperSize || $node.getAttribute('data-hm-subpapersize');
             var meta_json = $node.getAttribute('meta_json');
-            var style = $node.getAttribute('data-hm-substyle');
+            var subStyle = $node.getAttribute('data-hm-substyle') || '';
+            var containerInlineStyle = $node.getAttribute('style') || '';
+            var style = [subStyle, containerInlineStyle].filter(function (s) {
+                return s && String(s).trim();
+            }).join(';');
             var $recordContent = $('<body></body>').append($node.getHtml());
 
             //将隐藏的页眉、页脚恢复
@@ -1957,13 +2009,11 @@ commonHM.component['documentModel'].fn({
                 // 移除简洁模式样式
                 $td.find('.concise-model').removeClass('concise-model');
 
-                // 清空单选框选中状态
-                $td.find('[data-hm-node=radiobox]').prop('checked', false);
+                // 清空单选/复选：仅处理 _selected="true" 的选项节点，避免误改外层容器
+                $td.find('span[data-hm-node="radiobox"][_selected="true"]:not([data-hm-node="labelbox"])').removeClass('fa-dot-circle-o').addClass('fa-circle-o').removeAttr('_selected');
+                $td.find('span[data-hm-node="checkbox"][_selected="true"]:not([data-hm-node="labelbox"])').removeClass('fa-check-square-o').addClass('fa-square-o').removeAttr('_selected');
 
-                // 清空复选框选中状态  
-                $td.find('[data-hm-node=checkbox]').prop('checked', false);
-
-                // 清空时间选中状态
+                // 清空时间选中状态（先清空，后续统一补默认当前时间）
                 $td.find('[data-hm-node=timebox]').html('&nbsp;');
 
                 // 清空下拉框选中值
@@ -1979,6 +2029,9 @@ commonHM.component['documentModel'].fn({
 
             // 将新行插入到当前行后面
             $currentRow.after($newRow);
+
+            // 新增行后：对勾选了【默认当前时间】的日期数据元填入当前时间 (AIED-337)
+            _t._applyTimeboxAutoshowCurtime($newRow);
         } catch (error) {
             console.warn('增加表格行时发生错误:', error);
         }
@@ -2102,11 +2155,9 @@ commonHM.component['documentModel'].fn({
                 // 移除简洁模式样式
                 $newTd.find('.concise-model').removeClass('concise-model');
 
-                // 清空单选框选中状态
-                $newTd.find('[data-hm-node=radiobox]').prop('checked', false);
-
-                // 清空复选框选中状态  
-                $newTd.find('[data-hm-node=checkbox]').prop('checked', false);
+                // 清空单选/复选：仅处理 _selected="true" 的选项节点，避免误改外层容器
+                $newTd.find('span[data-hm-node="radiobox"][_selected="true"]:not([data-hm-node="labelbox"])').removeClass('fa-dot-circle-o').addClass('fa-circle-o').removeAttr('_selected');
+                $newTd.find('span[data-hm-node="checkbox"][_selected="true"]:not([data-hm-node="labelbox"])').removeClass('fa-check-square-o').addClass('fa-square-o').removeAttr('_selected');
 
                 // 清空时间选中状态
                 $newTd.find('[data-hm-node=timebox]').html('&nbsp;');

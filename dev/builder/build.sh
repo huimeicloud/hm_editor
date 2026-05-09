@@ -74,7 +74,7 @@ then
 	VERSION=$TAG
 fi
 
-
+rm -rf ./release
 
 java -jar ckbuilder/$CKBUILDER_VERSION/ckbuilder.jar --build ../../ release $JAVA_ARGS --version="$VERSION" --revision="$REVISION" --overwrite
 
