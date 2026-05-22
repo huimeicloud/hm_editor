@@ -395,55 +395,101 @@ commonHM.component['documentModel'].fn({
     /**
      * 渲染数据
      * @param {*} data
+     * 
+     * AIED-356 优化：手动分页模式下避免页面抖动
+     * - 手动分页下同步后置 DOM 操作并恢复滚动位置
+     * - 批量处理图片初始化，减少重绘次数
      */
     renderData: function (data) {
         var _t = this;
+        var isRealtimePageBreak = _t.editor.HMConfig.realtimePageBreak;
+        var isManualPageBreak = !isRealtimePageBreak;
+        var docEl = _t.editor.document.$.documentElement;
+        var bodyEl = _t.editor.document.$.body;
+        var scrollState = null;
+
+        if (isManualPageBreak) {
+            scrollState = {
+                docTop: docEl.scrollTop,
+                docLeft: docEl.scrollLeft,
+                bodyTop: bodyEl.scrollTop,
+                bodyLeft: bodyEl.scrollLeft
+            };
+        }
+
+        var restoreScrollState = function () {
+            if (!scrollState) {
+                return;
+            }
+            docEl.scrollTop = scrollState.docTop;
+            docEl.scrollLeft = scrollState.docLeft;
+            bodyEl.scrollTop = scrollState.bodyTop;
+            bodyEl.scrollLeft = scrollState.bodyLeft;
+        };
 
         // 如果开启了实时分页,先移除所有分页
-        if (_t.editor.HMConfig.realtimePageBreak) {
+        if (isRealtimePageBreak) {
             // 保存当前快照
             _t.editor.fire('saveSnapshot', {
                 name: 'beforeRenderData',
                 tagName: 'beforeRenderData'
             });
 
-            // 移除所有分页
-            CKEDITOR.plugins.pagebreakCmd.removeAllSplitters(_t.editor);
+            // 移除所有分页，但保留 body 宽高和内边距，避免回填数据前后滚动条变化导致页面抖动。
+            CKEDITOR.plugins.pagebreakCmd.removeAllSplitters(_t.editor, false, {
+                preserveBodyShape: true,
+                preserveBodyWidth: true,
+                preserveBodyHeight: true
+            });
         }
 
-        // 遍历数据数组
-        data.forEach(function (item) {
-            if (item.code) {
-                // 查找具有相同 doc_code 属性的节点
-                var $nodes = $(_t.editor.document.$).find('[doc_code="' + item.code + '"]');
-                // 如果找到节点，更新其内容
-                if ($nodes.length > 0) {
-                    $nodes.each(function () {
-                        var $node = $(this);
-                        // 处理普通数据元
-                        if (item.data) {
-                            item.data.forEach(function (dataItem) {
-                                // 检查是否是表格类型数据
-                                if (dataItem.keyCode && dataItem.keyCode.indexOf('TABLE_') === 0) {
-                                    // 如果是表格数据，使用_renderTableData处理
-                                    // 从keyCode中提取表格名称（去掉TABLE_前缀）
-                                    var tableName = dataItem.keyCode.substring(6);
-                                    _t._renderTableData($node, dataItem.keyValue, tableName);
-                                    return;
-                                } else {
-                                    _t._bindDataItem($node, dataItem);
-                                }
-                            });
-                        }
-                        // 勾选「默认当前时间」(_autoshowcurtime) 的 timebox：无业务值时补当前时间（含未出现在 data 中的项）
-                        _t._applyTimeboxAutoshowCurtime($node);
-                    });
+        // AIED-356: 手动分页模式下，使用文档片段减少重绘
+        if (isManualPageBreak) {
+            // 暂停编辑器渲染，避免中间状态显示
+            _t.editor.fire('lockSnapshot');
+        }
+
+        try {
+            // 遍历数据数组
+            data.forEach(function (item) {
+                if (item.code) {
+                    // 查找具有相同 doc_code 属性的节点
+                    var $nodes = $(_t.editor.document.$).find('[doc_code="' + item.code + '"]');
+                    // 如果找到节点，更新其内容
+                    if ($nodes.length > 0) {
+                        $nodes.each(function () {
+                            var $node = $(this);
+                            // 处理普通数据元
+                            if (item.data) {
+                                item.data.forEach(function (dataItem) {
+                                    // 检查是否是表格类型数据
+                                    if (dataItem.keyCode && dataItem.keyCode.indexOf('TABLE_') === 0) {
+                                        // 如果是表格数据，使用_renderTableData处理
+                                        // 从keyCode中提取表格名称（去掉TABLE_前缀）
+                                        var tableName = dataItem.keyCode.substring(6);
+                                        _t._renderTableData($node, dataItem.keyValue, tableName);
+                                        return;
+                                    } else {
+                                        _t._bindDataItem($node, dataItem);
+                                    }
+                                });
+                            }
+                            // 勾选「默认当前时间」(_autoshowcurtime) 的 timebox：无业务值时补当前时间（含未出现在 data 中的项）
+                            _t._applyTimeboxAutoshowCurtime($node);
+                        });
+                    }
                 }
+            });
+        } finally {
+            // AIED-356: 恢复编辑器渲染
+            if (isManualPageBreak) {
+                _t.editor.fire('unlockSnapshot');
+                restoreScrollState();
             }
-        });
+        }
 
         // 如果开启了实时分页,渲染完成后重新进行分页
-        if (_t.editor.HMConfig.realtimePageBreak) {
+        if (isRealtimePageBreak) {
             // 执行分页
             CKEDITOR.plugins.pagebreakCmd.performAutoPaging(_t.editor, {
                 name: '渲染数据后分页',
@@ -459,11 +505,36 @@ commonHM.component['documentModel'].fn({
             });
         }
 
+        if (isManualPageBreak) {
+            // 手动分页下避免下一帧再次改动 DOM，减少可见抖动。
+            _t._renderDataPostProcess();
+            restoreScrollState();
+        } else if (typeof window.requestAnimationFrame === 'function') {
+            window.requestAnimationFrame(function () {
+                _t._renderDataPostProcess();
+            });
+        } else {
+            setTimeout(function () {
+                _t._renderDataPostProcess();
+            }, 0);
+        }
+    },
+
+    /**
+     * AIED-356: 渲染数据后的后置处理
+     * - 延迟执行图片初始化等非关键操作
+     * - 避免阻塞主渲染流程导致页面抖动
+     * @private
+     */
+    _renderDataPostProcess: function () {
+        var _t = this;
+
         // 数据渲染完成后，检查是否有新的图片需要初始化
         console.log('数据渲染完成，检查图片元素:', $(_t.editor.document.$).find('[data-hm-image-resizable="true"]').length);
 
         // 为现有的图片widget添加拖拽功能（如果还没有的话）
         _t.initExistingImageResizers($(_t.editor.document.getBody().$));
+
         // 调用文档加载完成回调
         if (typeof window.onDocumentLoad === 'function') {
             try {

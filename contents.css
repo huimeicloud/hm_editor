@@ -457,7 +457,8 @@ span[data-hm-node=icd10-code] {
 [_paperheader] {
     /* background-color: #F0F0F0; */
 }
-[_placeholdertext].print-preview {
+[_placeholdertext].print-preview,
+[_placeholderText].print-preview {
     display: none !important;
 }
 

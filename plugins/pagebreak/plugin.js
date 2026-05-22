@@ -240,6 +240,8 @@ var removeSplitterDebugger = false; // 调试保存使用, 去除所有分页符
         switchCssPaging: function switchCssPaging(body) {
             // 切换样式1
             thisCmd.switchCssPreview($(body));
+            // 分页计算需要保留 placeholder 的编辑态高度，避免长 placeholder 被隐藏后分页位置偏前。
+            $(body).find('[_placeholderText],[_placeholdertext]').removeClass('print-preview');
             // 删除续打标志以免影响分页
             var continuationIdf = body.getElementsByClassName('continuation-identifier');
             for (var i = continuationIdf.length - 1; i >= 0; i--) {
@@ -1024,15 +1026,33 @@ var removeSplitterDebugger = false; // 调试保存使用, 去除所有分页符
          * @param {CKEDITOR.editor} editor
          * @param {boolean} useCopy 如果为 true 则产生副本, 否则在原有 dom 上进行操作.
          *                  useCopy == true 时, 只产生副本, 否则还会记录当前编辑的位置以便下次恢复.
+         * @param {Object} options 额外选项
+         * @param {boolean} options.preserveBodyShape 是否用分页页壳样式临时维持 body 视觉外形
+         * @param {boolean} options.preserveBodyWidth 是否保留去分页前的 body 宽度
+         * @param {boolean} options.preserveBodyHeight 是否用临时最小高度保留去分页前的滚动高度
          *
          * @return {html.dom} 去除分页之后的文本
          */
-        removeAllSplitters: function removeAllSplitters(editor, useCopy) {
+        removeAllSplitters: function removeAllSplitters(editor, useCopy, options) {
             var _;
             var docTmp;
             var document = editor.document.$;
             // todo 默认文本包在一个div中
             var body = document.body;
+            options = options || {};
+            var bodyShape = {
+                width: body.style.width,
+                paddingTop: body.style.paddingTop,
+                paddingBottom: body.style.paddingBottom,
+                paddingLeft: body.style.paddingLeft,
+                paddingRight: body.style.paddingRight,
+                boxShadow: body.style.boxShadow,
+                webkitBoxShadow: body.style.webkitBoxShadow,
+                boxSizing: body.style.boxSizing
+            };
+            var bodyMinHeight = body.style.minHeight;
+            var bodyScrollHeight = Math.max(body.scrollHeight, document.documentElement.scrollHeight);
+            var pageShape = null;
 
             // 没有分页参数时不取消分页, localhost 除外
             var loc = window.location.href;
@@ -1055,6 +1075,17 @@ var removeSplitterDebugger = false; // 调试保存使用, 去除所有分页符
             // 合并内容, 一个逻辑页中只有一个页面内容板块
             var logicPages = $splittersRemoved.find('>div.' + thisCmd.LOGIC_PAGE_CLASS);
             var pageContents = $(logicPages).find('>>div.' + thisCmd.PAGE_CONTENT_CLASS);
+            if (options.preserveBodyShape && logicPages.length) {
+                var pageStyle = window.getComputedStyle(logicPages[0]);
+                pageShape = {
+                    paddingTop: pageStyle.paddingTop,
+                    paddingBottom: pageStyle.paddingBottom,
+                    paddingLeft: pageStyle.paddingLeft,
+                    paddingRight: pageStyle.paddingRight,
+                    boxShadow: pageStyle.boxShadow,
+                    webkitBoxShadow: pageStyle.webkitBoxShadow
+                };
+            }
             // 为了避免进行过多的保存书签操作, 此处仅在页面开启分页时保存书签.
             if (logicPages.length) {
                 // 当前病历中的滚动位置
@@ -1197,7 +1228,31 @@ var removeSplitterDebugger = false; // 调试保存使用, 去除所有分页符
             splittersRemoved.style.paddingBottom = editor.HMConfig.editShowPaddingTopBottom ? paperMarginPx.bottom + 'px' : 0;
             splittersRemoved.style.paddingLeft = paperMarginPx.left + 'px';
             splittersRemoved.style.paddingRight = paperMarginPx.right + 'px';           
-            splittersRemoved.style.width = CKEDITOR.plugins.paperCmd.logicPaperSize.width + 'px';
+            splittersRemoved.style.width = options.preserveBodyWidth ? bodyShape.width : CKEDITOR.plugins.paperCmd.logicPaperSize.width + 'px';
+            if (options.preserveBodyShape) {
+                splittersRemoved.style.width = bodyShape.width;
+                splittersRemoved.setAttribute('data-hm-preserved-body-padding-top', bodyShape.paddingTop);
+                splittersRemoved.setAttribute('data-hm-preserved-body-padding-bottom', bodyShape.paddingBottom);
+                splittersRemoved.setAttribute('data-hm-preserved-body-padding-left', bodyShape.paddingLeft);
+                splittersRemoved.setAttribute('data-hm-preserved-body-padding-right', bodyShape.paddingRight);
+                splittersRemoved.setAttribute('data-hm-preserved-body-box-shadow', bodyShape.boxShadow);
+                splittersRemoved.setAttribute('data-hm-preserved-body-webkit-box-shadow', bodyShape.webkitBoxShadow);
+                splittersRemoved.setAttribute('data-hm-preserved-body-box-sizing', bodyShape.boxSizing);
+                if (pageShape) {
+                    // body 默认 content-box，直接加页壳 padding 会撑大外宽。
+                    splittersRemoved.style.boxSizing = 'border-box';
+                    splittersRemoved.style.paddingTop = pageShape.paddingTop;
+                    splittersRemoved.style.paddingBottom = pageShape.paddingBottom;
+                    splittersRemoved.style.paddingLeft = pageShape.paddingLeft;
+                    splittersRemoved.style.paddingRight = pageShape.paddingRight;
+                    splittersRemoved.style.boxShadow = pageShape.boxShadow;
+                    splittersRemoved.style.webkitBoxShadow = pageShape.webkitBoxShadow;
+                }
+            }
+            if (options.preserveBodyHeight) {
+                splittersRemoved.setAttribute('data-hm-preserved-body-min-height', bodyMinHeight);
+                splittersRemoved.style.minHeight = bodyScrollHeight + 'px';
+            }
 
             splittersRemoved.style.background = 'white';
             // splittersRemoved.style.cursor = 'text';
@@ -2329,6 +2384,28 @@ var removeSplitterDebugger = false; // 调试保存使用, 去除所有分页符
                             hmReminder.detach();
                             hmReminder.prependTo($body.find('.hm-logic-page').first());
                         } 
+                        var preservedBodyMinHeight = body.getAttribute('data-hm-preserved-body-min-height');
+                        if (preservedBodyMinHeight !== null) {
+                            body.style.minHeight = preservedBodyMinHeight;
+                            body.removeAttribute('data-hm-preserved-body-min-height');
+                        }
+                        var preservedBodyPaddingTop = body.getAttribute('data-hm-preserved-body-padding-top');
+                        if (preservedBodyPaddingTop !== null) {
+                            body.style.paddingTop = preservedBodyPaddingTop;
+                            body.style.paddingBottom = body.getAttribute('data-hm-preserved-body-padding-bottom');
+                            body.style.paddingLeft = body.getAttribute('data-hm-preserved-body-padding-left');
+                            body.style.paddingRight = body.getAttribute('data-hm-preserved-body-padding-right');
+                            body.style.boxShadow = body.getAttribute('data-hm-preserved-body-box-shadow');
+                            body.style.webkitBoxShadow = body.getAttribute('data-hm-preserved-body-webkit-box-shadow');
+                            body.style.boxSizing = body.getAttribute('data-hm-preserved-body-box-sizing');
+                            body.removeAttribute('data-hm-preserved-body-padding-top');
+                            body.removeAttribute('data-hm-preserved-body-padding-bottom');
+                            body.removeAttribute('data-hm-preserved-body-padding-left');
+                            body.removeAttribute('data-hm-preserved-body-padding-right');
+                            body.removeAttribute('data-hm-preserved-body-box-shadow');
+                            body.removeAttribute('data-hm-preserved-body-webkit-box-shadow');
+                            body.removeAttribute('data-hm-preserved-body-box-sizing');
+                        }
                     }
 
 

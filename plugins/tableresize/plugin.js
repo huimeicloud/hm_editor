@@ -5,7 +5,11 @@
 
 ( function() {
 	var pxUnit = CKEDITOR.tools.cssLength,
-		needsIEHacks = CKEDITOR.env.ie && ( CKEDITOR.env.ie7Compat || CKEDITOR.env.quirks );
+		needsIEHacks = CKEDITOR.env.ie && ( CKEDITOR.env.ie7Compat || CKEDITOR.env.quirks ),
+		// 列边界可拖拽的热区宽度（像素），过小会导致难以选中
+		MIN_PILLAR_HIT = 10,
+		MAX_PILLAR_HIT = 24,
+		PILLAR_DETACH_HYSTERESIS = 6;
 
 	function getWidth( el ) {
 		return CKEDITOR.env.ie ? el.$.clientWidth : parseFloat( el.getComputedStyle( 'width' ), 10 );
@@ -110,9 +114,13 @@
 					rtl ? pillarLeft = x : pillarRight = x + table.$.offsetWidth;
 				}
 
-				// // pillar 宽度默认不小于6, 但是不能大于两边任一格子的宽度的1/3, 但两边单元格宽度太小时使 pillar 宽度设为2.
-				// pillarWidth = (!nextTd) ? 6 : Math.max(Math.min(tdWidth / 3, nextTdWidth / 3, Math.max(pillarRight - pillarLeft, 6)), 2);
-				pillarWidth = (!nextTd) ? 2 : Math.max(Math.min(tdWidth / 3, nextTdWidth / 3, Math.max(pillarRight - pillarLeft, 2)), 2.0);
+				var borderCenter = ( pillarLeft + pillarRight ) / 2;
+				pillarWidth = ( !nextTd ) ?
+					MIN_PILLAR_HIT :
+					Math.max(
+						Math.min( tdWidth / 3, nextTdWidth / 3, MAX_PILLAR_HIT ),
+						MIN_PILLAR_HIT
+					);
 
 				// The pillar should reflects exactly the shape of the hovered
 				// column border line.
@@ -120,7 +128,8 @@
                     table: table,
                     colgroup: colgroup,
                     index: pillarIndex,
-                    x: pillarLeft - pillarWidth / 2,
+                    centerX: borderCenter,
+                    x: borderCenter - pillarWidth / 2,
                     y: table.getDocumentPosition().y, // 使用表格的y位置
                     boundedTd: td,
                     width: pillarWidth,
@@ -136,15 +145,38 @@
 		return pillars;
 	}
 
-	function getPillarAtPosition( pillars, positionX ) {
-		for ( var i = 0, len = pillars.length; i < len; i++ ) {
-			var pillar = pillars[ i ];
+	function getPillarCenterX( pillar ) {
+		return pillar.centerX != null ? pillar.centerX : ( pillar.x + pillar.width / 2 );
+	}
 
-			if ( positionX >= pillar.x && positionX <= ( pillar.x + pillar.width ) )
-				return pillar;
+	function getPillarAtPosition( pillars, positionX, positionY ) {
+		var best = null,
+			bestDist = Infinity;
+
+		for ( var i = 0, len = pillars.length; i < len; i++ ) {
+			var pillar = pillars[ i ],
+				centerX = getPillarCenterX( pillar ),
+				hitHalf = pillar.width / 2,
+				dist = Math.abs( positionX - centerX );
+
+			if ( dist > hitHalf )
+				continue;
+
+			if ( positionY != null && pillar.table ) {
+				var tablePos = pillar.table.getDocumentPosition(),
+					tableBottom = tablePos.y + pillar.table.$.offsetHeight;
+
+				if ( positionY < tablePos.y || positionY > tableBottom )
+					continue;
+			}
+
+			if ( dist < bestDist ) {
+				bestDist = dist;
+				best = pillar;
+			}
 		}
 
-		return null;
+		return best;
 	}
 
 	function cancel( evt ) {
@@ -185,12 +217,13 @@
 			leftSideTd = rtl ? pillar.nextBoundedTd : pillar.boundedTd;
 			rightSideTd = rtl ? pillar.boundedTd : pillar.nextBoundedTd;
 
-			// Cache the resize limit boundaries.
-			leftShiftBoundary = pillar.x - (rightSideCol ? leftSideCol.$.offsetWidth : pillar.table.$.offsetWidth);
-			rightShiftBoundary = pillar.x + (rightSideCol ? rightSideCol.$.offsetWidth : 1000);
+			// Cache the resize limit boundaries (以列边界中心为基准，而非热区左缘).
+			var borderX = getPillarCenterX( pillar );
+			leftShiftBoundary = borderX - ( rightSideCol ? leftSideCol.$.offsetWidth : pillar.table.$.offsetWidth );
+			rightShiftBoundary = borderX + ( rightSideCol ? rightSideCol.$.offsetWidth : 1000 );
 
 			resizer.setOpacity( 0.5 );
-			startOffset = parseInt( resizer.getStyle( 'left' ), 10 );
+			startOffset = borderX;
 			currentShift = 0;
 			isResizing = 1;
 
@@ -430,7 +463,7 @@
 
 		resizer = CKEDITOR.dom.element.createFromHtml( '<div data-cke-temp=1 contenteditable=false unselectable=on ' +
 			'style="position:absolute;cursor:col-resize;filter:alpha(opacity=0);opacity:0;' +
-				'padding:0;background-image:none;z-index:10;width:0"></div>', document );
+				'padding:0;background-image:none;z-index:10000;width:0"></div>', document );
 
 		// Clean DOM when editor is destroyed.
 		editor.on( 'destroy', function() {
@@ -454,12 +487,15 @@
 			}
 
 			pillar = targetPillar;
-			var bodyHeight = editor.document.$.body.offsetHeight;
+			var bodyHeight = editor.document.$.body.offsetHeight,
+				centerX = getPillarCenterX( targetPillar ),
+				hitWidth = targetPillar.width;
 			resizer.setStyles( {
-				borderLeft:pxUnit( targetPillar.width )+' dashed #000',
-				height: pxUnit(bodyHeight + 40),
-				left: pxUnit( targetPillar.x ),
-				top: pxUnit(0)
+				width: pxUnit( hitWidth ),
+				borderLeft: '1px dashed #000',
+				height: pxUnit( bodyHeight + 40 ),
+				left: pxUnit( centerX - hitWidth / 2 ),
+				top: pxUnit( 0 )
 			} );
 
 			// In IE6/7, it's not possible to have custom cursors for floating
@@ -480,9 +516,14 @@
 				if ( !pillar )
 					return 0;
 
-				if ( !isResizing && ( posX < pillar.x || posX > ( pillar.x + pillar.width ) ) ) {
-					detach();
-					return 0;
+				if ( !isResizing ) {
+					var centerX = getPillarCenterX( pillar ),
+						hitHalf = pillar.width / 2 + PILLAR_DETACH_HYSTERESIS;
+
+					if ( Math.abs( posX - centerX ) > hitHalf ) {
+						detach();
+						return 0;
+					}
 				}
 
 				var resizerNewPosition = posX - Math.round( resizer.$.offsetWidth / 2 );
@@ -612,7 +653,7 @@
 						table.on( 'mousedown', clearPillarsCache );
 					}
 
-					var pillar = getPillarAtPosition( pillars, pageX );
+					var pillar = getPillarAtPosition( pillars, pageX, pageY );
 					if ( pillar ) {
 						// 获取鼠标所在行数
 						pillar.indexY = -1;

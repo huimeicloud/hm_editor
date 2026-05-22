@@ -5,51 +5,13 @@ commonHM.component['documentModel'].fn({
      */
     insertContentAtCursor: function (content) {
         var _t = this;
-        var editor = _t.editor;
-        var selection = editor.getSelection();
-        var range = selection && selection.getRanges()[0];
-        if (!range) {
+        var selection = _t.editor.getSelection().getRanges()[0];
+        if (!selection) {
             console.warn('未找到光标位置');
             return;
         }
-        var markerId = 'hm-cursor-marker-' + Date.now();
-        var markerHtml = '<span data-hm-cursor-marker="' + markerId + '">&#8203;</span>';
-        editor.insertHtml((content || '') + markerHtml);
-        var setCursorToInsertedTail = function (retryCount) {
-            try {
-                editor.focus();
-                var markerNode = editor.document.findOne('[data-hm-cursor-marker="' + markerId + '"]');
-                if (markerNode) {
-                    var cursorRange = editor.createRange();
-                    cursorRange.setStartBefore(markerNode);
-                    cursorRange.collapse(true);
-                    var latestSelection = editor.getSelection();
-                    latestSelection.removeAllRanges();
-                    latestSelection.selectRanges([cursorRange]);
-                    markerNode.remove();
-                    return;
-                }
-                if (retryCount > 0) {
-                    setTimeout(function () {
-                        setCursorToInsertedTail(retryCount - 1);
-                    }, 10);
-                    return;
-                } else {
-                    var latestSelection = editor.getSelection();
-                    var latestRanges = latestSelection && latestSelection.getRanges();
-                    if (latestRanges && latestRanges[0]) {
-                        latestRanges[0].collapse(false);
-                        latestSelection.selectRanges([latestRanges[0]]);
-                    }
-                }
-            } catch (e) {
-                console.warn('insertContentAtCursor: 设置光标位置失败', e);
-            }
-        };
-        setTimeout(function () {
-            setCursorToInsertedTail(20);
-        }, 0);
-        editor.editable().fire('togglePlaceHolder', {});
+        _t.editor.insertHtml(content);
+        _t.editor.editable().fire('togglePlaceHolder', {});
     },
 
     /**
