@@ -54,10 +54,12 @@ commonHM.component['documentModel'].fn({
     /**
      * 设置文档数据元内容
      * @param {Array} dataList
+     * @param {Object} [options] 渲染选项
+     * @param {Boolean} [options.fullRender] 为 true 时强制走完整去分页/重分页流程
      */
-    setDocData: function (dataList) {
+    setDocData: function (dataList, options) {
         var _t = this;
-        _t.renderData(dataList);
+        _t.renderData(dataList, options);
     },
      /**
      * 获取文档内容数据

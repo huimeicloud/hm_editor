@@ -997,8 +997,8 @@ function removeBodyZeroWidthSpace(editor) {
 						return false;
 					}
 					
-					// 检查是否在表格中，如果在表格中且选中了单元格，则只删除单元格内容
-					if (selection.isInTable && selection.isInTable()) {
+					// 仅表格假选区时整体清空单元格；部分文字选中走 deleteContents
+					if (selection.isFake && selection.isInTable && selection.isInTable()) {
 						var tabletools = editor.plugins.tabletools;
 						if (tabletools && tabletools.getSelectedCells) {
 							var selectedCells = tabletools.getSelectedCells(selection);

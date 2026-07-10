@@ -1178,6 +1178,39 @@ CKEDITOR.plugins.add('document', {
             }
         };
 
+        // 是否为同一 td/th 内的部分文字选区（非整格包裹）
+        function isPartialTextInTableCell( range ) {
+            if ( !range || range.collapsed ) {
+                return false;
+            }
+            var startCell = range.startContainer.getAscendant( { td: 1, th: 1 }, true ),
+                endCell = range.endContainer.getAscendant( { td: 1, th: 1 }, true ),
+                enclosedNode;
+
+            if ( !startCell || !startCell.equals( endCell ) ) {
+                return false;
+            }
+
+            enclosedNode = range.getEnclosedNode();
+            return !( enclosedNode && enclosedNode.is && enclosedNode.is( 'td', 'th' ) );
+        }
+
+        function preventDeleteKeyEvent( evt ) {
+            if ( evt ) {
+                evt.stop();
+                evt.data.preventDefault();
+            }
+        }
+
+        // 删除后将选区折叠为光标，避免剩余文字仍处于选中态
+        function applyCollapsedSelectionAfterDelete( range ) {
+            if ( !range.collapsed ) {
+                range.collapse( true );
+            }
+            range.optimize();
+            editor.getSelection().selectRanges( [ range ] );
+        }
+
         //书写界面判断表格是否有设置不可编辑，若设置不可编辑，则不允许删除
         function tableEditfalse() {
             if (!editor.HMConfig.designMode) {
@@ -1276,32 +1309,30 @@ CKEDITOR.plugins.add('document', {
                         evt.data.preventDefault();
                         return false;
                     }
-                    // 先检查是否在表格中，如果在表格中且选中了单元格，则只删除单元格内容
-                    if (selection && selection.isInTable && selection.isInTable()) {
+                    // 模板制作：优先走 deleteSelectionPart（支持单元格内部分文字删除）
+                    if (editor.HMConfig.designMode) {
+                        if (editor.deleteSelectionPart(range0, evt.data.$.code === 'Delete' ? 'del' : 'back', evt)) {
+                            editor.fire('saveSnapshot');
+                            return false;
+                        }
+                    } else if (selection && selection.isFake && selection.isInTable && selection.isInTable()) {
+                        // 非模板制作：表格假选区整体清空单元格
                         var tabletools = editor.plugins.tabletools;
                         if (tabletools && tabletools.getSelectedCells) {
                             var selectedCells = tabletools.getSelectedCells(selection);
                             if (selectedCells && selectedCells.length > 0) {
-                                // 阻止默认的删除行为，防止删除表格结构
                                 evt.stop();
                                 evt.data.preventDefault();
-                                
-                                // 清空所有选中单元格的内容，但保留单元格结构
                                 editor.fire('saveSnapshot');
                                 for (var i = 0; i < selectedCells.length; i++) {
-                                    var cell = selectedCells[i];
-                                    // 清空单元格内容，但保留一个br以保持单元格高度
-                                    cell.setHtml('<br>');
+                                    selectedCells[i].setHtml('<br>');
                                 }
-                                // 重置选择
                                 selection.reset();
                                 editor.fire('saveSnapshot');
                                 return false;
                             }
                         }
                     }
-                    
-                    editor.deleteSelectionPart(range0, evt.data.$.code === 'Delete' ? 'del' : 'back', evt); // 模板制作系统删除
                     if(tableEditfalse()===false||switchModelDelete()===false||deleteText()===false){
                         evt.stop();
                         evt.data.preventDefault();
@@ -2024,55 +2055,82 @@ CKEDITOR.plugins.add('document', {
 
         editor.deleteSelectionPart = function (range0, type, evt) {
             if (!editor.HMConfig.designMode) {
-                return;
+                return false;
             }
-            if (type == 'del' && range0.endOffset == range0.startOffset) {
-                return;
+            if (type == 'del' && range0.collapsed) {
+                return false;
             }
-            
-            var selection = editor.getSelection();
-            // 检查是否在表格中，如果在表格中且选中了单元格，则只删除单元格内容
-            if (selection && selection.isInTable && selection.isInTable()) {
-                var tabletools = editor.plugins.tabletools;
+
+            var selection = editor.getSelection(),
+                selectionHtml,
+                startEle = range0.startContainer,
+                noDelTag = ['tr', 'td', 'th', 'tbody', 'thead', 'table'],
+                tabletools,
+                selectedCells,
+                i;
+
+            // 单元格内部分文字：只删选中内容（含 startContainer 为 td 的跨子节点选区）
+            if (isPartialTextInTableCell(range0)) {
+                selectionHtml = editor.getSelectedHtml(1);
+                if (selectionHtml) {
+                    range0.deleteContents(true);
+                    applyCollapsedSelectionAfterDelete(range0);
+                    preventDeleteKeyEvent(evt);
+                    return true;
+                }
+            }
+
+            // 表格假选区（整格/多格）：清空单元格内容，保留结构
+            if (selection && selection.isFake && selection.isInTable && selection.isInTable()) {
+                tabletools = editor.plugins.tabletools;
                 if (tabletools && tabletools.getSelectedCells) {
-                    var selectedCells = tabletools.getSelectedCells(selection);
+                    selectedCells = tabletools.getSelectedCells(selection);
                     if (selectedCells && selectedCells.length > 0) {
-                        // 清空所有选中单元格的内容，但保留单元格结构
-                        for (var i = 0; i < selectedCells.length; i++) {
-                            var cell = selectedCells[i];
-                            // 清空单元格内容，但保留一个br以保持单元格高度
-                            cell.setHtml('<br>');
+                        for (i = 0; i < selectedCells.length; i++) {
+                            selectedCells[i].setHtml('<br>');
                         }
-                        // 重置选择
                         selection.reset();
-                        return;
+                        preventDeleteKeyEvent(evt);
+                        return true;
                     }
                 }
             }
-            
-            var startEle = range0.startContainer;
-            var noDelTag = ['tr', 'td', 'th', 'tbody', 'thead', 'table'];
-            if (startEle && startEle.type == 1 && noDelTag.indexOf(startEle.getName()) > -1) {
-                return;
+
+            if (startEle && startEle.type != CKEDITOR.NODE_ELEMENT) {
+                startEle = startEle.getParent();
             }
 
-            var selectionHtml = editor.getSelectedHtml(1);
-            if (selectionHtml) { //选中部分删除逻辑
+            // 折叠光标落在表格结构节点上时不删结构
+            if (range0.collapsed && startEle && startEle.type == CKEDITOR.NODE_ELEMENT &&
+                noDelTag.indexOf(startEle.getName()) > -1) {
+                return false;
+            }
+
+            selectionHtml = editor.getSelectedHtml(1);
+            if (selectionHtml) {
                 range0.deleteContents(true);
-                return;
+                applyCollapsedSelectionAfterDelete(range0);
+                preventDeleteKeyEvent(evt);
+                return true;
             }
 
-            if (range0.endOffset == range0.startOffset && startEle && startEle.type == 1) { //不选中直接删除逻辑
-                if (startEle && startEle.getAttribute && startEle.getAttribute('data-hm-name')) {
+            if (range0.collapsed && startEle && startEle.type == CKEDITOR.NODE_ELEMENT) {
+                if (startEle.getAttribute && startEle.getAttribute('data-hm-name')) {
                     startEle.remove();
-                } else if (startEle && startEle.type == 1 && startEle.getChildren().count() > 0) {
+                    preventDeleteKeyEvent(evt);
+                    return true;
+                }
+                if (startEle.getChildren().count() > 0) {
                     var curChild = startEle.getChildren().getItem(range0.startOffset - 1);
                     if (curChild) {
                         curChild.remove();
+                        preventDeleteKeyEvent(evt);
+                        return true;
                     }
                 }
-                return;
             }
+
+            return false;
         }
 
         // 自动分页

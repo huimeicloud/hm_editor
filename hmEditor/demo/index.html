@@ -98,6 +98,7 @@
                                         <button id="btnRevisionHistory" type="button">修订记录</button>
                                         <button id="btnMultiPartHeader" type="button">设置分段页眉</button>
                                         <button id="btnSetTablePerssion" type="button">设置表格权限</button>
+                                        <button id="btnSetTableRowData" type="button">表格行赋值</button>
                                         <button id="btnInsMetaData" type="button" disabled class="next-feature-btn">插入数据元</button>
                                         <button id="btnFocusElement" type="button">定位元素</button>
                                         <button id="btnGetSelectedElement" type="button">获取选中数据元</button>
@@ -742,6 +743,35 @@
                     <button id="btnConfirmCustomProps" class="dialog-btn btn-primary">确定</button>
                     <button id="btnCancelCustomProps" class="dialog-btn">取消</button>
                     <div class="help-text" id="customPropsHelpText">设置文档的自定义属性信息</div>
+                </div>
+            </div>
+
+            <!-- 设置表格行数据对话框（setTableRowData 手动测试；onTableRowAdd 可选在 createTab 注册） -->
+            <div class="dialogBox tableRowDataDialog" style="display:none;width:640px;">
+                <h3>演示用 - setTableRowData（手动指定行）</h3>
+                <div class="option-row">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="enableOnTableRowAdd"> 创建编辑器时启用点「+」新增行赋值（setOnTableRowAdd）
+                    </label>
+                </div>
+                <div class="input-group">
+                    <label>表格编码：</label>
+                    <input type="text" id="tableRowDataCode" placeholder="如 TABLE_一般护理记录单" value="TABLE_一般护理记录单">
+                </div>
+                <div class="input-group">
+                    <label>行索引：</label>
+                    <input type="number" id="tableRowDataRowIndex" min="0" placeholder="0 表示第一行" value="0">
+                </div>
+                <div class="input-group">
+                    <label>行数据 JSON：</label>
+                    <textarea id="tableRowDataJson" rows="10" style="width:100%;font-family:monospace;font-size:12px;"></textarea>
+                </div>
+                <div>
+                    <button id="btnConfirmTableRowData" class="dialog-btn btn-primary">确定</button>
+                    <button id="btnCancelTableRowData" class="dialog-btn">取消</button>
+                    <div class="help-text" id="tableRowDataHelpText">
+                        勾选上方选项后，新建标签页会自动调用 setOnTableRowAdd；打开「一般护理记录单」点「+」即可验证。本弹窗下方字段仅用于手动测试 setTableRowData。
+                    </div>
                 </div>
             </div>
 

@@ -369,6 +369,14 @@ commonHM.component['documentModel'].fn({
                         background: #f44336 !important;
                         transform: none !important;
                     }
+                    .add-row-icon.disabled {
+                        opacity: 0.5 !important;
+                        cursor: not-allowed !important;
+                    }
+                    .add-row-icon.disabled:hover {
+                        background: #4CAF50 !important;
+                        transform: none !important;
+                    }
                 </style>
             `);
         }
@@ -395,21 +403,53 @@ commonHM.component['documentModel'].fn({
     /**
      * 渲染数据
      * @param {*} data
-     * 
-     * AIED-356 优化：手动分页模式下避免页面抖动
-     * - 手动分页下同步后置 DOM 操作并恢复滚动位置
-     * - 批量处理图片初始化，减少重绘次数
+     * @param {Object} [options] 渲染选项
+     * @param {Boolean} [options.fullRender] 为 true 时强制完整去分页/重分页
+     *
+     * AIED-356 优化：避免页面抖动
+     * - 手动分页：lockSnapshot + 同步后置处理 + 恢复滚动位置
+     * - 实时分页（首次/强制）：隐藏中间态 → 去分页/赋值/重分页
+     * - 实时分页（已分页增量）：原地赋值 + debounce 重分页，与用户输入一致
      */
-    renderData: function (data) {
+    renderData: function (data, options) {
         var _t = this;
+        options = options || {};
         var isRealtimePageBreak = _t.editor.HMConfig.realtimePageBreak;
-        var isManualPageBreak = !isRealtimePageBreak;
+
+        if (isRealtimePageBreak && !options.fullRender && _t._canUseIncrementalRenderData()) {
+            _t._renderDataIncremental(data);
+            return;
+        }
+
+        _t._renderDataFull(data, isRealtimePageBreak);
+    },
+
+    /**
+     * 文档是否已完成实时分页（存在逻辑页）
+     * @returns {Boolean}
+     * @private
+     */
+    _canUseIncrementalRenderData: function () {
+        var pagebreakCmd = CKEDITOR.plugins.pagebreakCmd;
+        if (!pagebreakCmd) {
+            return false;
+        }
+        var body = this.editor.document.getBody().$;
+        return body.getElementsByClassName(pagebreakCmd.LOGIC_PAGE_CLASS).length > 0;
+    },
+
+    /**
+     * 实时分页下增量赋值：跳过去分页，debounce 后重分页
+     * @param {*} data
+     * @private
+     */
+    _renderDataIncremental: function (data) {
+        var _t = this;
         var docEl = _t.editor.document.$.documentElement;
         var bodyEl = _t.editor.document.$.body;
-        var scrollState = null;
 
-        if (isManualPageBreak) {
-            scrollState = {
+        if (!_t._renderDataIncrementalScrollState) {
+            _t._renderDataIncrementalScrollState = {
                 docTop: docEl.scrollTop,
                 docLeft: docEl.scrollLeft,
                 bodyTop: bodyEl.scrollTop,
@@ -417,25 +457,97 @@ commonHM.component['documentModel'].fn({
             };
         }
 
-        var restoreScrollState = function () {
-            if (!scrollState) {
+        _t.editor.fire('lockSnapshot', { dontUpdate: true });
+        try {
+            _t._applyRenderDataItems(data);
+        } finally {
+            _t.editor.fire('unlockSnapshot');
+        }
+
+        _t._scheduleIncrementalRepaging();
+    },
+
+    /**
+     * debounce 合并脚本连续 setDocData 触发的重分页
+     * @private
+     */
+    _scheduleIncrementalRepaging: function () {
+        var _t = this;
+        if (_t._renderDataRepagingTimer) {
+            clearTimeout(_t._renderDataRepagingTimer);
+        }
+        _t._renderDataRepagingTimer = setTimeout(function () {
+            _t._renderDataRepagingTimer = null;
+            var pagebreakCmd = CKEDITOR.plugins.pagebreakCmd;
+            if (!pagebreakCmd) {
+                _t._finishIncrementalRenderData();
                 return;
             }
+            pagebreakCmd.performAutoPaging(_t.editor, {
+                name: '渲染数据后分页',
+                data: {
+                    source: 'renderDataIncremental'
+                }
+            });
+            _t._waitRealtimePagingComplete(function () {
+                _t._finishIncrementalRenderData();
+            });
+        }, 32);
+    },
+
+    /**
+     * 增量渲染收尾：恢复滚动，不重复触发 onDocumentLoad
+     * @private
+     */
+    _finishIncrementalRenderData: function () {
+        var _t = this;
+        var scrollState = _t._renderDataIncrementalScrollState;
+        if (scrollState) {
+            var docEl = _t.editor.document.$.documentElement;
+            var bodyEl = _t.editor.document.$.body;
+            docEl.scrollTop = scrollState.docTop;
+            docEl.scrollLeft = scrollState.docLeft;
+            bodyEl.scrollTop = scrollState.bodyTop;
+            bodyEl.scrollLeft = scrollState.bodyLeft;
+            _t._renderDataIncrementalScrollState = null;
+        }
+    },
+
+    /**
+     * 完整渲染：首次加载或强制 fullRender
+     * @param {*} data
+     * @param {Boolean} isRealtimePageBreak
+     * @private
+     */
+    _renderDataFull: function (data, isRealtimePageBreak) {
+        var _t = this;
+        var isManualPageBreak = !isRealtimePageBreak;
+        var docEl = _t.editor.document.$.documentElement;
+        var bodyEl = _t.editor.document.$.body;
+        var scrollState = {
+            docTop: docEl.scrollTop,
+            docLeft: docEl.scrollLeft,
+            bodyTop: bodyEl.scrollTop,
+            bodyLeft: bodyEl.scrollLeft
+        };
+
+        var restoreScrollState = function () {
             docEl.scrollTop = scrollState.docTop;
             docEl.scrollLeft = scrollState.docLeft;
             bodyEl.scrollTop = scrollState.bodyTop;
             bodyEl.scrollLeft = scrollState.bodyLeft;
         };
 
-        // 如果开启了实时分页,先移除所有分页
+        var endRealtimeRenderBusy = function () {
+            bodyEl.classList.remove('hm-render-data-busy');
+        };
+
         if (isRealtimePageBreak) {
-            // 保存当前快照
+            bodyEl.classList.add('hm-render-data-busy');
             _t.editor.fire('saveSnapshot', {
                 name: 'beforeRenderData',
                 tagName: 'beforeRenderData'
             });
-
-            // 移除所有分页，但保留 body 宽高和内边距，避免回填数据前后滚动条变化导致页面抖动。
             CKEDITOR.plugins.pagebreakCmd.removeAllSplitters(_t.editor, false, {
                 preserveBodyShape: true,
                 preserveBodyWidth: true,
@@ -443,81 +555,258 @@ commonHM.component['documentModel'].fn({
             });
         }
 
-        // AIED-356: 手动分页模式下，使用文档片段减少重绘
-        if (isManualPageBreak) {
-            // 暂停编辑器渲染，避免中间状态显示
-            _t.editor.fire('lockSnapshot');
-        }
-
+        _t.editor.fire('lockSnapshot', { dontUpdate: true });
         try {
-            // 遍历数据数组
-            data.forEach(function (item) {
-                if (item.code) {
-                    // 查找具有相同 doc_code 属性的节点
-                    var $nodes = $(_t.editor.document.$).find('[doc_code="' + item.code + '"]');
-                    // 如果找到节点，更新其内容
-                    if ($nodes.length > 0) {
-                        $nodes.each(function () {
-                            var $node = $(this);
-                            // 处理普通数据元
-                            if (item.data) {
-                                item.data.forEach(function (dataItem) {
-                                    // 检查是否是表格类型数据
-                                    if (dataItem.keyCode && dataItem.keyCode.indexOf('TABLE_') === 0) {
-                                        // 如果是表格数据，使用_renderTableData处理
-                                        // 从keyCode中提取表格名称（去掉TABLE_前缀）
-                                        var tableName = dataItem.keyCode.substring(6);
-                                        _t._renderTableData($node, dataItem.keyValue, tableName);
-                                        return;
-                                    } else {
-                                        _t._bindDataItem($node, dataItem);
-                                    }
-                                });
-                            }
-                            // 勾选「默认当前时间」(_autoshowcurtime) 的 timebox：无业务值时补当前时间（含未出现在 data 中的项）
-                            _t._applyTimeboxAutoshowCurtime($node);
-                        });
-                    }
-                }
-            });
+            _t._applyRenderDataItems(data);
         } finally {
-            // AIED-356: 恢复编辑器渲染
+            _t.editor.fire('unlockSnapshot');
             if (isManualPageBreak) {
-                _t.editor.fire('unlockSnapshot');
                 restoreScrollState();
             }
         }
 
-        // 如果开启了实时分页,渲染完成后重新进行分页
         if (isRealtimePageBreak) {
-            // 执行分页
             CKEDITOR.plugins.pagebreakCmd.performAutoPaging(_t.editor, {
                 name: '渲染数据后分页',
                 data: {
                     source: 'renderData'
                 }
             });
+            _t._waitRealtimePagingComplete(function () {
+                endRealtimeRenderBusy();
+                restoreScrollState();
+                _t.editor.fire('saveSnapshot', {
+                    name: 'afterRenderData',
+                    tagName: 'afterRenderData'
+                });
+                _t._renderDataPostProcess();
+            });
+            return;
+        }
 
-            // 保存分页后的快照
-            _t.editor.fire('saveSnapshot', {
-                name: 'afterRenderData',
-                tagName: 'afterRenderData'
+        _t._renderDataPostProcess();
+        restoreScrollState();
+    },
+
+    /**
+     * 遍历 dataList 并绑定到 DOM
+     * @param {*} data
+     * @private
+     */
+    _applyRenderDataItems: function (data) {
+        var _t = this;
+        data.forEach(function (item) {
+            if (!item.code) {
+                return;
+            }
+            var $nodes = $(_t.editor.document.$).find('[doc_code="' + item.code + '"]');
+            if ($nodes.length === 0) {
+                return;
+            }
+            $nodes.each(function () {
+                var $node = $(this);
+                if (item.data) {
+                    item.data.forEach(function (dataItem) {
+                        if (dataItem.keyCode && dataItem.keyCode.indexOf('TABLE_') === 0) {
+                            var tableName = dataItem.keyCode.substring(6);
+                            _t._renderTableData($node, dataItem.keyValue, tableName);
+                            return;
+                        }
+                        _t._bindDataItem($node, dataItem);
+                    });
+                }
+                _t._applyTimeboxAutoshowCurtime($node);
+            });
+        });
+        _t._syncRealtimePageHeaderFooterFromSource();
+    },
+
+    /**
+     * 实时分页下将源文档中已赋值的页眉页脚同步到各逻辑页可视克隆，并刷新分页缓存。
+     * setDocData 写入 emrWidget 内隐藏的原件，界面展示的是分页克隆，需主动同步。
+     * @private
+     */
+    _syncRealtimePageHeaderFooterFromSource: function () {
+        var _t = this;
+        var pagebreakCmd = CKEDITOR.plugins.pagebreakCmd;
+        if (!pagebreakCmd || !_t.editor.HMConfig.realtimePageBreak) {
+            return;
+        }
+        var body = _t.editor.document.getBody().$;
+        var logicPages = body.getElementsByClassName(pagebreakCmd.LOGIC_PAGE_CLASS);
+        if (!logicPages.length) {
+            return;
+        }
+
+        var $body = $(body);
+        var emrWidgets = body.getElementsByClassName('emrWidget-content');
+        var sourceHeaderTables = [];
+        var sourceFooterTables = [];
+        var wi;
+
+        if (emrWidgets.length) {
+            for (wi = 0; wi < emrWidgets.length && sourceHeaderTables.length === 0; wi++) {
+                $(emrWidgets[wi]).find('table[_paperheader="true"]').each(function () {
+                    sourceHeaderTables.push(this);
+                });
+            }
+            for (wi = emrWidgets.length - 1; wi >= 0 && sourceFooterTables.length === 0; wi--) {
+                $(emrWidgets[wi]).find('table[_paperfooter="true"]').filter(function (i, item) {
+                    return item.getElementsByClassName('page').length;
+                }).each(function () {
+                    sourceFooterTables.push(this);
+                });
+            }
+        }
+        if (!sourceHeaderTables.length) {
+            $body.find('.' + pagebreakCmd.PAGE_CONTENT_CLASS + ' table[_paperheader="true"]').each(function () {
+                sourceHeaderTables.push(this);
+            });
+        }
+        if (!sourceFooterTables.length) {
+            var $footers = $body.find('.' + pagebreakCmd.PAGE_CONTENT_CLASS + ' table[_paperfooter="true"]').filter(function (i, item) {
+                return item.getElementsByClassName('page').length;
+            });
+            if (!$footers.length) {
+                $footers = $body.find('table[_paperfooter="true"]').last();
+            }
+            $footers.each(function () {
+                sourceFooterTables.push(this);
             });
         }
 
-        if (isManualPageBreak) {
-            // 手动分页下避免下一帧再次改动 DOM，减少可见抖动。
-            _t._renderDataPostProcess();
-            restoreScrollState();
-        } else if (typeof window.requestAnimationFrame === 'function') {
-            window.requestAnimationFrame(function () {
-                _t._renderDataPostProcess();
-            });
-        } else {
-            setTimeout(function () {
-                _t._renderDataPostProcess();
-            }, 0);
+        var fillGroupFromTables = function (groupEl, sourceTables) {
+            if (!groupEl || !sourceTables.length) {
+                return;
+            }
+            while (groupEl.firstChild) {
+                groupEl.removeChild(groupEl.firstChild);
+            }
+            for (var ti = 0; ti < sourceTables.length; ti++) {
+                var cloned = sourceTables[ti].cloneNode(true);
+                cloned.style.display = '';
+                groupEl.appendChild(cloned);
+            }
+        };
+
+        var rebuildCacheGroup = function (cacheGroup, sourceTables, groupClass) {
+            if (!sourceTables.length) {
+                return cacheGroup;
+            }
+            var group = cacheGroup;
+            if (!group) {
+                group = _t.editor.document.$.createElement('div');
+                group.className = groupClass;
+                group.setAttribute('contenteditable', 'false');
+            }
+            fillGroupFromTables(group, sourceTables);
+            return group.cloneNode(true);
+        };
+
+        pagebreakCmd.pageHeaderGroup = rebuildCacheGroup(
+            pagebreakCmd.pageHeaderGroup,
+            sourceHeaderTables,
+            pagebreakCmd.PAGE_HEADER_CLASS
+        );
+        pagebreakCmd.pageFooterGroup = rebuildCacheGroup(
+            pagebreakCmd.pageFooterGroup,
+            sourceFooterTables,
+            pagebreakCmd.PAGE_FOOTER_CLASS
+        );
+
+        for (var pi = 0; pi < logicPages.length; pi++) {
+            var logicPage = logicPages[pi];
+            fillGroupFromTables(
+                logicPage.getElementsByClassName(pagebreakCmd.PAGE_HEADER_CLASS)[0],
+                sourceHeaderTables
+            );
+            fillGroupFromTables(
+                logicPage.getElementsByClassName(pagebreakCmd.PAGE_FOOTER_CLASS)[0],
+                sourceFooterTables
+            );
+            _t._refreshQrcodeBarcodeInContainer($(logicPage));
         }
+        if (pagebreakCmd.pageHeaderGroup) {
+            _t._refreshQrcodeBarcodeInContainer($(pagebreakCmd.pageHeaderGroup));
+        }
+        if (pagebreakCmd.pageFooterGroup) {
+            _t._refreshQrcodeBarcodeInContainer($(pagebreakCmd.pageFooterGroup));
+        }
+    },
+
+    /**
+     * 刷新容器内二维码/条形码展示（克隆页眉页脚后需重新绘制）
+     * @param {jQuery} $root
+     * @private
+     */
+    _refreshQrcodeBarcodeInContainer: function ($root) {
+        var _t = this;
+        if (!$root || !$root.length) {
+            return;
+        }
+        $root.find('span[data-hm-node="newtextbox"]').each(function () {
+            var $box = $(this);
+            var $content = $box.find('span.new-textbox-content');
+            if (!$content.length) {
+                return;
+            }
+            var texttype = $content.attr('_texttype');
+            var bindVal = $content.attr('_bindvalue');
+            if (texttype === '二维码') {
+                if (!bindVal) {
+                    return;
+                }
+                _t.generateQrcode({
+                    text: bindVal,
+                    width: $content.attr('_qrcode_width') || '100',
+                    height: $content.attr('_qrcode_height') || '100',
+                    errorLevel: $content.attr('_qrcode_error_level') || 'M',
+                    textPosition: $content.attr('_qrcode_text_position') || 'bottom',
+                    container: $content
+                }).catch(function (error) {
+                    console.error('页眉页脚二维码刷新失败:', error);
+                });
+            } else if (texttype === '条形码') {
+                if (!bindVal) {
+                    return;
+                }
+                try {
+                    if (_t.generateBarcodeSync) {
+                        var barcodeHTML = _t.generateBarcodeSync({
+                            text: bindVal,
+                            width: $content.attr('_barcode_width') || '200',
+                            height: $content.attr('_barcode_height') || '50',
+                            barWidth: $content.attr('_barcode_bar_width') || '2',
+                            textPosition: $content.attr('_barcode_text_position') || 'bottom'
+                        });
+                        $content.html(barcodeHTML);
+                    }
+                } catch (error) {
+                    console.error('页眉页脚条形码刷新失败:', error);
+                }
+            }
+        });
+    },
+
+    /**
+     * 等待实时分页异步完成
+     * @param {Function} callback
+     * @private
+     */
+    _waitRealtimePagingComplete: function (callback) {
+        var pagebreakCmd = CKEDITOR.plugins.pagebreakCmd;
+        if (!pagebreakCmd) {
+            callback();
+            return;
+        }
+        var check = function () {
+            if (!pagebreakCmd.autoPaging) {
+                callback();
+            } else {
+                setTimeout(check, 16);
+            }
+        };
+        setTimeout(check, 0);
     },
 
     /**
@@ -849,6 +1138,131 @@ commonHM.component['documentModel'].fn({
         var _t = this;
         _t._bindDataItem($row, dataItem);
     },
+
+    /**
+     * 查找列表类表格（优先 data-hm-table-code，其次 data-hm-datatable）
+     * @param {jQuery} $body 编辑器 body
+     * @param {String} tableCode 表格编码
+     * @returns {jQuery|null}
+     * @private
+     */
+    _findListTableByCode: function ($body, tableCode) {
+        var $table = $body.find('table[data-hm-table-code="' + tableCode + '"][data-hm-table-type="list"]');
+        if ($table.length === 0) {
+            $table = $body.find('table[data-hm-datatable="' + tableCode + '"][data-hm-table-type="list"]');
+        }
+        return $table.length ? $table : null;
+    },
+
+    /**
+     * 给列表类表格指定行/列设置数据元值（仅绑定目标行/列，不影响其他行/列）
+     * @param {String} tableCode 表格编码（data-hm-table-code 或 data-hm-datatable）
+     * @param {Number} rowIndex 竖向表格（evaluate-type=col）为行索引（tbody tr）；横向表格（evaluate-type=row）为数据列索引
+     * @param {Array} rowData 数据元数组，每项含 keyCode、keyValue，可选 keyName
+     * @returns {Boolean} 是否成功
+     */
+    setTableRowData: function (tableCode, rowIndex, rowData) {
+        var _t = this;
+
+        if (!tableCode) {
+            console.error('setTableRowData: tableCode 参数不能为空');
+            return false;
+        }
+        if (typeof rowIndex !== 'number' || rowIndex < 0 || rowIndex % 1 !== 0) {
+            console.error('setTableRowData: rowIndex 必须为非负整数');
+            return false;
+        }
+        if (!rowData || !Array.isArray(rowData)) {
+            console.error('setTableRowData: rowData 必须为数组');
+            return false;
+        }
+        if (rowData.length === 0) {
+            console.warn('setTableRowData: rowData 为空，未执行绑定');
+            return true;
+        }
+
+        var $body = $(_t.editor.document.getBody().$);
+        var $table = _t._findListTableByCode($body, tableCode);
+        if (!$table) {
+            console.error('setTableRowData: 未找到表格编码为 ' + tableCode + ' 的列表类表格');
+            return false;
+        }
+
+        var $tbody = $table.find('tbody');
+        if (!$tbody.length) {
+            console.error('setTableRowData: 表格中未找到 tbody');
+            return false;
+        }
+
+        var evaluateType = $table.attr('evaluate-type') || 'col';
+        var $scope;
+
+        if (evaluateType === 'col') {
+            var $rows = $tbody.find('tr');
+            if (rowIndex >= $rows.length) {
+                console.error('setTableRowData: 行索引 ' + rowIndex + ' 超出范围（共 ' + $rows.length + ' 行）');
+                return false;
+            }
+            $scope = $rows.eq(rowIndex);
+            rowData.forEach(function (dataItem) {
+                if (dataItem) {
+                    _t._bindTableDataToRow($scope, dataItem);
+                }
+            });
+        } else {
+            var $firstRow = $tbody.find('tr:first');
+            var dataColumnCount = $firstRow.find('td:not(.hm-table-horizontal-header)').length;
+            if (rowIndex >= dataColumnCount) {
+                console.error('setTableRowData: 列索引 ' + rowIndex + ' 超出范围（共 ' + dataColumnCount + ' 列）');
+                return false;
+            }
+            var $allRows = $tbody.find('tr');
+            $scope = $();
+            rowData.forEach(function (dataItem, dataRowIndex) {
+                if (!dataItem || dataRowIndex >= $allRows.length) {
+                    return;
+                }
+                var $currentRow = $allRows.eq(dataRowIndex);
+                var $currentCell = $currentRow.find('td:not(.hm-table-horizontal-header)').eq(rowIndex);
+                if ($currentCell.length > 0) {
+                    _t._bindDataItem($currentCell, dataItem);
+                    $scope = $scope.add($currentCell);
+                }
+            });
+        }
+
+        if ($scope && $scope.length) {
+            _t._applyTimeboxAutoshowCurtime($scope);
+        }
+        return true;
+    },
+
+    /**
+     * 给列表类表格指定 tr 行设置数据元值（直接绑定到行 DOM，不依赖行索引查找）
+     * @param {HTMLElement|jQuery} row 表格行 tr 元素
+     * @param {Array} rowData 数据元数组
+     * @returns {Boolean} 是否成功
+     */
+    setTableRowDataOnRow: function (row, rowData) {
+        var _t = this;
+        var $row = $(row);
+        if (!$row.length) {
+            console.error('setTableRowDataOnRow: row 无效');
+            return false;
+        }
+        if (!rowData || !Array.isArray(rowData)) {
+            console.error('setTableRowDataOnRow: rowData 必须为数组');
+            return false;
+        }
+        rowData.forEach(function (dataItem) {
+            if (dataItem) {
+                _t._bindTableDataToRow($row, dataItem);
+            }
+        });
+        _t._applyTimeboxAutoshowCurtime($row);
+        return true;
+    },
+
     // 设置数据元的值
     bindDatasource: function (datasourceNode, nodeType, bindVal, imgFlag) {
         var _t = this;
@@ -899,6 +1313,7 @@ commonHM.component['documentModel'].fn({
                         // 使用同步条形码生成方法
                         try {
                             if (_t.generateBarcodeSync) {
+                                newtextboxcontent.attr('_bindvalue', bindVal);
                                 var barcodeHTML = _t.generateBarcodeSync({
                                     text: bindVal,
                                     width: barcodeWidth,
@@ -1224,6 +1639,33 @@ commonHM.component['documentModel'].fn({
             }
         });
     },
+
+    /**
+     * 触发列表表格新增行回调（HMConfig.onTableRowAdd / 模板 window.onTableRowAdd）
+     * @param {Object} ctx 回调上下文：tableCode、tableName、rowIndex、$row、$table
+     * @private
+     */
+    _fireOnTableRowAdd: function (ctx) {
+        var _t = this;
+        var hmEditor = _t.$parent;
+        var fn = hmEditor && hmEditor.editor && hmEditor.editor.HMConfig
+            ? hmEditor.editor.HMConfig.onTableRowAdd
+            : null;
+        if (typeof fn !== 'function' && typeof window.onTableRowAdd === 'function') {
+            fn = window.onTableRowAdd;
+        }
+        if (typeof fn !== 'function') {
+            return;
+        }
+        try {
+            var result = fn.call(hmEditor, ctx, hmEditor);
+            if (result && Array.isArray(result) && result.length && ctx.$row) {
+                _t.setTableRowDataOnRow(ctx.$row, result);
+            }
+        } catch (callbackError) {
+            console.error('onTableRowAdd 执行失败:', callbackError);
+        }
+    },
     /**
      * 初始化将带有不可编辑属性数据元状态置为不可编辑状态
      * @param {jQuery} $body 编辑器body元素
@@ -1471,7 +1913,10 @@ commonHM.component['documentModel'].fn({
         // $body.find('table[data-hm-datatable][data-hm-table-type="list"]').on('mouseleave','tbody tr',function(){
         var colTable = 'table[data-hm-datatable][data-hm-table-type="list"][evaluate-type="col"]';
         var rowTable = 'table[data-hm-datatable][data-hm-table-type="list"][evaluate-type="row"]';
-        $body.on('mouseleave', colTable + ' tbody tr', function () {
+        $body.on('mouseleave', colTable + ' tbody tr', function (event) {
+                if (_t._shouldKeepTableActions(event.relatedTarget)) {
+                    return;
+                }
                 $body.find('.table-row-actions').remove();
             }).on('mouseenter.tableActions', colTable + ' tbody tr', function (event) {
                 // 使用 event.target 来获取实际触发的元素
@@ -1479,6 +1924,9 @@ commonHM.component['documentModel'].fn({
                 _t._handleTrMouseEnter($tr[0], $tr.index());
             }).off('click.tableActions', colTable + ' .add-row-icon')
             .on('click.tableActions', colTable + ' .add-row-icon', function (e) {
+                if ($(this).hasClass('disabled')) {
+                    return;
+                }
                 e.stopPropagation();
                 e.preventDefault();
                 _t._addTableRow($(this).closest('tr'));
@@ -1497,7 +1945,10 @@ commonHM.component['documentModel'].fn({
                 e.stopPropagation();
                 e.preventDefault();
                 _t._deleteTableCell($(this).parents('td'));
-            }).on('mouseleave', rowTable + ' tbody td', function () {
+            }).on('mouseleave', rowTable + ' tbody td', function (event) {
+                if (_t._shouldKeepTableActions(event.relatedTarget)) {
+                    return;
+                }
                 $body.find('.table-cell-actions').remove();
             });
 
@@ -1605,6 +2056,17 @@ commonHM.component['documentModel'].fn({
                 }
             }
         });
+    },
+
+    /**
+     * 判断鼠标移出表格行/单元格时是否应保留操作图标。
+     * 列宽拖拽热区（data-cke-temp）覆盖在表格上方，移入时会误触发 mouseleave。
+     */
+    _shouldKeepTableActions: function (relatedTarget) {
+        if (!relatedTarget) {
+            return false;
+        }
+        return $(relatedTarget).closest('.table-row-actions, .table-cell-actions, [data-cke-temp]').length > 0;
     },
 
     _handleTrMouseEnter: function (tr, index) {
@@ -2103,6 +2565,15 @@ commonHM.component['documentModel'].fn({
 
             // 新增行后：对勾选了【默认当前时间】的日期数据元填入当前时间 (AIED-337)
             _t._applyTimeboxAutoshowCurtime($newRow);
+
+            var $table = $currentRow.closest('table');
+            _t._fireOnTableRowAdd({
+                tableCode: $table.attr('data-hm-table-code') || $table.attr('data-hm-datatable') || '',
+                tableName: $table.attr('data-hm-datatable') || '',
+                rowIndex: $newRow.index(),
+                $row: $newRow[0],
+                $table: $table[0]
+            });
         } catch (error) {
             console.warn('增加表格行时发生错误:', error);
         }

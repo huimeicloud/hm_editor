@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @license Copyright (c) 2003-2017, CKSource - Frederico Knabben. All rights reserved.
  * For licensing, see LICENSE.md or http://ckeditor.com/license
  */
@@ -147,6 +147,20 @@ CKEDITOR.plugins.add( 'table', {
 
 		editor.on('contentDom', function () {
 			var editable = editor.editable();
+			var wrapUpdateTimer;
+
+			function scheduleHmLinedWrapUpdate() {
+				clearTimeout(wrapUpdateTimer);
+				wrapUpdateTimer = setTimeout(function () {
+					updateHmLinedCellWrap($(editor.document.getBody().$));
+				}, 50);
+			}
+
+			scheduleHmLinedWrapUpdate();
+			editable.attachListener(editable, 'keyup', scheduleHmLinedWrapUpdate);
+			editable.attachListener(editable, 'paste', scheduleHmLinedWrapUpdate);
+			editor.on('change', scheduleHmLinedWrapUpdate);
+
 			editable.attachListener(editable, 'mouseenter', function () {
 				if (!editor.HMConfig.designMode) {
 					var elements = editor.document.find("[_emrstyle*='_if(disable)']");
@@ -359,6 +373,125 @@ CKEDITOR.plugins.add( 'table', {
 
 	}
 } );
+
+function hmCellPlainText($cell) {
+	var text = ($cell.text && typeof $cell.text === 'function' ? $cell.text() : $cell.textContent) || '';
+	text = text.split('\u00a0').join('').split('\u200B').join('');
+	text = text.split(' ').join('').split('\n').join('').split('\r').join('').split('\t').join('');
+	return text;
+}
+
+function hmLinedCellLineCount(cell) {
+	var $cell = $(cell);
+	if (!hmCellPlainText($cell).length && !$cell.find('img,svg,canvas,table,[data-hm-node]').length) {
+		return 1;
+	}
+
+	var step = getHmCellLineHeightPx($cell);
+	var range = cell.ownerDocument.createRange();
+	range.selectNodeContents(cell);
+	var rects = range.getClientRects();
+	var lineTops = [];
+	// 按行高比例合并同一行的多个 rect；固定 1px 阈值在大行高下会少算，纯高度算法也会少算。
+	var mergeThreshold = Math.max(step * 0.45, 4);
+
+	for (var i = 0; i < rects.length; i++) {
+		var rect = rects[i];
+		if (rect.width <= 2 || rect.height <= 2) {
+			continue;
+		}
+		var top = rect.top;
+		var merged = false;
+		for (var j = 0; j < lineTops.length; j++) {
+			if (Math.abs(lineTops[j] - top) < mergeThreshold) {
+				merged = true;
+				break;
+			}
+		}
+		if (!merged) {
+			lineTops.push(top);
+		}
+	}
+
+	return lineTops.length > 0 ? lineTops.length : 1;
+}
+
+function getHmCellLineHeightPx($cell) {
+	var lineHeight = parseFloat($cell.css('line-height'));
+	if (!lineHeight || isNaN(lineHeight)) {
+		lineHeight = (parseFloat($cell.css('font-size')) || 16) * 1.5;
+	}
+	return Math.round(lineHeight * 100) / 100;
+}
+
+function buildHmLineBackground(lineCount, step) {
+	if (lineCount <= 1) {
+		return null;
+	}
+	var lineEnd = Math.max(step - 1, 0);
+	var images = [];
+	var sizes = [];
+	var positions = [];
+	for (var i = 1; i < lineCount; i++) {
+		images.push(
+			'linear-gradient(to bottom, transparent ' + lineEnd + 'px, #000 ' + lineEnd + 'px, #000 ' + step + 'px, transparent ' + step + 'px)'
+		);
+		sizes.push('100% ' + step + 'px');
+		positions.push('0 ' + ((i - 1) * step) + 'px');
+	}
+	return {
+		image: images.join(', '),
+		size: sizes.join(', '),
+		position: positions.join(', ')
+	};
+}
+
+function applyHmLinedCellLineStyle($cell, lineCount) {
+	var el = $cell[0];
+	if (!el || !el.style) {
+		return;
+	}
+	if (lineCount <= 1) {
+		el.style.backgroundImage = '';
+		el.style.backgroundSize = '';
+		el.style.backgroundPosition = '';
+		el.style.backgroundRepeat = '';
+		return;
+	}
+	var step = getHmCellLineHeightPx($cell);
+	var bg = buildHmLineBackground(lineCount, step);
+	if (!bg) {
+		el.style.backgroundImage = '';
+		el.style.backgroundSize = '';
+		el.style.backgroundPosition = '';
+		return;
+	}
+	el.style.backgroundImage = bg.image;
+	el.style.backgroundSize = bg.size;
+	el.style.backgroundPosition = bg.position;
+	el.style.backgroundRepeat = 'no-repeat';
+}
+
+function updateHmLinedCellWrap($root) {
+	$root.find('table.hm-lined-cell td, table.hm-lined-cell th').each(function () {
+		var $cell = $(this);
+		// 清理历史遗留的 DOM 分隔结构，编辑态仅通过 CSS 背景控制。
+		$cell.find('.hm-line-sep').remove();
+		var $wrapper = $cell.children('.hm-lined-content');
+		if ($wrapper.length) {
+			$wrapper.first().replaceWith($wrapper.first().contents());
+		}
+
+		var lineCount = hmLinedCellLineCount(this);
+		if (lineCount > 1) {
+			$cell.addClass('hm-lined-wrap');
+			applyHmLinedCellLineStyle($cell, lineCount);
+		} else {
+			$cell.removeClass('hm-lined-wrap');
+			applyHmLinedCellLineStyle($cell, 1);
+		}
+	});
+}
 
 function resetDataSource($body,filterNameFun){
 	var allDs = getDataSourceList($body);

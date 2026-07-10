@@ -579,6 +579,7 @@ function doPrintChrome(editor, syncType, timeout, download, callback, downloadPd
     }
     $(body.$).find('span[data-hm-node="newtextbox"][_border]').css('border','1px solid black').css('min-width','12px').css('height','12px')
         .css("font-size","12px").css('display','inline-block').css('text-align','center').css("line-height","12px");
+    prepareHmLinedCellsForPrint($(body.$));
     dealPrintGroupTable($(body.$));
     $(body.$).find('span[diag]').css('display','none');
     $(body.$).find('span[operation]').css('display','none');
@@ -656,6 +657,130 @@ function doPrintChrome(editor, syncType, timeout, download, callback, downloadPd
         clearTimeout(timeIndex);
     }, timeout);
 }
+
+function hmCellHasContent($cell) {
+    return hmCellPlainText($cell).length > 0 || $cell.find('img,svg,canvas,table,[data-hm-node]').length > 0;
+}
+
+function hmCellPlainText($cell) {
+    var text = $cell.text() || '';
+    text = text.split('\u00a0').join('').split('\u200B').join('');
+    text = text.split(' ').join('').split('\n').join('').split('\r').join('').split('\t').join('');
+    return text;
+}
+
+function getHmCellLineHeightPx($cell) {
+    var el = $cell[0];
+    if (el && el.style && el.style.lineHeight) {
+        var explicitPx = parseFloat($cell.css('line-height'));
+        if (explicitPx && !isNaN(explicitPx)) {
+            return Math.round(explicitPx * 100) / 100;
+        }
+    }
+
+    var $styled = $cell.find('[style*="line-height"]').first();
+    if ($styled.length) {
+        var innerPx = parseFloat($styled.css('line-height'));
+        if (innerPx && !isNaN(innerPx)) {
+            return Math.round(innerPx * 100) / 100;
+        }
+    }
+
+    var lineHeight = parseFloat($cell.css('line-height'));
+    if (!lineHeight || isNaN(lineHeight)) {
+        lineHeight = (parseFloat($cell.css('font-size')) || 16) * 1.5;
+    }
+    return Math.round(lineHeight * 100) / 100;
+}
+
+function syncHmCellLineHeightToWrapper($cell, $content) {
+    var cellEl = $cell[0];
+    var contentEl = $content[0];
+    if (!cellEl || !contentEl || !contentEl.style) {
+        return;
+    }
+
+    if (cellEl.style.lineHeight) {
+        contentEl.style.lineHeight = cellEl.style.lineHeight;
+        return;
+    }
+
+    var styledChild = $cell.find('[style*="line-height"]').first()[0];
+    if (styledChild && styledChild.style && styledChild.style.lineHeight) {
+        contentEl.style.lineHeight = styledChild.style.lineHeight;
+        return;
+    }
+
+    $content.css('line-height', $cell.css('line-height'));
+}
+
+function hmLinedCellLineCount(cell) {
+    var $cell = $(cell);
+    if (!hmCellHasContent($cell)) {
+        return 1;
+    }
+
+    var step = getHmCellLineHeightPx($cell);
+
+    var range = cell.ownerDocument.createRange();
+    range.selectNodeContents(cell);
+    var rects = range.getClientRects();
+    var lineTops = [];
+    var mergeThreshold = Math.max(step * 0.45, 4);
+
+    for (var i = 0; i < rects.length; i++) {
+        var rect = rects[i];
+        if (rect.width <= 2 || rect.height <= 2) {
+            continue;
+        }
+        var top = rect.top;
+        var merged = false;
+        for (var j = 0; j < lineTops.length; j++) {
+            if (Math.abs(lineTops[j] - top) < mergeThreshold) {
+                merged = true;
+                break;
+            }
+        }
+        if (!merged) {
+            lineTops.push(top);
+        }
+    }
+
+    return lineTops.length > 0 ? lineTops.length : 1;
+}
+
+/** 打印前为 hm-lined-cell 按行插入分隔线（DOM），wk 下比 CSS 渐变更稳定。 */
+function prepareHmLinedCellsForPrint($root) {
+    $root.find('table.hm-lined-cell td, table.hm-lined-cell th').each(function () {
+        var $cell = $(this);
+        var $wrapper = $cell.children('.hm-lined-content');
+
+        $cell.find('.hm-line-sep').remove();
+        if ($wrapper.length) {
+            $wrapper.first().replaceWith($wrapper.first().contents());
+        }
+        if (!hmCellHasContent($cell)) {
+            return;
+        }
+
+        var lineCount = hmLinedCellLineCount(this);
+        if (lineCount <= 1) {
+            return;
+        }
+
+        $cell.wrapInner('<div class="hm-lined-content"></div>');
+        var $content = $cell.children('.hm-lined-content').first();
+        syncHmCellLineHeightToWrapper($cell, $content);
+        var lineHeight = getHmCellLineHeightPx($cell);
+
+        for (var i = 1; i < lineCount; i++) {
+            $('<div class="hm-line-sep" contenteditable="false"></div>')
+                .css('top', (i * lineHeight) + 'px')
+                .appendTo($content);
+        }
+    });
+}
+
 function doPrint(editor, syncType, timeout, download, callback, downloadPdfCallback) {
     // 使用http打印
     var p;
@@ -915,6 +1040,7 @@ function doPrint(editor, syncType, timeout, download, callback, downloadPdfCallb
     $(body.$).find('span[data-hm-node="newtextbox"][_border]').css('border','1px solid black').css('min-width','12px').css('height','14px').css("font-size","10px")
         .css('display','inline-block').css('text-align','left').css("line-height","14px");
         //.css("line-height","12px").css("vertical-align","text-bottom");
+    prepareHmLinedCellsForPrint($(body.$));
     dealPrintGroupTable($(body.$));
     // 处理续打
     if ((syncType === "打印" || syncType === "续打") && !dealPrintLabel(editor, syncType)) {  //处理打印标识

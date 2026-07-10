@@ -29,6 +29,31 @@ table[data-hm-table=temperature] td:last-child,
 table[data-hm-table=temperature] th:last-child {
     border-right-width: 1.2pt;
 }
+table.hm-lined-cell td,
+table.hm-lined-cell th {
+    vertical-align: top;
+    background-image: none !important;
+}
+table.hm-lined-cell .hm-lined-content {
+    display: block;
+    position: relative;
+}
+table.hm-lined-cell .hm-lined-content p {
+    margin: 0 !important;
+}
+table.hm-lined-cell .hm-line-sep {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 1px dashed black;
+    pointer-events: none;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+table.solid-border.hm-lined-cell .hm-line-sep {
+    border-top-style: solid;
+}
 
 td[_emrstyle ~='_if(overflow){breakparagraph}']{
     white-space: normal;word-break:break-all;line-height: 1;

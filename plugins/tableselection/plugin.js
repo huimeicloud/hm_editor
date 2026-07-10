@@ -1622,8 +1622,11 @@
 			}
 
 			function clearCellInRange( range ) {
-				if ( range.getEnclosedNode() ) {
-					range.getEnclosedNode().setText( '' );
+				var enclosedNode = range.getEnclosedNode();
+				// 仅当 range 完全包裹一个 td/th 单元格时，才整体清空文本；
+				// 单元格内部分内容选择应走 deleteContents，避免误删整个单元格内容 (AIED-365)
+				if ( enclosedNode && enclosedNode.is && enclosedNode.is( 'td', 'th' ) ) {
+					enclosedNode.setText( '' );
 				} else {
 					range.deleteContents();
 				}

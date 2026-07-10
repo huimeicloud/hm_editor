@@ -130,6 +130,20 @@ HMEditor.fn({
     initEditorConfig: function () {
         var _t = this;
         _t.editor.options = _t.options;
+        var rowAddOpt = _t.options.onTableRowAdd;
+        var rowAddHandler = null;
+        if (typeof rowAddOpt === 'function') {
+            rowAddHandler = rowAddOpt;
+        } else if (rowAddOpt && rowAddOpt.tableCode && Array.isArray(rowAddOpt.rowData)) {
+            (function (code, data) {
+                rowAddHandler = function (ctx) {
+                    if (ctx.tableCode !== code) {
+                        return;
+                    }
+                    return data;
+                };
+            })(rowAddOpt.tableCode, rowAddOpt.rowData);
+        }
         _t.editor.HMConfig = window.HMConfig = {
             designMode: _t.options.designMode || false,
             reviseMode: _t.options.reviseMode || false,
@@ -145,8 +159,10 @@ HMEditor.fn({
             customParams: _t.options.customParams || {}, // 自定义参数 动态数据源接口入参
             editShowPaddingTopBottom: _t.options.editShowPaddingTopBottom || false, // 编辑时纸张设置里面的上下边距是否有效，默认为false
             multiPartHeader: _t.options.multiPartHeader || [], // 聚合病程实时分页时，页眉上转科换床信息
-            allowModifyDatasource: _t.options.allowModifyDatasource || false // 允许修改数据元名称和编码
+            allowModifyDatasource: _t.options.allowModifyDatasource || false, // 允许修改数据元名称和编码
+            onTableRowAdd: rowAddHandler // 列表表格点击「+」新增行后回调或行数据
         }
+        _t.onTableRowAdd = _t.editor.HMConfig.onTableRowAdd;
         _t.editor.showTools = _t.options.hasOwnProperty('showTools') ? _t.options.showTools : true;
         delete _t.options.designMode;
         delete _t.options.reviseMode;

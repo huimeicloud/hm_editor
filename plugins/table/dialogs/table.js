@@ -29,6 +29,51 @@
         return maxCols;
     }
 
+    function syncHmLineBorderCheckbox(dialog) {
+        var whiteSpaceEl = dialog.getContentElement('info', 'white-space');
+        var lineBorderEl = dialog.getContentElement('info', 'hm-line-border');
+        if (!whiteSpaceEl || !lineBorderEl) {
+            return;
+        }
+        if (whiteSpaceEl.getValue() == '1') {
+            lineBorderEl.enable();
+        } else {
+            lineBorderEl.disable();
+            lineBorderEl.setValue(false);
+        }
+    }
+
+    function cleanHmLinedCellDom($table) {
+        $table.find('td, th').each(function () {
+            var $cell = $(this);
+            $cell.find('.hm-line-sep').remove();
+            var $wrapper = $cell.children('.hm-lined-content');
+            if ($wrapper.length) {
+                $wrapper.first().replaceWith($wrapper.first().contents());
+            }
+            $cell.removeClass('hm-lined-wrap');
+            if (typeof applyHmLinedCellLineStyle === 'function') {
+                applyHmLinedCellLineStyle($cell, 1);
+            }
+        });
+    }
+
+    function refreshHmLinedCellFromDialog(dialog, selectedTable, editor) {
+        var whiteSpaceEl = dialog.getContentElement('info', 'white-space');
+        var lineBorderEl = dialog.getContentElement('info', 'hm-line-border');
+        var wrapMode = whiteSpaceEl && whiteSpaceEl.getValue() == '1';
+        var enabled = wrapMode && lineBorderEl && lineBorderEl.getValue();
+
+        if (enabled) {
+            selectedTable.addClass('hm-lined-cell');
+            if (editor && typeof updateHmLinedCellWrap === 'function') {
+                updateHmLinedCellWrap($(editor.document.getBody().$));
+            }
+        } else {
+            selectedTable.removeClass('hm-lined-cell');
+            cleanHmLinedCellDom($(selectedTable.$));
+        }
+    }
 
     // Whole-positive-integer validator.
     function validatorNum(msg) {
@@ -189,6 +234,13 @@
                         tableTypeElement.onChange();
                     }, 10);
                 }
+
+                var whiteSpaceElement = this.getContentElement('info', 'white-space');
+                if (whiteSpaceElement) {
+                    setTimeout(function () {
+                        syncHmLineBorderCheckbox(whiteSpaceElement.getDialog());
+                    }, 10);
+                }
                 
                 // 在修改已有表格属性时禁用表格方向选择
                 if (command == 'tableProperties' && table) {
@@ -226,7 +278,8 @@
                             row = tbody.append(makeElement('tr'));
                             for (var j = 0; j < cols; j++) {
                                 var cell = row.append(makeElement('td'));
-                                cell.appendBogus();
+                                // 强制插入 <br>，避免 needsBrFiller 被全局关闭时（如在 span 内回车后）单元格高度为 0
+                                cell.appendBogus(true);
                             }
                         }
                     }
@@ -671,6 +724,7 @@
                     },
                     {
                         type: 'hbox',
+                        widths: ['58%', '42%'],
                         children: [{
                                 id: 'white-space',
                                 type: 'select',
@@ -684,6 +738,9 @@
                                     ['单行溢出截断...', '3'],
                                     ['单行溢出截断不显示', '4']
                                 ],
+                                onChange: function () {
+                                    syncHmLineBorderCheckbox(this.getDialog());
+                                },
                                 setup: function (selectedTable) {
                                     if (selectedTable.hasClass('table2')) {
                                         this.setValue('2');
@@ -710,7 +767,19 @@
                                         selectedTable.removeClass('table2');
                                         selectedTable.removeClass('table3');
                                     }
-
+                                    refreshHmLinedCellFromDialog(this.getDialog(), selectedTable, this.getDialog().getParentEditor());
+                                }
+                            },
+                            {
+                                id: 'hm-line-border',
+                                type: 'checkbox',
+                                label: '换行显示边框',
+                                'default': false,
+                                setup: function (selectedTable) {
+                                    this.setValue(selectedTable.hasClass('hm-lined-cell'));
+                                },
+                                commit: function (data, selectedTable) {
+                                    refreshHmLinedCellFromDialog(this.getDialog(), selectedTable, this.getDialog().getParentEditor());
                                 }
                             }
                             // {

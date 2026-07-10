@@ -119,6 +119,12 @@ table td, table th {
     border: 1px dashed black;
     /*text-align: left;*/
 }
+table.hm-lined-cell td.hm-lined-wrap,
+table.hm-lined-cell th.hm-lined-wrap {
+    vertical-align: top;
+    background-repeat: no-repeat;
+    background-position: left top;
+}
 table .hm-table-horizontal-header { font-weight:400;text-align:center; }
 
 table td._text-top{
@@ -950,6 +956,11 @@ span[_radiostyle='radioStyle_square'] span[data-hm-itemname].fa-circle-o:before 
 }
 span[_radiostyle='radioStyle_square'] span[data-hm-itemname].fa-dot-circle-o:before {
     content: "\f046";
+}
+
+/* 实时分页 renderData 期间隐藏中间态，避免去分页/赋值/重分页过程可见抖动 */
+body.hm-render-data-busy {
+    visibility: hidden;
 }
 
 /* 修订样式==== start ===== */

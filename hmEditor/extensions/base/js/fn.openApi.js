@@ -63,13 +63,15 @@ HMEditor.fn({
      * @param {String} dataList[].nursingData[][].keyId 护理数据数据元ID
      * @param {String} dataList[].nursingData[][].keyName 护理数据数据元名称
      * @param {String} dataList[].nursingData[][].keyValue 护理数据数据元值
+     * @param {Object} [options] 渲染选项
+     * @param {Boolean} [options.fullRender] 为 true 时强制完整去分页/重分页（默认已分页文档走增量赋值）
      */
-    setDocData: function (dataList) {
+    setDocData: function (dataList, options) {
         // 如果传入的是对象，则包装成数组
         if (dataList && typeof dataList === 'object' && !Array.isArray(dataList)) {
             dataList = [dataList];
         }
-        this.documentModel.setDocData(dataList);
+        this.documentModel.setDocData(dataList, options);
     },
     /**
      * 显示AI草稿内容（支持多份病历）
@@ -724,6 +726,86 @@ HMEditor.fn({
      */
     setTableRowAddable: function (tableCode, rowIndex, flag) {
         this.documentModel.setTableRowAddable(tableCode, rowIndex, flag); 
+    },
+    /**
+     * 注册列表表格点击「+」新增行后的行数据（推荐集成方式）
+     * @param {String|Function|Object|null} tableCodeOrCallback 表格编码；或自定义回调；或 { tableCode, rowData }；null 取消注册
+     * @param {Array} [rowData] 与 tableCode 搭配：新增行要绑定的数据元数组
+     * @returns {Boolean} 是否注册成功
+     *
+     * 使用示例（推荐，仅传参）：
+     * editor.setOnTableRowAdd('TABLE_一般护理记录单', [
+     *   { keyCode: 'DE09.00.053.00', keyValue: '2025-10-24 10:00' },
+     *   { keyCode: 'DE04.10.186.00', keyValue: '36.8' }
+     * ]);
+     *
+     * 自定义逻辑时可传函数（return 数据元数组自动绑定到新行）：
+     * editor.setOnTableRowAdd(function (ctx, editor) { return [...]; });
+     */
+    setOnTableRowAdd: function (tableCodeOrCallback, rowData) {
+        var callback = null;
+
+        if (tableCodeOrCallback == null) {
+            callback = null;
+        } else if (typeof tableCodeOrCallback === 'function') {
+            callback = tableCodeOrCallback;
+        } else if (typeof tableCodeOrCallback === 'string') {
+            if (!rowData || !Array.isArray(rowData)) {
+                console.error('setOnTableRowAdd: rowData 必须为数组');
+                return false;
+            }
+            var tableCode = tableCodeOrCallback;
+            callback = function (ctx) {
+                if (ctx.tableCode !== tableCode) {
+                    return;
+                }
+                return rowData;
+            };
+        } else if (typeof tableCodeOrCallback === 'object') {
+            var opts = tableCodeOrCallback;
+            if (!opts.tableCode) {
+                console.error('setOnTableRowAdd: tableCode 不能为空');
+                return false;
+            }
+            if (!opts.rowData || !Array.isArray(opts.rowData)) {
+                console.error('setOnTableRowAdd: rowData 必须为数组');
+                return false;
+            }
+            var code = opts.tableCode;
+            var data = opts.rowData;
+            callback = function (ctx) {
+                if (ctx.tableCode !== code) {
+                    return;
+                }
+                return data;
+            };
+        } else {
+            console.error('setOnTableRowAdd: 参数无效');
+            return false;
+        }
+
+        this.editor.HMConfig.onTableRowAdd = callback;
+        this.onTableRowAdd = callback;
+        return true;
+    },
+    /**
+     * 给列表类表格指定行/列设置数据元值（程序化赋值，非「+」点击场景）
+     * @param {String} tableCode 表格编码（data-hm-table-code 或 data-hm-datatable）
+     * @param {Number} rowIndex 竖向表格为 tbody 行索引；横向表格为数据列索引
+     * @param {Array} rowData 数据元数组 [{ keyCode, keyValue, keyName? }, ...]
+     * @returns {Boolean} 是否成功
+     */
+    setTableRowData: function (tableCode, rowIndex, rowData) {
+        return this.documentModel.setTableRowData(tableCode, rowIndex, rowData);
+    },
+    /**
+     * 给指定 tr 行设置数据元值（onTableRowAdd 内可用 ctx.$row 调用）
+     * @param {HTMLElement} row 表格行 tr 元素
+     * @param {Array} rowData 数据元数组
+     * @returns {Boolean} 是否成功
+     */
+    setTableRowDataOnRow: function (row, rowData) {
+        return this.documentModel.setTableRowDataOnRow(row, rowData);
     },
     /**
      * 定位到病历或元素

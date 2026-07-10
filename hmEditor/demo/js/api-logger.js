@@ -569,6 +569,8 @@ class ApiLogger {
             'showWarnInfo', 'execEditorMethod', 'execCommand',
             'addCustomMenu', 'setDocReadOnly', 'setDocReviseMode',
             'setTemplateDatasource','setDocWatermark',
+            'getTableData', 'setTableRowData', 'setTableRowDataOnRow', 'setOnTableRowAdd',
+            'setTableRowReadonly', 'setTableRowDeletable', 'setTableRowAddable',
 	    'downloadPdf','downloadOfd',
 
             // 从fn.baseInit.js

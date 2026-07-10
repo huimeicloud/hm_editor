@@ -865,12 +865,12 @@ body {
     gap: 10px;
 }
 
-.documentInfo .option-row, .insertMetaDataInfo .option-row {
+.documentInfo .option-row, .insertMetaDataInfo .option-row, .tableRowDataDialog .option-row {
     margin-bottom: 15px;
     text-align: left;
 }
 
-.documentInfo .checkbox-label,.insertMetaDataInfo .checkbox-label {
+.documentInfo .checkbox-label,.insertMetaDataInfo .checkbox-label,.tableRowDataDialog .checkbox-label {
     display: flex;
     align-items: center;
     font-size: 13px;
@@ -878,7 +878,7 @@ body {
     cursor: pointer;
 }
 
-.documentInfo .checkbox-label input[type="checkbox"],.insertMetaDataInfo .checkbox-label input[type="checkbox"] {
+.documentInfo .checkbox-label input[type="checkbox"],.insertMetaDataInfo .checkbox-label input[type="checkbox"],.tableRowDataDialog .checkbox-label input[type="checkbox"] {
     margin-right: 6px;
 }
 

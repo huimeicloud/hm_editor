@@ -810,6 +810,17 @@
 			dimension = 0;
 
 		var _row = null;//上下合并单元格时只用合并第一行的宽度
+		var _usePercent = false; // 宽度单位是否为百分比，使用第一个单元格的单位
+		// 检测是否是水平合并（所有单元格在同一行）
+		var isHorizontalMerge = true;
+		var firstRowIndex = cells[ 0 ].getParent().$.rowIndex;
+		for ( var k = 1; k < cells.length; k++ ) {
+			if ( cells[ k ].getParent().$.rowIndex !== firstRowIndex ) {
+				isHorizontalMerge = false;
+				break;
+			}
+		}
+
 		for ( var i = 0; i < cells.length; i++ ) {
 			cell = cells[ i ];
 
@@ -818,18 +829,25 @@
 				colSpan = cell.$.colSpan,
 				rowSpan = cell.$.rowSpan,
 				rowIndex = tr.$.rowIndex,
-				_usePercent = cell.$.style.width.indexOf('%') > 0;
-			    _colWidth = parseFloat(cell.$.style.width),
+				_colWidth = parseFloat(cell.$.style.width),
 				colIndex = cellInRow( map, rowIndex, cell );
 			if (i === 0) {
 				_row = rowIndex;
+				_usePercent = cell.$.style.width.indexOf('%') > 0;
 			}
 
 			// Accumulated the actual places taken by all selected cells.
 			dimension += colSpan * rowSpan;
 			// Accumulated the maximum virtual spans from column and row.
 			totalColSpan = Math.max( totalColSpan, colIndex - startColumn + colSpan );
-			totalRowSpan = Math.max( totalRowSpan, rowIndex - startRow + rowSpan );
+			// 修复单行合并问题：水平合并时只使用第一个单元格的 rowSpan
+			if ( isHorizontalMerge ) {
+				if ( i === 0 ) {
+					totalRowSpan = rowSpan;
+				}
+			} else {
+				totalRowSpan = Math.max( totalRowSpan, rowIndex - startRow + rowSpan );
+			}
 			if (rowIndex == _row) {
 				totalWidth = totalWidth + _colWidth;
 			}
@@ -856,20 +874,20 @@
 
 			firstCell.appendBogus();
 
-			if ( totalColSpan >= mapWidth )
-				firstCell.removeAttribute( 'rowSpan' );
-			else
+			if ( totalRowSpan > 1 )
 				firstCell.$.rowSpan = totalRowSpan;
+			else
+				firstCell.removeAttribute( 'rowSpan' );
 
-			if ( totalRowSpan >= mapHeight )
-				firstCell.removeAttribute( 'colSpan' );
-			else {
+			if ( totalColSpan > 1 ) {
 				firstCell.$.colSpan = totalColSpan;
 				if (_usePercent) {
 					firstCell.$.style.width = totalWidth+'%';
 				} else {
 					firstCell.$.style.width = totalWidth+'px';
 				}
+			} else {
+				firstCell.removeAttribute( 'colSpan' );
 			}
 
 			// Swip empty <tr> left at the end of table due to the merging.

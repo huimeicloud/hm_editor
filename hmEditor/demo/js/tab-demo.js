@@ -6,6 +6,20 @@
 // 全局变量：存储最后点击的文档信息
 window.lastClickedDocCode = '';
 
+/** 创建编辑器后注册：列表表格点「+」自动绑定行数据 */
+function registerDemoOnTableRowAdd(editor) {
+    if (!editor || typeof editor.setOnTableRowAdd !== 'function') {
+        return;
+    }
+    editor.setOnTableRowAdd('TABLE_一般护理记录单', [
+        { keyCode: 'DE09.00.053.00', keyValue: '2025-10-24 10:00' },
+        { keyCode: 'DE04.10.186.00', keyValue: '36.8' },
+        { keyCode: 'DE04.10.265.00', keyValue: '良好' },
+        { keyCode: 'DE06.00.183.00', keyValue: 'Demo 新增行赋值' },
+        { keyCode: 'DE02.01.039.00.178', keyValue: '演示签名' }
+    ]);
+}
+
 class TabEditorManager {
     constructor(options) {
         this.options = options || {};
@@ -101,6 +115,9 @@ class TabEditorManager {
 
             // 创建编辑器
             const editorInstance = await HMEditorLoader.createEditorAsync(mergedOptions);
+            if ($('#enableOnTableRowAdd').is(':checked')) {
+                registerDemoOnTableRowAdd(editorInstance);
+            }
             if (content) {
                 // 如果有内容，则设置文档内容
                 editorInstance.setDocContent(content);
@@ -1304,6 +1321,71 @@ $(document).ready(function () {
         $('.tablePermissionDialog').hide();
         $('#tablePermissionCode').val('');
         $('#tablePermissionRowIndex').val('');
+    });
+
+    // ==================== setTableRowData 手动测试（onTableRowAdd 由弹窗配置项控制是否在 createTab 注册） ====================
+    var DEMO_TABLE_ROW_DATA_JSON = [
+        { keyCode: 'DE09.00.053.00', keyValue: '2025-10-24 10:00' },
+        { keyCode: 'DE04.10.186.00', keyValue: '36.8' },
+        { keyCode: 'DE04.10.265.00', keyValue: '良好' },
+        { keyCode: 'DE06.00.183.00', keyValue: 'Demo 新增行赋值' },
+        { keyCode: 'DE02.01.039.00.178', keyValue: '演示签名' }
+    ];
+
+    $('#btnSetTableRowData').on('click', function () {
+        if (!window.tabManager.currentTabId) {
+            showEditorNotOpenDialog('表格行赋值');
+            return;
+        }
+        if (!$('#tableRowDataCode').val()) {
+            $('#tableRowDataCode').val('TABLE_一般护理记录单');
+        }
+        $('#tableRowDataJson').val(JSON.stringify(DEMO_TABLE_ROW_DATA_JSON, null, 2));
+        $('.tableRowDataDialog').show();
+    });
+
+    $('#btnConfirmTableRowData').on('click', async function () {
+        try {
+            var tableCode = $('#tableRowDataCode').val().trim();
+            var jsonText = $('#tableRowDataJson').val().trim();
+            if (!tableCode) {
+                showAlertDialog('请输入表格编码');
+                return;
+            }
+            if (!jsonText) {
+                showAlertDialog('请输入行数据 JSON');
+                return;
+            }
+            var rowData = JSON.parse(jsonText);
+            if (!Array.isArray(rowData)) {
+                showAlertDialog('行数据必须是 JSON 数组');
+                return;
+            }
+            var editor = await window.tabManager.getCurrentEditor();
+            var rowIndex = parseInt($('#tableRowDataRowIndex').val(), 10);
+            if (isNaN(rowIndex) || rowIndex < 0) {
+                showAlertDialog('行索引必须为非负整数');
+                return;
+            }
+            var ok = editor.setTableRowData(tableCode, rowIndex, rowData);
+            if (!ok) {
+                showAlertDialog('setTableRowData 调用失败，请检查表格编码与行索引');
+                return;
+            }
+            var verifyData = editor.getTableData({ tableCode: tableCode, rowIndex: rowIndex });
+            $('#contentTitle').text('setTableRowData 结果（第 ' + rowIndex + ' 行）');
+            $('#contentDisplay').val(JSON.stringify(verifyData, null, 2));
+            $('#btnSaveHtmlRaw').addClass('hidden');
+            $('.contentDisplayDialog').show();
+            $('.tableRowDataDialog').hide();
+        } catch (e) {
+            console.error('setTableRowData 演示失败:', e);
+            showAlertDialog('操作失败: ' + e.message);
+        }
+    });
+
+    $('#btnCancelTableRowData').on('click', function () {
+        $('.tableRowDataDialog').hide();
     });
 
     //只读模式
@@ -3784,7 +3866,7 @@ var TOOLBAR_REGULAR_BUTTON_IDS = [
     'btnInsertDoc', 'btnDeleteDoc', 'btnSetData', 'btnInsertDataAtCursor', 'btnInsertImageAtCursor',
     'btnInsertHtml', 'btnMenu', 'btnReadOnly', 'btnRevise', 'btnShowTools', 'btnWatermark',
     'btnGetHtml', 'btnGetText', 'btnGetMetaData', 'btnExportPdf', 'btnCustomProperties',
-    'btnRevisionHistory', 'btnMultiPartHeader', 'btnSetTablePerssion', 'btnInsMetaData',
+    'btnRevisionHistory', 'btnMultiPartHeader', 'btnSetTablePerssion', 'btnSetTableRowData', 'btnInsMetaData',
     'btnFocusElement', 'btnGetSelectedElement', 'btnGetSelectedContent'
 ];
 
