@@ -3294,6 +3294,23 @@ CKEDITOR.plugins.add('datasource', {
 
             };
 
+            // 搜狗等 IME 可能不走有效 keydown 清 placeholder，仅在 beforeinput/compositionstart 落字；
+            // 若不在落字前清除，会把汉字插进占位符文本前，表现为「光标在文字前面」。
+            function clearPlaceholderForIme(evt) {
+                var $boundaryNewtextbox = editor.plugins["datasource"].getRangeBoundaryNewtextbox();
+                if (!$boundaryNewtextbox || !$boundaryNewtextbox.length) {
+                    return;
+                }
+                var $ph = $boundaryNewtextbox.first().children(':first');
+                if (!$ph.length || (!$ph.attr('_placeholdertext') && !$ph.find('.r-model-gen-remark').length)) {
+                    return;
+                }
+                evt.container = new CKEDITOR.dom.element($boundaryNewtextbox[0]).getAscendant({ td: 1, p: 1, div: 1 });
+                editable.fire('togglePlaceHolder', evt);
+            }
+            editable.attachListener(editable, 'beforeinput', clearPlaceholderForIme, null, null, -999);
+            editable.attachListener(editable, 'compositionstart', clearPlaceholderForIme, null, null, -999);
+
             editable.attachListener(editable, 'contextmenu', function (evt) {
                 var $div = $('#interactDiv');
                 if($div){
@@ -3623,23 +3640,34 @@ CKEDITOR.plugins.add('datasource', {
                                     lastPlaceholder.nodeType === CKEDITOR.NODE_TEXT &&
                                     (lastPlaceholder.data = $boundaryNewtextbox.attr('_placeholder'));
                             } else {
-                                $placeholder.removeAttr('_placeholdertext');
-                                if (lastPlaceholder && lastPlaceholder.nodeType === CKEDITOR.NODE_TEXT) {
-                                    lastPlaceholder.data = lastPlaceholder.data.replace(zeroWidthChar, '');
-                                    lastPlaceholder.data = lastPlaceholder.data.substr(0, lastPlaceholder.data.length - $placeholder.parent().attr('_placeholder').length).replace(zeroWidthChar, '');
-                                }else if($(lastPlaceholder).hasClass('r-model-gen-remark')){
-                                    $(lastPlaceholder).remove();
-                                }
-                                if (eventName === 'paste') {
-                                    selection = editor.getSelection();
-                                    range0 = selection.getRanges()[0];
-                                    range0.moveToPosition(new CKEDITOR.dom.element($placeholder[0]), CKEDITOR.POSITION_BEFORE_END);
-                                    selection.selectRanges([range0]);
-                                }
+								$placeholder.removeAttr('_placeholdertext');
+								// IME 的 beforeinput/compositionstart：原地收成单个 \\u200B，保持原 text 节点与 offset=1，
+								// 避免 append + selectRanges 与输入法抢选区导致光标落在汉字前面。
+								if (eventName === 'beforeinput' || eventName === 'compositionstart') {
+									if (lastPlaceholder && lastPlaceholder.nodeType === CKEDITOR.NODE_TEXT) {
+										lastPlaceholder.data = '\u200B';
+									} else if ($(lastPlaceholder).hasClass('r-model-gen-remark')) {
+										$(lastPlaceholder).remove();
+										$placeholder[0].appendChild(document.createTextNode('\u200B'));
+									}
+								} else {
+									if (lastPlaceholder && lastPlaceholder.nodeType === CKEDITOR.NODE_TEXT) {
+										lastPlaceholder.data = lastPlaceholder.data.replace(zeroWidthChar, '');
+										lastPlaceholder.data = lastPlaceholder.data.substr(0, lastPlaceholder.data.length - $placeholder.parent().attr('_placeholder').length).replace(zeroWidthChar, '');
+									}else if($(lastPlaceholder).hasClass('r-model-gen-remark')){
+										$(lastPlaceholder).remove();
+									}
+									if (eventName === 'paste') {
+										selection = editor.getSelection();
+										range0 = selection.getRanges()[0];
+										range0.moveToPosition(new CKEDITOR.dom.element($placeholder[0]), CKEDITOR.POSITION_BEFORE_END);
+										selection.selectRanges([range0]);
+									}
 
-                                // chrome68 光标会在括号前面
-                                $placeholder.append('\u200b');
-                            }
+									// chrome68 光标会在括号前面
+									$placeholder.append('\u200b');
+								}
+							}
                         } else {
                             // 当没有 placeholder 时判断内容是否为空, 为空时加 placeholder
                             addPlaceHolderFlag = true;

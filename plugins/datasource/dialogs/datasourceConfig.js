@@ -983,7 +983,9 @@ function _handleRelevance(node) {
         var 关联数据元名称 = relevanceArr[i]['关联数据元名称'];
         var 关联数据元值 = relevanceArr[i]['关联数据元值'];
         var 关联数据元显示隐藏 = relevanceArr[i]['关联数据元显示隐藏'];
+        // 赋值目标排除标题；显示/隐藏可作用于标题（labelbox）
         var ele = $body.find('[data-hm-name="' + 关联数据元名称 + '"]:not([data-hm-node="labelbox"])');
+        var $showHideTargets = $body.find('[data-hm-name="' + 关联数据元名称 + '"]');
         if (关联数据元值) {
             var eleType = ele.attr('data-hm-node');
             if (valArr.includes(当前数据元值)) {
@@ -1018,15 +1020,15 @@ function _handleRelevance(node) {
         if (关联数据元显示隐藏) {
             if (关联数据元显示隐藏 == '显示') {
                 if (valArr.includes(当前数据元值)) {
-                    ele.show();
+                    $showHideTargets.show();
                 } else {
-                    ele.hide();
+                    $showHideTargets.hide();
                 }
             } else if (关联数据元显示隐藏 == '隐藏') {
                 if (valArr.includes(当前数据元值)) {
-                    ele.hide();
+                    $showHideTargets.hide();
                 } else {
-                    ele.show();
+                    $showHideTargets.show();
                 }
             }
         }

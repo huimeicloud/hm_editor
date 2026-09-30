@@ -1372,7 +1372,13 @@ commonHM.component['documentModel'].fn({
                     console.log(bindVal);
                     console.log(e);
                 }
-                datasourceNode.text(bindVal);
+                // 空值须保留零宽字符，否则空 span 会被 CKEditor $removeEmpty 滤掉；
+                // 打印前后快照恢复后日期类数据元会丢失（与加载内容时补 \u200B 的逻辑一致）
+                if (_t._isTimeboxBindValEmpty(bindVal)) {
+                    datasourceNode.text('\u200B');
+                } else {
+                    datasourceNode.text(bindVal);
+                }
                 break;
             case 'searchbox':
                 // var searchOption = datasourceNode.attr('_searchoption') || '';
