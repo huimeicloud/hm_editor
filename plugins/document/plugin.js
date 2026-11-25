@@ -2064,6 +2064,8 @@ CKEDITOR.plugins.add('document', {
             var selection = editor.getSelection(),
                 selectionHtml,
                 startEle = range0.startContainer,
+                // 文本节点上的 startOffset 是字符位置，不能当作父元素的子节点下标
+                startInText = !!(startEle && startEle.type != CKEDITOR.NODE_ELEMENT),
                 noDelTag = ['tr', 'td', 'th', 'tbody', 'thead', 'table'],
                 tabletools,
                 selectedCells,
@@ -2096,7 +2098,7 @@ CKEDITOR.plugins.add('document', {
                 }
             }
 
-            if (startEle && startEle.type != CKEDITOR.NODE_ELEMENT) {
+            if (startInText) {
                 startEle = startEle.getParent();
             }
 
@@ -2112,6 +2114,11 @@ CKEDITOR.plugins.add('document', {
                 applyCollapsedSelectionAfterDelete(range0);
                 preventDeleteKeyEvent(evt);
                 return true;
+            }
+
+            // 折叠光标在文字里：按字符删除，避免把偏移当成子节点下标删掉前面的内容
+            if (range0.collapsed && startInText) {
+                return false;
             }
 
             if (range0.collapsed && startEle && startEle.type == CKEDITOR.NODE_ELEMENT) {

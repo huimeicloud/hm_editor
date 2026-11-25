@@ -4133,6 +4133,116 @@ var removeSplitterDebugger = false; // 调试保存使用, 去除所有分页符
         return table.tHead && table.getAttribute(thisCmd.COPY_TABLE_HEADER);
     }
 
+    // 全角记 1，半角可打印字符记 0.5，零宽字符记 0。不用带 g 的正则，避免 lastIndex 导致隔字漏计。
+    function pagingCharUnits(ch) {
+        var code = ch.charCodeAt(0);
+        if (code === 0x200B || code === 0x200C || code === 0x200D || code === 0xFEFF) {
+            return 0;
+        }
+        if (code >= 0x21 && code <= 0x7E) {
+            return 0.5;
+        }
+        return 1;
+    }
+
+    function consumeLineBreakBackward(data, index) {
+        // index 指向换行符的后一位
+        if (data.charAt(index - 1) === '\n' && index > 1 && data.charAt(index - 2) === '\r') {
+            return index - 2;
+        }
+        return index - 1;
+    }
+
+    function consumeLineBreakForward(data, index) {
+        if (data.charAt(index) === '\r' && data.charAt(index + 1) === '\n') {
+            return index + 2;
+        }
+        return index + 1;
+    }
+
+    /**
+     * 按视觉行估算字符数。换行单独断行，短行不再按满行字数折算。
+     * fromEnd 为 true 时返回应从末尾移走的字符数，否则返回应从开头取走的字符数。
+     */
+    function countCharsByVisualLines(data, visualLines, charsPerLine, fromEnd) {
+        if (!data || visualLines <= 0 || !(charsPerLine > 0)) {
+            return 1;
+        }
+        var len = data.length;
+        var lines = 0;
+        var i;
+        if (fromEnd) {
+            i = len;
+            var atEnd = true;
+            while (i > 0 && lines < visualLines) {
+                var ch = data.charAt(i - 1);
+                if (ch === '\n' || ch === '\r') {
+                    i = consumeLineBreakBackward(data, i);
+                    var prev = i > 0 ? data.charAt(i - 1) : '';
+                    // 文本末尾或连续换行才是空行；夹在两行正文之间的换行只是分隔
+                    if (atEnd || prev === '\n' || prev === '\r' || prev === '') {
+                        lines++;
+                    }
+                    atEnd = false;
+                    continue;
+                }
+                atEnd = false;
+                var col = 0;
+                while (i > 0) {
+                    ch = data.charAt(i - 1);
+                    if (ch === '\n' || ch === '\r') {
+                        break;
+                    }
+                    var unit = pagingCharUnits(ch);
+                    if (col > 0 && col + unit > charsPerLine) {
+                        break;
+                    }
+                    col += unit;
+                    i--;
+                    if (col >= charsPerLine) {
+                        break;
+                    }
+                }
+                lines++;
+            }
+            return len - i > 0 ? len - i : 1;
+        }
+        i = 0;
+        while (i < len && lines < visualLines) {
+            ch = data.charAt(i);
+            if (ch === '\n' || ch === '\r') {
+                i = consumeLineBreakForward(data, i);
+                lines++;
+                continue;
+            }
+            col = 0;
+            while (i < len) {
+                ch = data.charAt(i);
+                if (ch === '\n' || ch === '\r') {
+                    break;
+                }
+                unit = pagingCharUnits(ch);
+                if (col > 0 && col + unit > charsPerLine) {
+                    break;
+                }
+                col += unit;
+                i++;
+                if (col >= charsPerLine) {
+                    break;
+                }
+            }
+            lines++;
+            // 行尾换行跟着这一行走，避免下一页以空行开头
+            if (i < len && (data.charAt(i) === '\n' || data.charAt(i) === '\r')) {
+                var next = i + 1 < len ? data.charAt(i + 1) : '';
+                if (!(next === '\n' || next === '\r')) {
+                    i = consumeLineBreakForward(data, i);
+                }
+            }
+        }
+        return i > 0 ? i : 1;
+    }
+
 
     // 获取 node 中的第一个字并将其移出 node
 
@@ -4212,18 +4322,10 @@ var removeSplitterDebugger = false; // 调试保存使用, 去除所有分页符
                 // todo margin 和 padding 算不算
                 var width = parseFloat(parentNode.css('width'));
                 // 在宋体中: 中文宽度为字符宽度, 英文宽度为字符宽度的一半.
-                // 故可以把字符全部看做为中文字符, 粗略地计算需要往前挪多少个整行.
+                // 换行单独占一行，避免短行按满行字数被一次拿走过多。
                 var line = -1 + Math.ceil((args.logicPageHeight - args.prevPage.offsetHeight + (lineHeight - fontSize)) / lineHeight);
-                // 这一次需要移动多少个字符
-                var strCount = (line > 0 && width >= fontSize) ? line * (Math.floor(width / fontSize)) : 1;
-                for (var i = 0; i < strCount && strCount < data.length; i++) {
-                    if (zeroWidthChar.test(data[i])) {
-                        strCount++;
-                    } else if (halfWidthChar.test(data[i])) {
-                        strCount += 0.5;
-                    }
-                }
-                strCount = Math.floor(strCount);
+                var charsPerLine = Math.floor(width / fontSize);
+                var strCount = (line > 0 && charsPerLine >= 1) ? countCharsByVisualLines(data, line, charsPerLine, false) : 1;
                 // 如果行首标点在行末
                 if (data.length > strCount &&
                     thisCmd.LINE_START_PUNCTUATION.test(data[strCount]) ||
@@ -4709,18 +4811,12 @@ var removeSplitterDebugger = false; // 调试保存使用, 去除所有分页符
                 // 在宋体中: 中文宽度为字符宽度, 英文宽度为字符宽度的一半.
                 // 故可以把字符全部看做为中文字符, 粗略地计算需要往前挪多少个整行.
                 // 因为挪字可能引起行高的变化, 所以需要少挪一行.
+                // 换行单独占一行，避免短行按满行字数被一次挪走过多，页底留下大段空白。
                 var line = -2 + Math.floor((args.prevPage.offsetHeight - args.logicPageHeight + (lineHeight - fontSize)) / lineHeight);
-                // 这一次需要移动多少个字符
-                var strCount = (line > 0 && width >= fontSize) ? line * (Math.floor(width / fontSize)) : 1;
-                for (var i = data.length - 1; i >= 0 && i >= data.length - strCount; i--) {
-                    if (zeroWidthChar.test(data[i])) {
-                        strCount++;
-                    } else if (halfWidthChar.test(data[i])) {
-                        strCount += 0.5;
-                    }
-                }
+                var charsPerLine = Math.floor(width / fontSize);
+                var moveCount = (line > 0 && charsPerLine >= 1) ? countCharsByVisualLines(data, line, charsPerLine, true) : 1;
                 // 从后面切割, 所以需要减去总长度
-                strCount = data.length - Math.floor(strCount);
+                var strCount = data.length - moveCount;
 
                 // 如果行首标点在行末
                 if (strCount > 0 &&

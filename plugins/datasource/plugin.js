@@ -96,6 +96,7 @@ CKEDITOR.plugins.add('datasource', {
                         timepicker: false,
                         format: 'm-d',
                         inline: inline,
+                        enterLikeTab: false,
                         onGenerate: function (ct) {
                             $interactTimebox.css('display', 'block');
                         },
@@ -113,6 +114,7 @@ CKEDITOR.plugins.add('datasource', {
                         timepicker: false,
                         format: 'Y-m-d',
                         inline: inline,
+                        enterLikeTab: false,
                         onGenerate: function (ct) {
                             $interactTimebox.css('display', 'block');
                         },
@@ -131,6 +133,7 @@ CKEDITOR.plugins.add('datasource', {
                         format: 'H:i',
                         step: 5,
                         inline: inline,
+                        enterLikeTab: false,
                         onGenerate: function (ct) {
                             $interactTimebox.css('display', 'block');
                         },
@@ -150,6 +153,7 @@ CKEDITOR.plugins.add('datasource', {
                         timepicker: false,
                         format: 'Y-m-d',
                         inline: inline,
+                        enterLikeTab: false,
                         onGenerate: function (ct) {
                             $interactTimebox.css('display', 'block');
                         },
@@ -169,6 +173,7 @@ CKEDITOR.plugins.add('datasource', {
                         format: 'Y-m-d H:i',
                         step: 5,
                         inline: inline,
+                        enterLikeTab: false,
                         onGenerate: function (ct) {
                             $interactTimebox.css('display', 'block');
                         }
@@ -182,6 +187,7 @@ CKEDITOR.plugins.add('datasource', {
                         format: 'Y-m-d H:i:s',
                         step: 5,
                         inline: inline,
+                        enterLikeTab: false,
                         onGenerate: function (ct) {
                             $interactTimebox.css('display', 'block');
                         }
@@ -195,6 +201,7 @@ CKEDITOR.plugins.add('datasource', {
                         format: 'H:i:s',
                         step: 5,
                         inline: inline,
+                        enterLikeTab: false,
                         onGenerate: function (ct) {
                             $interactTimebox.css('display', 'block');
                         },
@@ -210,6 +217,7 @@ CKEDITOR.plugins.add('datasource', {
                             timepicker: false,
                             format: 'Y-m',
                             inline: inline,
+                            enterLikeTab: false,
                             onGenerate: function (ct) {
                                 $interactTimebox.css('display', 'block');
                             },
@@ -227,6 +235,7 @@ CKEDITOR.plugins.add('datasource', {
                         format: 'Y-m-d H:i',
                         step: 5,
                         inline: inline,
+                        enterLikeTab: false,
                         onGenerate: function (ct) {
                             $interactTimebox.css('display', 'block');
                         }
@@ -234,6 +243,488 @@ CKEDITOR.plugins.add('datasource', {
                     break;
             }
             $.datetimepicker.setLocale('ch');
+            bindTimeboxQuickInput();
+
+            // 时分可连续输入数字（1214 → 12:14），Enter 直接写入，不必再点「确认」
+            function timeboxQuickKind(opt) {
+                if (opt === 'time') return 'hm';
+                if (opt === 'fullTime') return 'hms';
+                if (opt === 'fullDateTime') return 'ymdhms';
+                if (opt === 'month_day' || opt === 'date' || opt === 'date_han' || opt === 'year_month') return 'date';
+                return 'ymdhm';
+            }
+
+            function bindTimeboxQuickInput() {
+                var kind = timeboxQuickKind(timeOption);
+
+                function pad2(n) {
+                    n = parseInt(n, 10);
+                    if (isNaN(n)) return '00';
+                    return (n < 10 ? '0' : '') + n;
+                }
+
+                function formatClock(h, m, s) {
+                    h = parseInt(h, 10);
+                    m = parseInt(m, 10);
+                    if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) return '';
+                    var text = pad2(h) + ':' + pad2(m);
+                    if (s !== undefined && s !== null && s !== '') {
+                        s = parseInt(s, 10);
+                        if (isNaN(s) || s < 0 || s > 59) return '';
+                        text += ':' + pad2(s);
+                    }
+                    return text;
+                }
+
+                function parseDigitClock(digits, withSec, allowShort) {
+                    if (!/^\d+$/.test(digits)) return '';
+                    if (withSec) {
+                        if (digits.length === 6) {
+                            return formatClock(digits.substr(0, 2), digits.substr(2, 2), digits.substr(4, 2));
+                        }
+                        // 4 位只在确认/失焦时补秒，输入过程中留给继续敲秒数
+                        if (allowShort && (digits.length === 4 || digits.length === 3)) {
+                            var hmPart = parseDigitClock(digits, false, true);
+                            return hmPart ? hmPart + ':00' : '';
+                        }
+                        return '';
+                    }
+                    if (digits.length === 4) {
+                        return formatClock(digits.substr(0, 2), digits.substr(2, 2));
+                    }
+                    if (allowShort && digits.length === 3) {
+                        return formatClock(digits.charAt(0), digits.substr(1, 2));
+                    }
+                    return '';
+                }
+
+                function normalizeYmd(y, m, d) {
+                    y = parseInt(y, 10);
+                    m = parseInt(m, 10);
+                    d = parseInt(d, 10);
+                    if (isNaN(y) || isNaN(m) || isNaN(d)) return '';
+                    if (y < 1900 || y > 2100 || m < 1 || m > 12 || d < 1 || d > 31) return '';
+                    return y + '-' + pad2(m) + '-' + pad2(d);
+                }
+
+                function pickerDatePart() {
+                    try {
+                        var picked = $interactTimebox.datetimepicker('getValue');
+                        if (picked && !isNaN(picked.getTime())) {
+                            return normalizeYmd(picked.getFullYear(), picked.getMonth() + 1, picked.getDate());
+                        }
+                    } catch (e) {}
+                    return '';
+                }
+
+                function withSeconds() {
+                    return kind === 'hms' || kind === 'ymdhms';
+                }
+
+                function clockFromRest(rest, allowShort) {
+                    if (!rest) return '';
+                    var colonRe = withSeconds()
+                        ? (allowShort ? /^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/ : /^(\d{1,2}):(\d{2}):(\d{2})$/)
+                        : (allowShort ? /^(\d{1,2}):(\d{1,2})$/ : /^(\d{1,2}):(\d{2})$/);
+                    var cm = rest.match(colonRe);
+                    if (cm) {
+                        if (withSeconds()) {
+                            return formatClock(cm[1], cm[2], cm[3] != null ? cm[3] : '0');
+                        }
+                        return formatClock(cm[1], cm[2]);
+                    }
+                    if (/^\d+$/.test(rest)) {
+                        return parseDigitClock(rest, withSeconds(), allowShort);
+                    }
+                    return '';
+                }
+
+                // 返回格式化结果；无法识别时返回空串（调用方区分「空输入」和「未完成」）
+                function tryFormatTimeText(raw, allowShort, datePart) {
+                    var s = $.trim(raw || '');
+                    if (!s) return '';
+                    if (kind === 'date') return s;
+
+                    if (kind === 'hm' || kind === 'hms') {
+                        return clockFromRest(s, allowShort);
+                    }
+
+                    var dated = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:\s+(\S+))?$/);
+                    if (dated) {
+                        var ymd = normalizeYmd(dated[1], dated[2], dated[3]);
+                        if (!ymd) return '';
+                        var clockText = clockFromRest(dated[4] || '', allowShort);
+                        return clockText ? (ymd + ' ' + clockText) : '';
+                    }
+
+                    if (/^\d+$/.test(s)) {
+                        if (!withSeconds() && s.length === 12) {
+                            var ymd12 = normalizeYmd(s.substr(0, 4), s.substr(4, 2), s.substr(6, 2));
+                            var hm12 = parseDigitClock(s.substr(8, 4), false, false);
+                            if (ymd12 && hm12) return ymd12 + ' ' + hm12;
+                        }
+                        if (withSeconds() && s.length === 14) {
+                            var ymd14 = normalizeYmd(s.substr(0, 4), s.substr(4, 2), s.substr(6, 2));
+                            var hms14 = parseDigitClock(s.substr(8, 6), true, false);
+                            if (ymd14 && hms14) return ymd14 + ' ' + hms14;
+                        }
+                        var onlyClock = parseDigitClock(s, withSeconds(), allowShort);
+                        if (onlyClock && datePart) return datePart + ' ' + onlyClock;
+                    }
+                    return '';
+                }
+
+                function timeSegmentRange(val) {
+                    if (kind === 'hm' || kind === 'hms') {
+                        return { start: 0, end: val.length };
+                    }
+                    if (kind === 'date') return null;
+                    var idx = val.lastIndexOf(' ');
+                    if (idx < 0) return null;
+                    return { start: idx + 1, end: val.length };
+                }
+
+                function digitFromEvent(evt) {
+                    if (evt.ctrlKey || evt.altKey || evt.metaKey) return '';
+                    var which = evt.which || evt.keyCode;
+                    if (which >= 48 && which <= 57) return String(which - 48);
+                    if (which >= 96 && which <= 105) return String(which - 96);
+                    return '';
+                }
+
+                function toDate(formatted) {
+                    if (kind === 'hm' || kind === 'hms') {
+                        var parts = formatted.split(':');
+                        var clockDate = new Date();
+                        clockDate.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), parts[2] ? parseInt(parts[2], 10) : 0, 0);
+                        return clockDate;
+                    }
+                    var matched = formatted.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
+                    if (!matched) return null;
+                    return new Date(parseInt(matched[1], 10), parseInt(matched[2], 10) - 1, parseInt(matched[3], 10), parseInt(matched[4], 10), parseInt(matched[5], 10), matched[6] ? parseInt(matched[6], 10) : 0, 0);
+                }
+
+                function syncPickerTime(formatted) {
+                    var parsed = toDate(formatted);
+                    if (!parsed || isNaN(parsed.getTime())) return;
+                    $interactTimebox.data('hmParsedTime', parsed);
+                    var $picker = $interactTimebox.data('xdsoft_datetimepicker');
+                    var logic = $picker && $picker.data('xdsoft_datetime');
+                    if (logic && typeof logic.setCurrentTime === 'function') {
+                        try {
+                            logic.setCurrentTime(parsed);
+                        } catch (err) {}
+                    }
+                }
+
+                // false = 未完成或非法，不写入；'' = 空；字符串 = 可写入的格式化结果
+                $interactTimebox.data('hmNormalizeTime', function (allowShort) {
+                    var raw = $.trim($interactTimebox.val() || '');
+                    if (!raw) return '';
+                    var formatted = tryFormatTimeText(raw, allowShort, pickerDatePart());
+                    if (!formatted) return false;
+                    return formatted;
+                });
+                $interactTimebox.data('hmSyncPickerTime', syncPickerTime);
+
+                // 整段按格式占位：横线、空格、冒号固定，数字只覆盖对应位，避免敲成 2026-10-111111111
+                function maskSpec() {
+                    if (kind === 'hm') return 'dd:dd';
+                    if (kind === 'hms') return 'dd:dd:dd';
+                    if (kind === 'ymdhms') return 'dddd-dd-dd dd:dd:dd';
+                    if (timeOption === 'month_day') return 'dd-dd';
+                    if (timeOption === 'year_month') return 'dddd-dd';
+                    if (kind === 'date') return 'dddd-dd-dd';
+                    return 'dddd-dd-dd dd:dd';
+                }
+
+                function valueMatchesPattern(val, pattern) {
+                    if (!val || val.length !== pattern.length) return false;
+                    for (var i = 0; i < pattern.length; i++) {
+                        var token = pattern.charAt(i);
+                        var ch = val.charAt(i);
+                        if (token === 'd') {
+                            if (ch < '0' || ch > '9') return false;
+                        } else if (ch !== token) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+
+                function slotIndexes(pattern) {
+                    var slots = [];
+                    for (var i = 0; i < pattern.length; i++) {
+                        if (pattern.charAt(i) === 'd') slots.push(i);
+                    }
+                    return slots;
+                }
+
+                function buildSeed() {
+                    var pattern = maskSpec();
+                    var now = new Date();
+                    var datePart = pickerDatePart() || (now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate()));
+                    var hh = pad2(now.getHours());
+                    var mm = pad2(now.getMinutes());
+                    var ss = pad2(now.getSeconds());
+                    if (pattern === 'dd:dd') return hh + ':' + mm;
+                    if (pattern === 'dd:dd:dd') return hh + ':' + mm + ':' + ss;
+                    if (pattern === 'dddd-dd-dd dd:dd:dd') return datePart + ' ' + hh + ':' + mm + ':' + ss;
+                    if (pattern === 'dddd-dd-dd dd:dd') return datePart + ' ' + hh + ':' + mm;
+                    if (pattern === 'dddd-dd') return datePart.substring(0, 7);
+                    if (pattern === 'dd-dd') return datePart.substring(5, 10);
+                    return datePart;
+                }
+
+                var lastValid = '';
+
+                function ensureMasked(el) {
+                    var pattern = maskSpec();
+                    if (valueMatchesPattern(el.value, pattern)) {
+                        lastValid = el.value;
+                        return el.value;
+                    }
+                    var formatted = tryFormatTimeText(el.value, true, pickerDatePart());
+                    var fallback = (formatted && valueMatchesPattern(formatted, pattern)) ? formatted
+                        : (valueMatchesPattern(lastValid, pattern) ? lastValid : buildSeed());
+                    el.value = fallback;
+                    lastValid = fallback;
+                    return fallback;
+                }
+
+                function groupType(pattern, slotIndex) {
+                    var typesMap = {
+                        'dd:dd': ['hour', 'minute'],
+                        'dd:dd:dd': ['hour', 'minute', 'second'],
+                        'dddd-dd-dd dd:dd': ['year', 'month', 'day', 'hour', 'minute'],
+                        'dddd-dd-dd dd:dd:dd': ['year', 'month', 'day', 'hour', 'minute', 'second'],
+                        'dddd-dd-dd': ['year', 'month', 'day'],
+                        'dddd-dd': ['year', 'month'],
+                        'dd-dd': ['month', 'day']
+                    };
+                    var types = typesMap[pattern] || [];
+                    var group = -1;
+                    var prevDigit = false;
+                    for (var i = 0; i <= slotIndex; i++) {
+                        var isDigit = pattern.charAt(i) === 'd';
+                        if (isDigit && !prevDigit) group++;
+                        prevDigit = isDigit;
+                    }
+                    return types[group] || '';
+                }
+
+                function digitAllowed(pattern, chars, slotIndex, digit) {
+                    var type = groupType(pattern, slotIndex);
+                    var posInGroup = 0;
+                    var cursor = slotIndex;
+                    while (cursor > 0 && pattern.charAt(cursor - 1) === 'd') {
+                        posInGroup++;
+                        cursor--;
+                    }
+                    var d = parseInt(digit, 10);
+                    if (type === 'year') return true;
+                    if (type === 'month') {
+                        if (posInGroup === 0) return d <= 1;
+                        var monthTens = chars[slotIndex - 1];
+                        if (monthTens === '0') return d >= 1;
+                        if (monthTens === '1') return d <= 2;
+                        return false;
+                    }
+                    if (type === 'day') {
+                        if (posInGroup === 0) return d <= 3;
+                        var dayTens = chars[slotIndex - 1];
+                        if (dayTens === '0') return d >= 1;
+                        if (dayTens === '3') return d <= 1;
+                        return true;
+                    }
+                    if (type === 'hour') {
+                        if (posInGroup === 0) return d <= 2;
+                        return chars[slotIndex - 1] === '2' ? d <= 3 : true;
+                    }
+                    if (type === 'minute' || type === 'second') {
+                        if (posInGroup === 0) return d <= 5;
+                        return true;
+                    }
+                    return true;
+                }
+
+                function applyDigit(el, digit) {
+                    var pattern = maskSpec();
+                    var val = ensureMasked(el);
+                    var slots = slotIndexes(pattern);
+                    var start = el.selectionStart || 0;
+                    var end = el.selectionEnd == null ? start : el.selectionEnd;
+                    var slotPos = -1;
+                    var i;
+                    if (end > start) {
+                        for (i = 0; i < slots.length; i++) {
+                            if (slots[i] >= start && slots[i] < end) {
+                                slotPos = i;
+                                break;
+                            }
+                        }
+                    }
+                    if (slotPos < 0) {
+                        for (i = 0; i < slots.length; i++) {
+                            if (slots[i] >= start) {
+                                slotPos = i;
+                                break;
+                            }
+                        }
+                    }
+                    if (slotPos < 0) {
+                        el.value = val;
+                        return;
+                    }
+                    var chars = val.split('');
+                    if (!digitAllowed(pattern, chars, slots[slotPos], digit)) {
+                        el.value = val;
+                        el.setSelectionRange(slots[slotPos], slots[slotPos] + 1);
+                        return;
+                    }
+                    chars[slots[slotPos]] = digit;
+                    var nextVal = chars.join('');
+                    el.value = nextVal;
+                    lastValid = nextVal;
+                    var caret = slotPos + 1 < slots.length ? slots[slotPos + 1] : pattern.length;
+                    el.setSelectionRange(caret, caret);
+                }
+
+                function moveSlot(el, dir) {
+                    var pattern = maskSpec();
+                    var val = ensureMasked(el);
+                    el.value = val;
+                    var slots = slotIndexes(pattern);
+                    var start = el.selectionStart || 0;
+                    var slotPos = -1;
+                    var i;
+                    if (dir < 0) {
+                        for (i = slots.length - 1; i >= 0; i--) {
+                            if (slots[i] < start) {
+                                slotPos = i;
+                                break;
+                            }
+                        }
+                    } else {
+                        for (i = 0; i < slots.length; i++) {
+                            if (slots[i] >= start) {
+                                slotPos = i;
+                                break;
+                            }
+                        }
+                    }
+                    if (slotPos < 0) slotPos = dir < 0 ? 0 : slots.length - 1;
+                    el.setSelectionRange(slots[slotPos], slots[slotPos] + 1);
+                }
+
+                lastValid = ensureMasked($interactTimebox[0]);
+
+                $interactTimebox.on('keydown.hmTimeQuick', function (evt) {
+                    var which = evt.which || evt.keyCode;
+                    if (evt.ctrlKey || evt.metaKey || evt.altKey) return;
+                    if (which === 13 || which === 9 || which === 27 || which === 36 || which === 35 || (which >= 37 && which <= 40)) return;
+                    var digit = digitFromEvent(evt);
+                    if (digit) {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        applyDigit(this, digit);
+                        return;
+                    }
+                    if (which === 8 || which === 46) {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        moveSlot(this, which === 8 ? -1 : 1);
+                        return;
+                    }
+                    if (which === 229) return;
+                    if (which >= 32) {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                    }
+                });
+
+                $interactTimebox.on('paste.hmTimeQuick', function (evt) {
+                    var clipboard = evt.originalEvent && evt.originalEvent.clipboardData;
+                    var text = clipboard ? (clipboard.getData('text') || '') : '';
+                    evt.preventDefault();
+                    var pattern = maskSpec();
+                    var formatted = tryFormatTimeText(text, true, pickerDatePart());
+                    if (formatted && valueMatchesPattern(formatted, pattern)) {
+                        this.value = formatted;
+                        lastValid = formatted;
+                        this.setSelectionRange(formatted.length, formatted.length);
+                        return;
+                    }
+                    var digits = String(text || '').replace(/\D/g, '');
+                    for (var i = 0; i < digits.length; i++) {
+                        applyDigit(this, digits.charAt(i));
+                    }
+                });
+
+                $interactTimebox.on('input.hmTimeQuick', function () {
+                    var pattern = maskSpec();
+                    if (valueMatchesPattern(this.value, pattern)) {
+                        lastValid = this.value;
+                        return;
+                    }
+                    var formatted = tryFormatTimeText(this.value, false, pickerDatePart());
+                    if (formatted && valueMatchesPattern(formatted, pattern)) {
+                        this.value = formatted;
+                        lastValid = formatted;
+                        return;
+                    }
+                    if (lastValid && valueMatchesPattern(lastValid, pattern)) {
+                        var caret = this.selectionStart;
+                        this.value = lastValid;
+                        if (this.setSelectionRange && caret != null) {
+                            var pos = Math.min(caret, lastValid.length);
+                            this.setSelectionRange(pos, pos);
+                        }
+                    }
+                });
+
+                if ($form[0] && $form[0].addEventListener) {
+                    $form[0].addEventListener('blur', function (evt) {
+                        if (evt.target !== $interactTimebox[0]) return;
+                        ensureMasked($interactTimebox[0]);
+                    }, true);
+                }
+
+                if (kind !== 'date') {
+                    var timeFocused = false;
+                    var focusTimeSegment = function () {
+                        if (timeFocused) return;
+                        var el = $interactTimebox[0];
+                        if (!el) return;
+                        var val = ensureMasked(el);
+                        var range = timeSegmentRange(val);
+                        if (!range) return;
+                        var segment = val.substring(range.start, range.end);
+                        var complete = withSeconds() ? /^\d{2}:\d{2}:\d{2}$/.test(segment) : /^\d{2}:\d{2}$/.test(segment);
+                        if (!complete) return;
+                        el.focus();
+                        if (el.setSelectionRange) {
+                            el.setSelectionRange(range.start, range.end);
+                        }
+                        timeFocused = true;
+                    };
+                    focusTimeSegment();
+                    setTimeout(focusTimeSegment, 50);
+                }
+
+                $form.on('submit.hmTimeQuick', function (evt) {
+                    evt.preventDefault();
+                    return false;
+                });
+
+                $interactTimebox.on('keydown.hmTimeEnter', function (evt) {
+                    if ((evt.which || evt.keyCode) !== 13) return;
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    if (!$.trim($interactTimebox.val() || '')) return;
+                    $div.find('#timeConfirm').trigger('click');
+                });
+            }
 
             $div.find('#currentTime').on('click', function () {
                 var curTimeStr = '';
@@ -273,6 +764,21 @@ CKEDITOR.plugins.add('datasource', {
             })
 
             $div.find('#timeConfirm').on('click', function () {
+                var normalize = $interactTimebox.data('hmNormalizeTime');
+                var syncPicker = $interactTimebox.data('hmSyncPickerTime');
+                if (typeof normalize === 'function') {
+                    var normalized = normalize(true);
+                    if (normalized === false) {
+                        return;
+                    }
+                    if (normalized) {
+                        $interactTimebox.val(normalized);
+                        if (typeof syncPicker === 'function') {
+                            syncPicker(normalized);
+                        }
+                        $interactTimebox.val(normalized);
+                    }
+                }
                 var val = $interactTimebox.val();
                 var newValue = '';
                 
@@ -311,7 +817,8 @@ CKEDITOR.plugins.add('datasource', {
                     $node.text(newValue);
                 }
                 $div.hide();
-                var trueDate = $interactTimebox.datetimepicker('getValue');
+                var parsedTime = $interactTimebox.data('hmParsedTime');
+                var trueDate = (parsedTime && !isNaN(parsedTime.getTime())) ? parsedTime : $interactTimebox.datetimepicker('getValue');
                 if (trueDate) {
                     $node.attr('evt-data-time', trueDate.getTime());
                     if (!$node.attr('evt-data-id')) {
@@ -2462,6 +2969,27 @@ CKEDITOR.plugins.add('datasource', {
             return identicalCellsIndex;
         }
 
+        function getStyleTargetDatasource(range0) {
+            if (!range0) {
+                return null;
+            }
+            var fixNode = editor.getFixNodeWalker(range0).lastForward();
+            var parentFixNode = range0.startContainer.getAscendant(function (el) {
+                return el.getAttribute && el.getAttribute('data-hm-node');
+            }, true);
+            if (parentFixNode && parentFixNode.hasClass('new-textbox')) {
+                return null;
+            }
+            var datasource = fixNode || parentFixNode;
+            if (!datasource && editor.clickTargetElement && editor.clickTargetElement.getAttribute) {
+                var nodeType = editor.clickTargetElement.getAttribute('data-hm-node');
+                if (nodeType) {
+                    datasource = editor.clickTargetElement;
+                }
+            }
+            return datasource;
+        }
+
         function applyStyleToDatasource(ele, style, size) {
             switch (style) {
                 case 'bold':
@@ -2502,7 +3030,16 @@ CKEDITOR.plugins.add('datasource', {
                     ele.removeAttribute('style');
                     break;
                 case 'font':
-                    ele.setStyle('font-size', size + 'px');
+                    if (/^\d+$/.test(size)) {
+                        ele.setStyle('font-size', size + 'px');
+                    } else if (editor.fontConfig && editor.fontConfig[size]) {
+                        var family = editor.fontConfig[size]._.definition.styles['font-family'];
+                        if (family) {
+                            ele.setStyle('font-family', family);
+                        }
+                    } else if (/px|em|%|small|large/i.test(size)) {
+                        ele.setStyle('font-size', size);
+                    }
                     break;
             }
         }
@@ -2524,14 +3061,7 @@ CKEDITOR.plugins.add('datasource', {
                     var range0 = ranges[0];
                     if (!range0) return false;
 
-                    var fixNode = editor.getFixNodeWalker(range0).lastForward();
-                    var parentFixNode = range0.startContainer.getAscendant(function (el) {
-                        return el.getAttribute && el.getAttribute('data-hm-node');
-                    }, true);
-                    if (parentFixNode && parentFixNode.hasClass('new-textbox')) {
-                        return true;
-                    }
-                    var datasource = fixNode ? fixNode : parentFixNode
+                    var datasource = getStyleTargetDatasource(range0);
                     if (datasource) {
                         applyStyleToDatasource(datasource, evt.data.command.name);
                         return false;
@@ -2780,16 +3310,10 @@ CKEDITOR.plugins.add('datasource', {
             var ranges = selection.getRanges();
             var range0 = ranges[0];
             if (!range0) return false;
-            var fixNode = editor.getFixNodeWalker(range0).lastForward();
-            var parentFixNode = range0.startContainer.getAscendant(function (el) {
-                return el.getAttribute && el.getAttribute('data-hm-node');
-            }, true);
-            if (parentFixNode && parentFixNode.hasClass('new-textbox')) {
-                return true;
-            }
-            var datasource = fixNode ? fixNode : parentFixNode
+            var datasource = getStyleTargetDatasource(range0);
             if (datasource) {
                 applyStyleToDatasource(datasource, 'font', evt.data);
+                editor.fire('saveSnapshot');
                 return false;
             }
             return true;
@@ -2990,7 +3514,7 @@ CKEDITOR.plugins.add('datasource', {
                     var current = startElement;
                     while (current && current.type === CKEDITOR.NODE_ELEMENT) {
                         var nodeType = current.getAttribute && current.getAttribute('data-hm-node');
-                        if ((nodeType && nodeType !== 'labelbox') || 
+                        if (nodeType ||
                             current.hasClass('new-textbox') ||
                             current.hasClass('new-textbox-content')) {
                             isInDataSource = true;
@@ -3833,6 +4357,13 @@ CKEDITOR.plugins.add('datasource', {
                             element.addClass('fa-dot-circle-o');
                         }
                         _handleRelevance($(element.$).parent());
+                        break;
+                    case 'labelbox':
+                        if (editor.HMConfig.designMode) {
+                            range0.selectNode(element);
+                            selection.selectRanges([range0]);
+                            editor.clickTargetElement = element;
+                        }
                         break;
                     default:
                         // 鼠标点到括号上拖动的话不能重置选区 (或者可以把选区更改逻辑挪到 mousedown 事件中)

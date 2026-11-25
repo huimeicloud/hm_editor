@@ -6,6 +6,86 @@ var http = require('http');
 const url = require('url');
 var express = require('express');
 var router = express.Router();
+var axios = require('axios');
+
+/** html2ofd 服务地址（独立部署，由 emr-print 转发） */
+var HTML2OFD_URL = (process.env.HTML2OFD_URL || 'http://127.0.0.1:8080').replace(/\/$/, '');
+
+/**
+ * 将编辑器打印 options 映射为 html2ofd serve 的 options JSON
+ * @param {Object} printOptions
+ * @returns {Object}
+ */
+function mapPrintOptionsToHtml2Ofd(printOptions, hfExtra) {
+	var o = printOptions || {};
+	hfExtra = hfExtra || {};
+	var pick = function (v) {
+		if (v === undefined || v === null || v === '') {
+			return 0;
+		}
+		return v;
+	};
+	var out = {
+		pageSize: o.pageSize || 'A4',
+		orientation: o.orientation || 'portrait',
+		margin: {
+			top: pick(o.marginTop),
+			bottom: pick(o.marginBottom),
+			left: pick(o.marginLeft),
+			right: pick(o.marginRight)
+		},
+		title: o.title || ''
+	};
+	// 实时分页：正文已是逻辑页，转换侧按 .hm-logic-page 切页，不再套页眉页脚。
+	if (o.prePaginated) {
+		out.prePaginated = true;
+		out.margin = { top: 0, bottom: 0, left: 0, right: 0 };
+		return out;
+	}
+	if (hfExtra.headerHtml) {
+		out.header = {
+			html: hfExtra.headerHtml,
+			spacingMM: 0,
+			line: !!hfExtra.headerLine
+		};
+	}
+	if (hfExtra.footerHtml) {
+		out.footer = {
+			html: hfExtra.footerHtml,
+			spacingMM: 0,
+			line: !!hfExtra.footerLine
+		};
+	}
+	return out;
+}
+
+/** 拉取 dynamicHeaderFooter 页面并整理为 header/footer 片段 HTML */
+function normalizeDynamicHtmlFragment(html) {
+	if (!html) {
+		return '';
+	}
+	var styles = '';
+	var re = /<style[^>]*>[\s\S]*?<\/style>/gi;
+	var m;
+	while ((m = re.exec(html))) {
+		styles += m[0];
+	}
+	var body = html;
+	var bm = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+	if (bm) {
+		body = bm[1];
+	}
+	return styles + body;
+}
+
+async function fetchHtmlFragment(url) {
+	if (!url) {
+		return '';
+	}
+	var res = await axios.get(url, { timeout: 60000, responseType: 'text' });
+	return normalizeDynamicHtmlFragment(res.data);
+}
+
 // 引入PDF处理相关库
 // const { PDFDocument } = require('pdf-lib');
 // const pdfjsLib = require('pdfjs-dist');
@@ -334,6 +414,101 @@ async function getPdfChrome(req, res) {
 	}
 }
 
+function optionFlag(body, key) {
+	if (body[key] !== undefined) {
+		return body[key];
+	}
+	return body.options ? body.options[key] : undefined;
+}
+
+/**
+ * 拉取页眉页脚 HTML。
+ * html2ofd 经常和编辑器不在同一台机器（或不同容器），不能把本机路径交出去。
+ * 返回的片段以 "<" 开头，html2ofd 会按 HTML 正文处理。
+ */
+async function loadOfdHeaderFooter(body) {
+	var hfExtra = {
+		headerLine: optionFlag(body, 'headerLine'),
+		footerLine: optionFlag(body, 'footerLine')
+	};
+	var parts = [
+		['header', body.headerHtml || (body.options && body.options.headerHtml)],
+		['footer', body.footerHtml || (body.options && body.options.footerHtml)]
+	];
+	for (var i = 0; i < parts.length; i++) {
+		if (!parts[i][1]) {
+			continue;
+		}
+		var html = String(await fetchHtmlFragment(parts[i][1]) || '').replace(/^\uFEFF/, '').trim();
+		if (!html) {
+			continue;
+		}
+		if (html.charAt(0) !== '<') {
+			html = '<div>' + html + '</div>';
+		}
+		hfExtra[parts[i][0] + 'Html'] = html;
+	}
+	return hfExtra;
+}
+
+/**
+ * HTML / URL → OFD（转发至 html2ofd POST /convert）
+ * body: { html?, url?, htmlToken?, options?, headerHtml?, footerHtml?, headerLine?, footerLine? }
+ */
+router.post('/convertHtml2Ofd', async function (req, res) {
+	var body = req.body || {};
+	var targetUrl = body.url || body.htmlToken;
+	if (!targetUrl && !body.html) {
+		res.status(400).json({ error: '缺少 html 或 url/htmlToken' });
+		return;
+	}
+	try {
+		var hfExtra = await loadOfdHeaderFooter(body);
+		var convertBody = { options: mapPrintOptionsToHtml2Ofd(body.options, hfExtra) };
+		if (targetUrl) {
+			convertBody.url = targetUrl;
+		} else {
+			convertBody.html = body.html;
+		}
+		log('[convertHtml2Ofd] 转发至 ' + HTML2OFD_URL + '/convert');
+		var response = await axios.post(HTML2OFD_URL + '/convert', convertBody, {
+			responseType: 'arraybuffer',
+			timeout: 120000,
+			maxContentLength: 100 * 1024 * 1024,
+			validateStatus: function (status) {
+				return status >= 200 && status < 300;
+			}
+		});
+		res.setHeader('Content-Type', 'application/octet-stream');
+		res.setHeader('Content-Disposition', 'attachment; filename="document.ofd"');
+		if (response.headers['x-h2o-report']) {
+			res.setHeader('X-H2O-Report', response.headers['x-h2o-report']);
+		}
+		res.send(Buffer.from(response.data));
+	} catch (e) {
+		var detail = e.message;
+		if (e.response && e.response.data) {
+			try {
+				var parsed = JSON.parse(Buffer.from(e.response.data).toString('utf8'));
+				if (parsed.error) {
+					detail = parsed.error;
+				}
+			} catch (ignore) { /* keep detail */ }
+		}
+		error('[convertHtml2Ofd]', detail);
+		res.status(502).json({ error: 'html2ofd 转换失败: ' + detail });
+	}
+});
+
+/** 探测 html2ofd 是否可用 */
+router.get('/html2ofdHealth', async function (req, res) {
+	try {
+		var response = await axios.get(HTML2OFD_URL + '/healthz', { timeout: 5000 });
+		res.json({ ok: response.data === 'ok' || response.status === 200, html2ofdUrl: HTML2OFD_URL });
+	} catch (e) {
+		res.status(502).json({ ok: false, html2ofdUrl: HTML2OFD_URL, error: e.message });
+	}
+});
 
 
 /**

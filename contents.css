@@ -843,8 +843,32 @@ ins.ice-no-decoration, del.ice-no-decoration {
 }
 
 /*表格属性设置:单行显示、单行溢出截断时，文本数据元单行显示*/
-.table2 .new-textbox span.new-textbox-content,.table3 .new-textbox span.new-textbox-content {
+.table2 .new-textbox span.new-textbox-content,.table3 .new-textbox span.new-textbox-content,.table4 .new-textbox span.new-textbox-content {
     white-space: nowrap;
+}
+
+/*表格属性设置:单行溢出截断，单元格内截断规则（不依赖表格内注入的style标签，防止保存重新加载后失效）*/
+/* fixed 必须压过新建表格时写入的 inline table-layout:auto，否则列被内容撑开，截断不触发 */
+table.table3,
+table.table4 {
+    table-layout: fixed !important;
+}
+.table2 tr td, .table2 tr th {
+    white-space: nowrap;
+}
+.table3 tr td, .table3 tr th {
+    white-space: nowrap;
+    overflow: hidden;
+    /* clip: 不产生滚动容器，防止在单元格内打字时浏览器横向滚动td导致行首文字被裁掉 */
+    overflow: clip;
+    text-overflow: ellipsis;
+}
+/*表格属性设置:单行溢出截断不显示（截断但不显示省略号）*/
+.table4 tr td, .table4 tr th {
+    white-space: nowrap;
+    overflow: hidden;
+    overflow: clip;
+    text-overflow: clip;
 }
 
 .new-textbox.print-preview span.new-textbox-content{

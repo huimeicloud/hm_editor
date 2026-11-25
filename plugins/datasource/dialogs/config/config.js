@@ -583,6 +583,29 @@ function setConfig(data) {
     }
 }
 function config() {
+    function parseEles(els) {
+        var obj = {};
+        els.each(function () {
+            if ($(this).attr('_type') && isVisible(this)) {
+                obj[$(this).attr('_type')] = $(this).val();
+            }
+            function isVisible(e){
+                var flag = true;
+                if(!e){
+                    return flag;
+                }
+                if($(e).css('display') == 'none'){
+                    return false;
+                }
+                if($(e).hasClass('row')){
+                    return flag;
+                }
+                return isVisible($(e).parent()[0]);
+            }
+        })
+        return obj;
+    }
+
     var d = {};
     // 类型
     var nodeType = $(".type input[type='radio']:checked").val();
@@ -597,7 +620,8 @@ function config() {
         if ($('#c10').is(':checked')) {
             d['data-hm-node'] = 'positionnode';
         }
-        Object.assign(d, _dsObj);
+        var labelCheckboxObj = parseEles($('.row>div>input[type=checkbox]:checked'));
+        Object.assign(d, _dsObj, labelCheckboxObj);
         return d;
     }
     _dsObj = dsSelect.get();
@@ -672,30 +696,6 @@ function config() {
         _dsObj['_searchreturn'] = searchReturnValue;
     }
     // 手术级别、诊疗方式
-
-    function parseEles(els) {
-        var obj = {};
-        els.each(function () {
-            if ($(this).attr('_type') && isVisible(this)) {
-                obj[$(this).attr('_type')] = $(this).val();
-            }
-            function isVisible(e){
-                // $(this).is(':visible')
-                var flag = true;
-                if(!e){
-                    return flag;
-                }
-                if($(e).css('display') == 'none'){
-                    return false;
-                }
-                if($(e).hasClass('row')){
-                    return flag;
-                }
-                return isVisible($(e).parent()[0]);
-            }
-        })
-        return obj;
-    }
 
     function relevanceFun(ele){
         var trs = ele.find('tr');

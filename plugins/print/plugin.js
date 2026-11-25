@@ -194,6 +194,83 @@ function getPdfPath(path, params, syncType, download, callback, downloadPdfCallb
     });
 }
 
+/** 触发浏览器下载 OFD Blob */
+function downloadOfdBlob(blob, filename) {
+    var blobUrl = URL.createObjectURL(blob);
+    var downloadLink = document.createElement('a');
+    downloadLink.href = blobUrl;
+    downloadLink.download = filename || ('文档_' + new Date().getTime() + '.ofd');
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    setTimeout(function () {
+        URL.revokeObjectURL(blobUrl);
+    }, 3000);
+}
+
+/**
+ * 经 emr-print 转发 html2ofd。
+ * options 原样交给服务端 mapPrintOptionsToHtml2Ofd 裁剪。
+ * @param {Object} payload html 或 url/htmlToken，以及 options、headerHtml、footerHtml、headerLine、footerLine
+ * @param {Function} [callback] 接收 OFD Blob；不传则下载
+ */
+function convertHtml2OfdRequest(payload, callback) {
+    var params = payload || {};
+    var layer = addLayer('OFD');
+    $.ajax({
+        url: getHost() + '/emr-print/convertHtml2Ofd',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            html: params.html,
+            url: params.url,
+            htmlToken: params.htmlToken,
+            headerHtml: params.headerHtml,
+            footerHtml: params.footerHtml,
+            headerLine: params.headerLine,
+            footerLine: params.footerLine,
+            options: params.options
+        }),
+        xhrFields: { responseType: 'blob' },
+        success: function (blob) {
+            if (layer) {
+                layer.remove();
+            }
+            var ofdBlob = new Blob([blob], { type: 'application/octet-stream' });
+            if (typeof callback === 'function') {
+                try {
+                    callback(ofdBlob);
+                } catch (e) {
+                    console.error('OFD 回调失败:', e);
+                }
+            } else {
+                downloadOfdBlob(ofdBlob);
+            }
+        },
+        error: function (xhr) {
+            if (layer) {
+                layer.remove();
+            }
+            var msg = '生成 OFD 失败，请确认 html2ofd 服务已启动';
+            if (xhr.response instanceof Blob) {
+                var reader = new FileReader();
+                reader.onload = function () {
+                    try {
+                        var j = JSON.parse(reader.result);
+                        if (j.error) {
+                            msg = j.error;
+                        }
+                    } catch (e) { /* ignore */ }
+                    editorIns.showNotification(msg, 'warning');
+                };
+                reader.readAsText(xhr.response);
+            } else {
+                editorIns.showNotification(msg, 'warning');
+            }
+        }
+    });
+}
+
 /**
  * 处理未分页的续打标识
  */
@@ -386,40 +463,7 @@ function dealPrintLabelNew(editor, syncType) {
     return true;
 }
 
-function setPrintPageHFooterStyle(doc) {
-    doc.body.style.width = 'auto';
-    var style = doc.head.getElementsByClassName('page_head_footer');
-    if (!style || style.length == 0) {
-        var stylee = document.createElement('style');
-        var _style = '@page { size: auto; margin: 5mm;} \
-					html { padding: 0; margin: auto; background: #fff;} \
-					body { padding: 0; margin: auto; margin-bottom: 0;  background-color: #fff;  box-shadow: none; } \
-		';
-        stylee.setAttribute('media', 'print');
-        stylee.setAttribute('class', 'page_head_footer');
-        stylee.innerHTML = _style;
-        doc.head.appendChild(stylee);
-    }
-}
-
-
-function setPrintPageHFooterStyle(doc) {
-    doc.body.style.width = 'auto';
-    var style = doc.head.getElementsByClassName('page_head_footer');
-    if (!style || style.length == 0) {
-        var stylee = document.createElement('style');
-        var _style = '@page { size: auto; margin: 5mm;} \
-					html { padding: 0; margin: auto; background: #fff;} \
-					body { padding: 0; margin: auto; margin-bottom: 0;  background-color: #fff;  box-shadow: none; } \
-		';
-        stylee.setAttribute('media', 'print');
-        stylee.setAttribute('class', 'page_head_footer');
-        stylee.innerHTML = _style;
-        doc.head.appendChild(stylee);
-    }
-}
-
-function doPrintChrome(editor, syncType, timeout, download, callback, downloadPdfCallback) {
+function doPrintChrome(editor, syncType, timeout, download, callback, downloadPdfCallback, ofdExport) {
     // 使用http打印
     var head = editor.document.getHead().clone(true);
     var body = editor.document.getBody();
@@ -586,8 +630,8 @@ function doPrintChrome(editor, syncType, timeout, download, callback, downloadPd
     removeDocReminder(body); 
     
     // 如果不保存 pdf 的话可以直接在用户电脑上打印
-    // 分页模式打印是否生成pdf
-    if (!printConfig.pageBreakPrintPdf && !download) {
+    // 分页模式打印是否生成pdf。OFD 必须走转换，不能走浏览器打印。
+    if (!ofdExport && !printConfig.pageBreakPrintPdf && !download) {
         document.getElementById('cke_1_contents').getElementsByTagName('iframe')[0].contentWindow.print();
         callback && callback();
         return;
@@ -607,6 +651,10 @@ function doPrintChrome(editor, syncType, timeout, download, callback, downloadPd
             "footerHtml": '',
         }
     };
+    if (ofdExport) {
+        // 逻辑页已含页边距和页眉页脚，html2ofd 只按 .hm-logic-page 切页。
+        optionsParams.options.prePaginated = true;
+    }
     if (syncType == "续打") { // 续打增加续打标志
         optionsParams['isPrintcontinued'] = '1';
         // var currentUserInfo = JSON.parse(sessionStorage.getItem('emr_currentUserInfo')) || {};
@@ -625,6 +673,24 @@ function doPrintChrome(editor, syncType, timeout, download, callback, downloadPd
 
     // checkDaiwenFont(body, papareHeaderStr, papareFooterStr);
     var bodyContent = body.getOuterHtml();
+    var fullHtml = '<!DOCTYPE html><html style="padding-top: 0;">' + headHtml + bodyContent + '</html>';
+
+    // 恢复修订模式状态（如果之前修改了）
+    if (!shouldShowReviseInPrint && editor.reviseStateBeforePrint === 'hide') {
+        $(body.$).removeClass('hm-revise-hide').addClass('hm-revise-show');
+    }
+
+    if (ofdExport) {
+        var ofdTimer = setTimeout(function () {
+            convertHtml2OfdRequest({
+                html: fullHtml,
+                options: optionsParams.options
+            });
+            callback && callback();
+            clearTimeout(ofdTimer);
+        }, timeout);
+        return;
+    }
 
     // 使用已有的 dynamicHeader 函数来传输 html
     var htmlToken = $.ajax({
@@ -632,7 +698,7 @@ function doPrintChrome(editor, syncType, timeout, download, callback, downloadPd
         type: 'post',
         async: false,
         timeout: 2000,
-        data: {html: '<!DOCTYPE html><html style="padding-top: 0;">' + headHtml + bodyContent + '</html>'}
+        data: {html: fullHtml}
     });
     optionsParams.htmlToken = editorHref + '/emr-editor/dynamicHeaderFooter?uuid=' + htmlToken.responseText;
 
@@ -646,12 +712,7 @@ function doPrintChrome(editor, syncType, timeout, download, callback, downloadPd
         }
     }
     optionsParams.recordIds = recordIds;
-    
-    // 恢复修订模式状态（如果之前修改了）
-    if (!shouldShowReviseInPrint && editor.reviseStateBeforePrint === 'hide') {
-        $(body.$).removeClass('hm-revise-hide').addClass('hm-revise-show');
-    }
-    
+
     var timeIndex = setTimeout(function () {
         getPdfPath('/emr-print/getChromeHtml2PdfPath', optionsParams, syncType, download, callback, downloadPdfCallback);
         clearTimeout(timeIndex);
@@ -749,6 +810,61 @@ function hmLinedCellLineCount(cell) {
     return lineTops.length > 0 ? lineTops.length : 1;
 }
 
+/**
+ * 从 body data-hm-paperSize 解析纸张边距（px，与纸张设置同一换算：96/25.4）。
+ * @returns {{ topPx: number, rightPx: number, bottomPx: number, leftPx: number }}
+ */
+function parsePaperMarginFromBody(body) {
+    var pxPerMm = 96 / 25.4;
+    var parsePx = function (val, fallback) {
+        var n = parseFloat(val);
+        if (isNaN(n)) {
+            n = fallback;
+        }
+        return Math.round(n * pxPerMm);
+    };
+    var topPx = parsePx(10, 10);
+    var rightPx = parsePx(10, 10);
+    var bottomPx = parsePx(10, 10);
+    var leftPx = parsePx(10, 10);
+    var paperSizeStr = body.getAttribute('data-hm-paperSize') || body.getAttribute('data-hm-papersize');
+    if (paperSizeStr && paperSizeStr.indexOf('$') > -1) {
+        var marginPart = paperSizeStr.split('$')[1];
+        if (marginPart) {
+            marginPart = marginPart.replace(/undefined/g, '10').replace(/null/g, '10');
+            var parts = marginPart.split('#');
+            if (parts[0] && parts[0].split(':')[1]) {
+                topPx = parsePx(parts[0].split(':')[1], 10);
+            }
+            if (parts[1] && parts[1].split(':')[1]) {
+                rightPx = parsePx(parts[1].split(':')[1], 10);
+            }
+            if (parts[2] && parts[2].split(':')[1]) {
+                bottomPx = parsePx(parts[2].split(':')[1], 10);
+            }
+            if (parts[3] && parts[3].split(':')[1]) {
+                leftPx = parsePx(parts[3].split(':')[1], 10);
+            }
+        }
+    }
+    return {
+        topPx: topPx,
+        rightPx: rightPx,
+        bottomPx: bottomPx,
+        leftPx: leftPx
+    };
+}
+
+/** OFD：上下改成纸张边距(px)。左右保持调用方已写的 0（正文 HTML 已含左右边距）。 */
+function applyOfdPaperMarginsToPrintOptions(body, options) {
+    if (!options) {
+        return;
+    }
+    var m = parsePaperMarginFromBody(body);
+    options.marginTop = m.topPx + 'px';
+    options.marginBottom = m.bottomPx + 'px';
+}
+
 /** 打印前为 hm-lined-cell 按行插入分隔线（DOM），wk 下比 CSS 渐变更稳定。 */
 function prepareHmLinedCellsForPrint($root) {
     $root.find('table.hm-lined-cell td, table.hm-lined-cell th').each(function () {
@@ -781,7 +897,7 @@ function prepareHmLinedCellsForPrint($root) {
     });
 }
 
-function doPrint(editor, syncType, timeout, download, callback, downloadPdfCallback) {
+function doPrint(editor, syncType, timeout, download, callback, downloadPdfCallback, ofdExport) {
     // 使用http打印
     var p;
     var config = getConfig(editor);
@@ -1062,6 +1178,9 @@ function doPrint(editor, syncType, timeout, download, callback, downloadPdfCallb
             "footerHtml": paperFooterToken ? editorHref + '/emr-editor/dynamicHeaderFooter?uuid=' + paperFooterToken.responseText : ''
         }
     };
+    if (ofdExport) {
+        applyOfdPaperMarginsToPrintOptions(body, optionsParams.options);
+    }
     if (syncType == "续打") { // 续打增加续打标志
         optionsParams['isPrintcontinued'] = '1';
         // var currentUserInfo = JSON.parse(sessionStorage.getItem('emr_currentUserInfo')) || {};
@@ -1099,7 +1218,17 @@ function doPrint(editor, syncType, timeout, download, callback, downloadPdfCallb
     
     $(body.find('.emrWidget-content').$).css('display', 'block');
     var timeIndex = setTimeout(function () {
-        getPdfPath('/emr-print/getPdfPath', optionsParams, syncType, download, callback, downloadPdfCallback);
+        if (ofdExport) {
+            convertHtml2OfdRequest({
+                html: optionsParams.html,
+                options: optionsParams.options,
+                headerHtml: optionsParams.options.headerHtml,
+                footerHtml: optionsParams.options.footerHtml
+            });
+            callback && callback();
+        } else {
+            getPdfPath('/emr-print/getPdfPath', optionsParams, syncType, download, callback, downloadPdfCallback);
+        }
         clearTimeout(timeIndex);
     }, timeout);
 }
@@ -1160,14 +1289,12 @@ function checkDaiwenFont(body, papareHeaderStr, papareFooterStr) {
     var syncCmd = {
         exec: function (editor, data, timeout) {
             // 处理data参数：可能是字符串（旧方式）或对象（新方式，包含回调）
-            var syncType, downloadPdfCallback;
+            var syncType, downloadPdfCallback, ofdExport = false;
             var download = false;
-            
+
             if (typeof data === 'string') {
-                // 兼容旧方式：直接传递字符串
                 syncType = data;
             } else if (data && typeof data === 'object') {
-                // 新方式：传递对象，包含type和callback
                 syncType = data.type || data;
                 downloadPdfCallback = data.callback;
             } else {
@@ -1185,10 +1312,14 @@ function checkDaiwenFont(body, papareHeaderStr, papareFooterStr) {
                 syncType = '打印';
                 download = true;
             }
+            if (syncType == '下载OFD') {
+                syncType = '打印';
+                ofdExport = true;
+            }
             if (!getConfig(editor).realtimePageBreak) {
-                doPrint(editor, syncType, timeout, download, savePrintFunction, downloadPdfCallback);
+                doPrint(editor, syncType, timeout, download, savePrintFunction, downloadPdfCallback, ofdExport);
             } else {
-                doPrintChrome(editor, syncType, timeout, download, savePrintFunction, downloadPdfCallback);
+                doPrintChrome(editor, syncType, timeout, download, savePrintFunction, downloadPdfCallback, ofdExport);
             }
         },
         canUndo: false,
@@ -1240,7 +1371,16 @@ function checkDaiwenFont(body, papareHeaderStr, papareFooterStr) {
                     execPrintCommand(editor, pluginName, '续打');
                 }
             };
-            
+            items['下载OFD'] = {
+                label: '下载 OFD',
+                group: pluginName,
+                onClick: function () {
+                    execPrintCommand(editor, pluginName, {
+                        type: '下载OFD'
+                    });
+                }
+            };
+
             editor.ui.add('Print', CKEDITOR.UI_MENUBUTTON, {
                 label: '打印',
                 command: pluginName,

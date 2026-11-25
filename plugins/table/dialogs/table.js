@@ -369,8 +369,9 @@
                     table.setAttribute('data-hm-table', 'true');
                     // 表格ID, 用于被分页之后识别表格
                     table.setAttribute('hm-table-id', CKEDITOR.tools.getUniqueId());
-                    //表格设置单行溢出截断的，表格设置为非自适应
-                    if (table.hasClass('table3')) {
+                    // 单行溢出截断（省略号 table3 / 不显示 table4）必须固定列宽，
+                    // 否则 table-layout:auto 会把单元格撑开，截断不会出现
+                    if (table.hasClass('table3') || table.hasClass('table4')) {
                         table.setStyle('table-layout', 'fixed');
                     } else {
                         table.setStyle('table-layout', 'auto');
@@ -744,6 +745,8 @@
                                 setup: function (selectedTable) {
                                     if (selectedTable.hasClass('table2')) {
                                         this.setValue('2');
+                                    } else if (selectedTable.hasClass('table4')) {
+                                        this.setValue('4');
                                     } else if (selectedTable.hasClass('table3')) {
                                         this.setValue('3');
                                     } else {
@@ -751,21 +754,37 @@
                                     }
                                 },
                                 commit: function (data, selectedTable) {
+                                    // 移除之前注入的 style，避免每次确定都重复累积
+                                    var oldStyles = selectedTable.getElementsByTag('style');
+                                    for (var si = oldStyles.count() - 1; si >= 0; si--) {
+                                        oldStyles.getItem(si).remove();
+                                    }
                                     if (this.getValue() == '2') {
                                         selectedTable.appendHtml('<style>.table2 tr td{white-space:nowrap;}</style>');
                                         selectedTable.removeClass('table3');
+                                        selectedTable.removeClass('table4');
                                         selectedTable.addClass('table2');
                                     } else if (this.getValue() == '3') {
-                                        selectedTable.appendHtml('<style>.table3 tr td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}</style>');
+                                        selectedTable.appendHtml('<style>.table3 tr td{white-space:nowrap;overflow:hidden;overflow:clip;text-overflow:ellipsis}</style>');
                                         selectedTable.removeClass('table2');
+                                        selectedTable.removeClass('table4');
                                         selectedTable.addClass('table3');
                                     } else if (this.getValue() == '4') {
-                                        selectedTable.appendHtml('<style>.table3 tr td{white-space:nowrap;overflow:hidden}</style>');
+                                        selectedTable.appendHtml('<style>.table4 tr td{white-space:nowrap;overflow:hidden;overflow:clip}</style>');
                                         selectedTable.removeClass('table2');
-                                        selectedTable.addClass('table3');
+                                        selectedTable.removeClass('table3');
+                                        selectedTable.addClass('table4');
                                     } else {
                                         selectedTable.removeClass('table2');
                                         selectedTable.removeClass('table3');
+                                        selectedTable.removeClass('table4');
+                                    }
+                                    // 单行溢出截断必须配合固定布局，否则 table-layout:auto 时
+                                    // 单元格会被 nowrap 内容撑开，overflow/ellipsis 永远不触发，导致属性失效
+                                    if (this.getValue() == '3' || this.getValue() == '4') {
+                                        selectedTable.setStyle('table-layout', 'fixed');
+                                    } else if (selectedTable.hasClass('table2')) {
+                                        selectedTable.setStyle('table-layout', 'auto');
                                     }
                                     refreshHmLinedCellFromDialog(this.getDialog(), selectedTable, this.getDialog().getParentEditor());
                                 }

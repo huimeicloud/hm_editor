@@ -488,6 +488,16 @@ commonHM.component['documentModel'].fn({
             if (!_con.attr('_placeholdertext')) {
                 // 优化文本获取逻辑，处理包含expressionbox等复杂内容的情况
                 var contentArray = [];
+                // 空格键会插入独立的全角空格文本节点，相邻纯文本应拼成一个字符串
+                var pushContent = function (item) {
+                    var lastIndex = contentArray.length - 1;
+                    var last = contentArray[lastIndex];
+                    if (typeof item === 'string' && item !== '<br/>' && typeof last === 'string' && last !== '<br/>') {
+                        contentArray[lastIndex] = last + item;
+                        return;
+                    }
+                    contentArray.push(item);
+                };
                 //console.log(_con.contents());
                 // 遍历所有子节点，按顺序获取内容
                 _con.contents().each(function () {
@@ -498,7 +508,7 @@ commonHM.component['documentModel'].fn({
                             // 清理文本内容，移除零宽空格等特殊字符
                             text = text.replace(/\u200B/g, '').replace(/\uFEFF/g, ''); //.trim();
                             if (text) {
-                                contentArray.push(text);
+                                pushContent(text);
                             }
                         }
                     } else if (this.nodeType === 1) { // 元素节点
@@ -513,7 +523,7 @@ commonHM.component['documentModel'].fn({
                                 "_expressionoption": $element.attr('_expressionoption') || '',
                                 "id": $element.attr('data-hm-id') || ''
                             };
-                            contentArray.push(expressionObj);
+                            pushContent(expressionObj);
                         } else if ($element.is('img')) {
                             // 如果是图片元素，创建图片对象结构
                             var imgObj = {
@@ -524,9 +534,9 @@ commonHM.component['documentModel'].fn({
                                 "id": $element.attr('id') || '',
                                 "style": $element.attr('style') || ''
                             };
-                            contentArray.push(imgObj);
+                            pushContent(imgObj);
                         } else if ($element.is('br')) {
-                            contentArray.push('<br/>');
+                            pushContent('<br/>');
                         } else {
                             // 检查元素内部是否包含img
                             var $img = $element.find('img');
@@ -540,14 +550,14 @@ commonHM.component['documentModel'].fn({
                                     "id": $img.attr('id') || '',
                                     "style": $img.attr('style') || ''
                                 };
-                                contentArray.push(imgObj);
+                                pushContent(imgObj);
                             } else {
                                 // 其他元素，获取其文本内容
                                 var elementText = $element.text();
                                 if (elementText && elementText.trim()) {
                                     elementText = elementText.replace(/\u200B/g, '').replace(/\uFEFF/g, ''); //.trim();
                                     if (elementText) {
-                                        contentArray.push(elementText);
+                                        pushContent(elementText);
                                     }
                                 }
                             }
